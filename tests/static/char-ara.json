@@ -1,0 +1,525 @@
+{
+  "owner": "187421759484592128",
+  "upstream": "dicecloud-xQcuqBmuYQQicowfA",
+  "active": true,
+  "sheet_type": "dicecloud",
+  "import_version": 15,
+  "name": "Ara Fentas",
+  "description": "This is a copy of my personal character for testing.",
+  "image": "https://cdn.discordapp.com/attachments/425165102350860290/592751325976985621/zhucomm1.png",
+  "stats": {
+    "prof_bonus": 4,
+    "strength": 12,
+    "dexterity": 16,
+    "constitution": 13,
+    "intelligence": 12,
+    "wisdom": 14,
+    "charisma": 20
+  },
+  "levels": {
+    "total_level": 10,
+    "classes": {
+      "Bard": 8,
+      "Warlock": 2
+    }
+  },
+  "attacks": [
+    {
+      "name": "Rapier",
+      "automation": [
+        {
+          "type": "target",
+          "meta": [],
+          "target": "each",
+          "effects": [
+            {
+              "type": "attack",
+              "meta": [],
+              "hit": [
+                {
+                  "type": "damage",
+                  "meta": [],
+                  "damage": "1d8 + 3 [piercing]",
+                  "overheal": false
+                }
+              ],
+              "miss": [],
+              "attackBonus": "9"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "meta": [],
+          "text": "Finesse"
+        }
+      ],
+      "_v": 2
+    },
+    {
+      "name": "Dagger",
+      "automation": [
+        {
+          "type": "target",
+          "meta": [],
+          "target": "each",
+          "effects": [
+            {
+              "type": "attack",
+              "meta": [],
+              "hit": [
+                {
+                  "type": "damage",
+                  "meta": [],
+                  "damage": "1d4 + 3 [piercing]",
+                  "overheal": false
+                }
+              ],
+              "miss": [],
+              "attackBonus": "9"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "meta": [],
+          "text": "Finesse, light, thrown (range 20/60)"
+        }
+      ],
+      "_v": 2
+    }
+  ],
+  "skills": {
+    "acrobatics": {
+      "value": 15,
+      "prof": 2
+    },
+    "animalHandling": {
+      "value": 5,
+      "prof": 0.5
+    },
+    "arcana": {
+      "value": 7,
+      "prof": 1
+    },
+    "athletics": {
+      "value": 4,
+      "prof": 0.5
+    },
+    "deception": {
+      "value": 9,
+      "prof": 0.5
+    },
+    "history": {
+      "value": 4,
+      "prof": 0.5
+    },
+    "initiative": {
+      "value": 6,
+      "prof": 0.5
+    },
+    "insight": {
+      "value": 14,
+      "prof": 2
+    },
+    "intimidation": {
+      "value": 9,
+      "prof": 0.5
+    },
+    "investigation": {
+      "value": 4,
+      "prof": 0.5
+    },
+    "medicine": {
+      "value": 5,
+      "prof": 0.5
+    },
+    "nature": {
+      "value": 4,
+      "prof": 0.5
+    },
+    "perception": {
+      "value": 14,
+      "prof": 2
+    },
+    "performance": {
+      "value": 18,
+      "prof": 2
+    },
+    "persuasion": {
+      "value": 9,
+      "prof": 0.5
+    },
+    "religion": {
+      "value": 4,
+      "prof": 0.5
+    },
+    "sleightOfHand": {
+      "value": 6,
+      "prof": 0.5
+    },
+    "stealth": {
+      "value": 6,
+      "prof": 0.5
+    },
+    "survival": {
+      "value": 5,
+      "prof": 0.5
+    },
+    "strength": {
+      "value": 1
+    },
+    "dexterity": {
+      "value": 3
+    },
+    "constitution": {
+      "value": 2
+    },
+    "intelligence": {
+      "value": 1
+    },
+    "wisdom": {
+      "value": 2
+    },
+    "charisma": {
+      "value": 6
+    }
+  },
+  "resistances": {
+    "resist": [
+      {
+        "dtype": "cold"
+      },
+      {
+        "dtype": "fire"
+      },
+      {
+        "dtype": "poison"
+      }
+    ],
+    "immune": [],
+    "vuln": [],
+    "neutral": []
+  },
+  "saves": {
+    "strengthSave": {
+      "value": 1
+    },
+    "dexteritySave": {
+      "value": 9,
+      "prof": 1
+    },
+    "constitutionSave": {
+      "value": 8,
+      "prof": 1
+    },
+    "intelligenceSave": {
+      "value": 1
+    },
+    "wisdomSave": {
+      "value": 2
+    },
+    "charismaSave": {
+      "value": 12,
+      "prof": 1
+    }
+  },
+  "ac": 20,
+  "max_hp": 143,
+  "hp": 143,
+  "temp_hp": 0,
+  "cvars": {},
+  "options": {
+    "options": {
+      "color": 16711935
+    }
+  },
+  "overrides": {
+    "desc": null,
+    "image": null,
+    "attacks": [],
+    "spells": []
+  },
+  "consumables": [
+    {
+      "name": "Bardic Inspiration",
+      "value": 6,
+      "minv": "0",
+      "maxv": "6",
+      "reset": "short",
+      "display_type": "bubble",
+      "live_id": null,
+      "reset_to": null,
+      "reset_by": null,
+      "title": null,
+      "desc": null,
+      "ddb_source_feature_type": null,
+      "ddb_source_feature_id": null
+    },
+    {
+      "name": "Infernal Legacy: Hellish Rebuke",
+      "value": 1,
+      "minv": "0",
+      "maxv": "1",
+      "reset": "long",
+      "display_type": "bubble",
+      "live_id": null,
+      "reset_to": null,
+      "reset_by": null,
+      "title": null,
+      "desc": null,
+      "ddb_source_feature_type": null,
+      "ddb_source_feature_id": null
+    },
+    {
+      "name": "Infernal Legacy: Darkness",
+      "value": 1,
+      "minv": "0",
+      "maxv": "1",
+      "reset": "long",
+      "display_type": "bubble",
+      "live_id": null,
+      "reset_to": null,
+      "reset_by": null,
+      "title": null,
+      "desc": null,
+      "ddb_source_feature_type": null,
+      "ddb_source_feature_id": null
+    }
+  ],
+  "death_saves": {
+    "successes": 0,
+    "fails": 0
+  },
+  "spellbook": {
+    "slots": {
+      "1": 6,
+      "2": 3,
+      "3": 3,
+      "4": 2,
+      "5": 0,
+      "6": 0,
+      "7": 0,
+      "8": 0,
+      "9": 0
+    },
+    "max_slots": {
+      "1": 6,
+      "2": 3,
+      "3": 3,
+      "4": 2,
+      "5": 0,
+      "6": 0,
+      "7": 0,
+      "8": 0,
+      "9": 0
+    },
+    "spells": [
+      {
+        "name": "Prestidigitation",
+        "strict": true,
+        "level": 0,
+        "dc": null,
+        "sab": null
+      },
+      {
+        "name": "Healing Word",
+        "strict": true,
+        "level": 1,
+        "dc": null,
+        "sab": null
+      },
+      {
+        "name": "Mage Hand",
+        "strict": true,
+        "level": 0,
+        "dc": null,
+        "sab": null
+      },
+      {
+        "name": "Vicious Mockery",
+        "strict": true,
+        "level": 0,
+        "dc": null,
+        "sab": null
+      },
+      {
+        "name": "Heat Metal",
+        "strict": true,
+        "level": 2,
+        "dc": null,
+        "sab": null
+      },
+      {
+        "name": "Polymorph",
+        "strict": true,
+        "level": 4,
+        "dc": null,
+        "sab": null
+      },
+      {
+        "name": "Detect Magic",
+        "strict": true,
+        "level": 1,
+        "dc": null,
+        "sab": null
+      },
+      {
+        "name": "Hypnotic Pattern",
+        "strict": true,
+        "level": 3,
+        "dc": null,
+        "sab": null
+      },
+      {
+        "name": "Lesser Restoration",
+        "strict": true,
+        "level": 2,
+        "dc": null,
+        "sab": null
+      },
+      {
+        "name": "Dissonant Whispers",
+        "strict": false,
+        "level": null,
+        "dc": null,
+        "sab": null
+      },
+      {
+        "name": "Hold Person",
+        "strict": true,
+        "level": 2,
+        "dc": null,
+        "sab": null
+      },
+      {
+        "name": "Dimension Door",
+        "strict": true,
+        "level": 4,
+        "dc": null,
+        "sab": null
+      },
+      {
+        "name": "Tongues",
+        "strict": true,
+        "level": 3,
+        "dc": null,
+        "sab": null
+      },
+      {
+        "name": "Thaumaturgy",
+        "strict": true,
+        "level": 0,
+        "dc": null,
+        "sab": null
+      },
+      {
+        "name": "Minor Illusion",
+        "strict": true,
+        "level": 0,
+        "dc": null,
+        "sab": null
+      },
+      {
+        "name": "Eldritch Blast",
+        "strict": true,
+        "level": 0,
+        "dc": null,
+        "sab": null
+      },
+      {
+        "name": "Faerie Fire",
+        "strict": true,
+        "level": 1,
+        "dc": null,
+        "sab": null
+      },
+      {
+        "name": "Armor of Agathys",
+        "strict": false,
+        "level": null,
+        "dc": null,
+        "sab": null
+      },
+      {
+        "name": "Wall of Fire",
+        "strict": true,
+        "level": 4,
+        "dc": null,
+        "sab": null
+      },
+      {
+        "name": "Fly",
+        "strict": true,
+        "level": 3,
+        "dc": null,
+        "sab": null
+      },
+      {
+        "name": "Protection from Evil and Good",
+        "strict": true,
+        "level": 1,
+        "dc": null,
+        "sab": null
+      },
+      {
+        "name": "Levitate",
+        "strict": true,
+        "level": 2,
+        "dc": null,
+        "sab": null
+      },
+      {
+        "name": "Stone Shape",
+        "strict": true,
+        "level": 4,
+        "dc": null,
+        "sab": null
+      },
+      {
+        "name": "Wind Wall",
+        "strict": true,
+        "level": 3,
+        "dc": null,
+        "sab": null
+      },
+      {
+        "name": "Invisibility",
+        "strict": true,
+        "level": 2,
+        "dc": null,
+        "sab": null
+      },
+      {
+        "name": "Hellish Rebuke",
+        "strict": true,
+        "level": 1,
+        "dc": null,
+        "sab": null
+      },
+      {
+        "name": "Dispel Magic",
+        "strict": true,
+        "level": 3,
+        "dc": null,
+        "sab": null
+      }
+    ],
+    "dc": 17,
+    "sab": 9,
+    "caster_level": 10
+  },
+  "live": null,
+  "race": "Tiefling",
+  "background": "Entertainer",
+  "actions": [
+    {
+      "name": "Bardic Inspiration",
+      "uid": "221cc80c-37b9-4e92-be23-dac7328e8409",
+      "id": 1011,
+      "type_id": 222216831,
+      "activation_type": 3,
+      "snippet": null
+    }
+  ]
+}
