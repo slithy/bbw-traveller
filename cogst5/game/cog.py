@@ -2,6 +2,7 @@ import discord
 from discord.ext import commands
 from cogst5.library import Library
 
+
 class Game(commands.Cog):
     """Traveller 5 commands."""
 
@@ -10,12 +11,26 @@ class Game(commands.Cog):
         self.library = Library()
 
     async def print_long_message(self, ctx, msg):
-        if len(msg) <= 2000:
+        """Split long messages to workaround the discord limit"""
+        max_length = 100
+
+        if len(msg) <= max_length:
             await ctx.send(msg)
         else:
             s = msg.split("\n")
+
+            j = 0
+            l = 0
             for i in range(len(s)):
-               await ctx.send(s[i])
+                newl = l + len(s[i])
+                if newl <= max_length:
+                    l = newl
+                    continue
+                await ctx.send("\n".join(s[j:i]))
+                j = i
+                l = 0
+
+            await ctx.send("\n".join(s[j:]))
 
     # ==== commands ====
     @commands.command(name="library_data", aliases=["library", "lib", "l"])
@@ -28,4 +43,3 @@ class Game(commands.Cog):
         for arg in args:
             search_term = f"{search_term} {arg}"
         await self.print_long_message(ctx, self.library.search(search_term))
-
