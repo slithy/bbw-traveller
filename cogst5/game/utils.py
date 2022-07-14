@@ -23,20 +23,33 @@ class SafeDict(dict):
 
         super().__setitem__(key, value)
 
+    def _check_getitem_list(self, key, l):
+        if len(l) == 1:
+            return l[0][1]
+        if len(l) > 0:
+            keys, _ = zip(*l)
+            raise SelectionException(f"Multiple matches for key {key}: {keys}")
+        return None
+
     def __getitem__(self, key):
-        try:
-            return super().__getitem__(key)
-        except KeyError:
-            pm = [i for i in self.keys() if i.startswith(key)]
-            if len(pm) == 1:
-                return pm[0]
-            elif len(pm) > 0:
-                raise SelectionException(f"Multiple matches for key {key}: {pm}")
-            else:
-                pm = [i for i in self.keys() if key in i]
-                if len(pm) == 1:
-                    return pm[0]
-                elif len(pm) > 0:
-                    raise SelectionException(f"Multiple matches for key {key}: {pm}")
-                else:
-                    raise SelectionException(f"Unknown key: {key}")
+        ans = self._check_getitem_list(key, [(k, v) for k, v in self.items() if key == k])
+        if ans:
+            return ans
+        ans = self._check_getitem_list(key, [(k, v) for k, v in self.items() if key.lower() == k.lower()])
+        if ans:
+            return ans
+        # If we want to check by prefix, reenable this
+        # ans = self._check_getitem_list(key, [(k, v) for k, v in self.items() if k.startswith(key)])
+        # if ans:
+        #     return ans
+        # ans = self._check_getitem_list(key, [(k, v) for k, v in self.items() if k.lower().startswith(key.lower())])
+        # if ans:
+        #     return ans
+        ans = self._check_getitem_list(key, [(k, v) for k, v in self.items() if key in k])
+        if ans:
+            return ans
+        ans = self._check_getitem_list(key, [(k, v) for k, v in self.items() if key.lower() in k.lower()])
+        if ans:
+            return ans
+
+        raise SelectionException(f"Unknown key: {key}")
