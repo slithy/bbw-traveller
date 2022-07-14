@@ -95,13 +95,3 @@ fuel: {self.fuel_current}/{self.fuel_capacity}
         s += "\n".join([f"{i}: {getattr(self, i)}" for i in self.__dict__ if i not in already_included])
 
         return s
-
-    def __to_json__(self):
-        return self.__dict__
-
-    @classmethod
-    def __from_dict__(cls, d):
-        c = cls()
-        for i in c.__dict__:
-            c.set_attribute(i, d[i])
-        return c

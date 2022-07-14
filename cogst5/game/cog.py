@@ -2,6 +2,7 @@ import discord
 from discord.ext import commands
 from cogst5.library import Library
 import json
+import jsonpickle
 from os.path import basename
 import time
 
@@ -11,13 +12,7 @@ from ..models.errors import *
 
 from .session_data import SessionData
 
-
-class ToJson(json.JSONEncoder):
-    def default(self, obj):
-        if hasattr(obj, "__to_json__"):
-            return obj.__to_json__()
-        return json.JSONEncoder.default(self, obj)
-
+jsonpickle.set_encoder_options('json', sort_keys=True)
 
 
 class Game(commands.Cog):
@@ -63,22 +58,29 @@ class Game(commands.Cog):
         await self.print_long_message(ctx, self.library.search(search_term))
 
     @commands.command(name="save")
-    async def save_json(self, ctx, filename: str = "session_data.json"):
+    async def save_session_data(self, ctx, filename: str = "session_data"):
         """Save session data to a file in JSON format."""
-        with open(f"/save/{basename(filename)}", "w") as f:
-            json.dump(self.session_data.__to_json__(), f, cls=ToJson, indent=2, ensure_ascii=False)
+
+        enc_data = jsonpickle.encode(self.session_data)
+        p = f"/save/{filename}.json"
+        with open(p, "w") as f:
+            json.dump(json.loads(enc_data), f, indent=2)
+
         ts = time.gmtime()
         timestamp = time.strftime("%Y%m%d%H%M%S", ts)
-        filename_backup = f"{basename(filename)}.{timestamp}"
-        with open(f"/save/{filename_backup}", "w") as f:
-            json.dump(self.session_data.__to_json__(), f, cls=ToJson)
-        await ctx.send(f"Session data saved as: {filename}. Backup in: {filename_backup}")
+        p_backup = f"/save/{filename}_{timestamp}.json"
+        with open(p_backup, "w") as f:
+            json.dump(json.loads(enc_data), f, indent=2)
+
+        await ctx.send(f"Session data saved as: {basename(p)}. Backup in: {basename(p_backup)}")
 
     @commands.command(name="load")
-    async def load_json(self, ctx, filename: str = "session_data.json"):
+    async def load_session_data(self, ctx, filename: str = "session_data.json"):
         """Load session data from a JSON-formatted file."""
-        with open(f"/save/{basename(filename)}", "r") as f:
-            self.session_data = self.session_data.__from_dict__(json.load(f))
+
+        with open(f"../../save/{basename(filename)}", "r") as f:
+            enc_data = json.dumps(json.load(f))
+            self.session_data = jsonpickle.decode(enc_data)
 
         await ctx.send(f"Session data loaded from {filename}.")
 
