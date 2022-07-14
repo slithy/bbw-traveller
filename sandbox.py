@@ -1,6 +1,7 @@
 import json
 import jsonpickle
 from os.path import basename
+from cogst5.game.inventory import Item
 
 jsonpickle.set_encoder_options('json', sort_keys=True)
 
@@ -21,20 +22,34 @@ def save_load(filename = "test.json"):
     a = Dummy()
 
     enc_data = jsonpickle.encode(a)
-    with open(f"../../save/{basename(filename)}", "w") as f:
+    with open(f"save/{basename(filename)}", "w") as f:
         json.dump(json.loads(enc_data), f, indent=2)
 
-    with open(f"../../save/{basename(filename)}", "r") as f:
+    with open(f"save/{basename(filename)}", "r") as f:
         enc_data = json.dumps(json.load(f))
         b = jsonpickle.decode(enc_data)
     print(b)
 
 
+def safe_item():
+    a = Item()
+    a.set_attr("name", "AA")
+    print(a)
+    a.set_attr("name", 3)
+    print(type(a.name))
+    a.set_attr("value", 3.2)
+    a.set_attr("value", "AA")
 
-if __name__ == '__main__':
-    save_load()
 
 
+
+
+# if __name__ == '__main__':
+#
+#
+#     # save_load()
+#     # safe_item()
+#     pass
 
 
 
