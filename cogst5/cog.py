@@ -8,7 +8,7 @@ import time
 
 from .starship import Starship
 
-from ..models.errors import *
+from .models.errors import *
 
 from .session_data import SessionData
 

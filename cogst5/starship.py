@@ -1,6 +1,6 @@
 import json
 
-from ..models.errors import *
+from .models.errors import *
 
 
 class Starship:

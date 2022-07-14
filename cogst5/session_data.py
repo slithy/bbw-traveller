@@ -1,6 +1,6 @@
 from .starship import Starship
 
-from ..models.errors import *
+from .models.errors import *
 
 
 class SessionData:
