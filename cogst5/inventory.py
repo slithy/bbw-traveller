@@ -1,4 +1,3 @@
-from utils import safe_conv
 from models.errors import *
 
 from safe_objects import SafeObj, SafeDict
@@ -43,7 +42,7 @@ class Inventory(SafeDict):
     def vol_current(self):
         return sum([i.vol_total() for i in self.values()])
 
-    def vol_status(self):
+    def _vol_status_str(self):
         return f"{self.vol_current()}/{self.vol_max}"
 
     def __str__(self):
@@ -68,7 +67,7 @@ class Inventory(SafeDict):
             raise NotAllowed(
                 f"The Item {item.name} is too big for this inventory! Its total volume is: "
                 f"{item.vol_total()}. "
-                f"The inventory status is: {self.vol_status()}"
+                f"The inventory status is: {self.__vol_status_str__()}"
             )
 
         if item.name in self:
