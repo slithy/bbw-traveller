@@ -181,10 +181,11 @@ class BbwContainer(dict):
         s += print_table(self._str_table(is_compact), headers=self._header(is_compact))
 
         if not is_compact and len(self.keys()):
+            entries_is_compact = False
             s += "\n"
-            h = type(list(self.values())[0])._header()
+            h = type(list(self.values())[0])._header(is_compact=entries_is_compact)
 
-            t = [i._str_table(is_compact=True) for i in self.values()]
+            t = [i._str_table(is_compact=entries_is_compact) for i in self.values()]
             s += print_table(t, headers=h)
 
         return s

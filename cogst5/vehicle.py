@@ -1,7 +1,7 @@
 from cogst5.models.errors import *
 
-from cogst5.bbw_objects import *
-
+from cogst5.base import *
+from cogst5.person import *
 from cogst5.utils import *
 
 
@@ -11,10 +11,7 @@ class BbwVehicle(BbwObj):
         type="",
         TL=0,
         cargo_capacity=0.0,
-        crew_size=0.0,
-        passenger_size=0.0,
         seat_capacity=0.0,
-        fuel_tank_size=0.0,
         fuel_tank_capacity=0.0,
         *args,
         **kwargs,
@@ -23,10 +20,8 @@ class BbwVehicle(BbwObj):
         self.set_type(type)
         self.set_TL(TL)
         self.cargo = BbwContainer(name="cargo", capacity=cargo_capacity)
-        self.seats = BbwObj(name="seats", size=passenger_size + crew_size, capacity=seat_capacity)
-        self._crew_size = 0
-        self.set_crew_size(crew_size)
-        self.fuel_tank = BbwObj(name="fuel_tank", size=fuel_tank_size, capacity=fuel_tank_capacity)
+        self.seats = BbwContainer(name="seats", capacity=seat_capacity)
+        self.fuel_tank = BbwObj(name="fuel_tank", size=0, capacity=fuel_tank_capacity)
 
     def set_type(self, v):
         v = str(v)
@@ -37,25 +32,6 @@ class BbwVehicle(BbwObj):
         test_geq("TL", v, 0.0)
         test_leq("TL", v, 30.0)
         self._TL = v
-
-    def set_crew_size(self, v):
-        v = float(v)
-        test_geq("crew size", v, 0)
-        new_seat_size = v + self.passenger_size()
-        self.seats.set_size(new_seat_size)
-        self._crew_size = v
-
-    def set_passenger_size(self, v):
-        v = float(v)
-        test_geq("passenger size", v, 0)
-        new_seat_size = v + self.crew_size()
-        self.seats.set_size(new_seat_size)
-
-    def crew_size(self):
-        return self._crew_size
-
-    def passenger_size(self):
-        return self.seats.size() - self.crew_size()
 
     def type(self):
         return self._type
@@ -70,13 +46,15 @@ class BbwVehicle(BbwObj):
         v = float(v)
         self.fuel_tank.set_size(self.fuel_tank.size() + v)
 
-    def add_passenger(self, v):
-        v = float(v)
-        self.set_passenger_size(self.passenger_size() + v)
+    def crew_size(self):
+        return sum([v.capacity() for v in self.seats.values() if v.is_crew()])
 
-    def add_crew(self, v):
-        v = float(v)
-        self.set_crew_size(self.crew_size() + v)
+    def add_person(self, item):
+        self.seats.add_item(item)
+
+    def del_person(self, name, count=1):
+        item = self.seats.get_item(name)
+        self.seats.del_item(item.name(), count)
 
     def add_cargo(self, item):
         self.cargo.add_item(item)
@@ -112,6 +90,8 @@ class BbwVehicle(BbwObj):
         if is_compact:
             return s
 
+        s += self.seats.__str__(is_compact=False)
+        s += "\n"
         s += self.cargo.__str__(is_compact=False)
         return s
 

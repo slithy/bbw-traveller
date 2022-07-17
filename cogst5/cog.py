@@ -9,7 +9,9 @@ import time
 from cogst5.models.errors import *
 
 from cogst5.session_data import BbwSessionData
-from cogst5.bbw_objects import *
+from cogst5.base import *
+from cogst5.person import *
+from cogst5.vehicle import *
 
 jsonpickle.set_encoder_options("json", sort_keys=True)
 
@@ -84,27 +86,33 @@ class Game(commands.Cog):
         await ctx.send(f"Session data loaded from {filename}.")
 
     @commands.command(name="set_spaceship", aliases=["add_spaceship"])
-    async def set_spaceship(self, ctx, name, capacity, type0, TL, cargo_capacity, seat_capacity, fuel_tank_capacity):
+    async def set_spaceship(self, ctx, name, capacity, type0, TL, seat_capacity, cargo_capacity, fuel_tank_capacity):
         """Add a ship"""
 
-        self.session_data.set_spaceship(
+        if name in self.session_data.fleet():
+            raise InvalidArgument(
+                f"A ship with that name: {name} already exists! If you really want to replace it, delete it first"
+            )
+
+        s = BbwSpaceShip(
             name=name,
-            capacity=capacity,
             type=type0,
             TL=TL,
+            capacity=capacity,
             cargo_capacity=cargo_capacity,
             seat_capacity=seat_capacity,
             fuel_tank_capacity=fuel_tank_capacity,
         )
+        self.session_data.fleet().set_item(s)
 
         await ctx.send(f"The ship {name} was successfully added to the fleet.")
         await self.set_ship_curr(ctx, name)
 
     @commands.command(name="del_ship", aliases=[])
-    async def del_spaceship(self, ctx, name):
+    async def del_ship(self, ctx, name):
         """Del ship"""
 
-        self.session_data.del_ship(name=name)
+        self.session_data.fleet.del_ship(name=name)
 
         await ctx.send(f"The ship {name} was successfully deleted.")
         await self.fleet(ctx)
@@ -138,17 +146,19 @@ class Game(commands.Cog):
 
         await self.ship_curr(ctx)
 
-    @commands.command(name="crew", aliases=["add_crew"])
-    async def add_crew(self, ctx, value):
+    @commands.command(name="add_person", aliases=[])
+    async def add_person(self, ctx, name, count=1, is_crew=0, salary=0, size=1.0, capacity=1.0):
         cs = self.session_data.get_ship_curr()
-        cs.add_crew(value)
+
+        new_person = BbwPerson(name=name, count=count, is_crew=is_crew, salary=salary, size=size, capacity=capacity)
+        cs.add_person(new_person)
 
         await self.ship_curr(ctx)
 
-    @commands.command(name="passenger", aliases=["add_passenger", "pass"])
-    async def add_passenger(self, ctx, value):
+    @commands.command(name="del_person", aliases=[])
+    async def del_person(self, ctx, name, count=1):
         cs = self.session_data.get_ship_curr()
-        cs.add_passenger(value)
+        cs.del_person(name=name, count=count)
 
         await self.ship_curr(ctx)
 
