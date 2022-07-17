@@ -109,10 +109,10 @@ class BbwContainer(dict):
             self.set_item(v)
             return
 
-        old_item = self[v.name()]
-        v.set_count(old_item.count() + v.count())
+        old_item = copy.deepcopy(self[v.name()])
+        old_item.set_count(old_item.count() + v.count())
 
-        self.set_item(v)
+        self.set_item(old_item)
 
     def set_item(self, v):
         k = v.name()
@@ -121,7 +121,6 @@ class BbwContainer(dict):
         if self.capacity() is not None:
             if v.capacity() is None:
                 raise NotAllowed("Container without capacity inside a container with capacity is not allowed!")
-            print(k, self.free_space(), v.capacity(), old_capacity)
             test_geq("final container capacity", self.free_space() - v.capacity() + old_capacity, 0.0)
 
         self[k] = v

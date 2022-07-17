@@ -118,3 +118,4 @@ class BbwVehicle(BbwObj):
 
 class BbwSpaceShip(BbwVehicle):
     pass
+

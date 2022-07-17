@@ -157,6 +157,7 @@ class Game(commands.Cog):
         cs = self.session_data.get_ship_curr()
 
         new_item = BbwObj(name=name, count=count, size=size, capacity=capacity)
+
         cs.add_cargo(new_item)
 
         await self.ship_curr(ctx)
