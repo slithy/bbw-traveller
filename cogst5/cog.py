@@ -6,13 +6,12 @@ import jsonpickle
 from os.path import basename
 import time
 
-from .starship import Starship
+from cogst5.models.errors import *
 
-from .models.errors import *
+from cogst5.session_data import BbwSessionData
+from cogst5.bbw_objects import *
 
-from .session_data import SessionData
-
-jsonpickle.set_encoder_options('json', sort_keys=True)
+jsonpickle.set_encoder_options("json", sort_keys=True)
 
 
 class Game(commands.Cog):
@@ -21,7 +20,7 @@ class Game(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.library = Library()
-        self.session_data = SessionData()
+        self.session_data = BbwSessionData()
 
     async def print_long_message(self, ctx, msg):
         """Split long messages to workaround the discord limit"""
@@ -48,9 +47,9 @@ class Game(commands.Cog):
     # ==== commands ====
     @commands.command(name="library_data", aliases=["library", "lib", "l"])
     async def query_library(self, ctx, search_term: str, *args):
-        """*Query Starship Library Database*
+        """*Query ship Library Database*
 
-        In a universe with no faster-than-light communication, there is no Galactic Internet. Every Starship therefore carries its own database of information about a wide variety of subjects: worlds, lifeforms, corporations, politics, history, *etc.* Almost all Starships in Traveller have this database in the form of the **Library/0** program. The Library database is periodically updated, when the ship is in port at a Class A or Class B starport.
+        In a universe with no faster-than-light communication, there is no Galactic Internet. Every ship therefore carries its own database of information about a wide variety of subjects: worlds, lifeforms, corporations, politics, history, *etc.* Almost all ships in Traveller have this database in the form of the **Library/0** program. The Library database is periodically updated, when the ship is in port at a Class A or Class B starport.
 
         `<search_term>` can be a single word, or a phrase. If there is an unambiguous partial match with an entry in the database, the Library Data for that entry will be returned. If there are multiple matching terms, a list of possible matches will be returned (try again with a more specific term from the list)."""
         for arg in args:
@@ -84,64 +83,87 @@ class Game(commands.Cog):
 
         await ctx.send(f"Session data loaded from {filename}.")
 
-    @commands.command(name="add_starship", aliases=["add_spaceship", "add_starcraft", "add_ship"])
-    async def add_starship(self, ctx, name):
-        """Add a starship to the fleet"""
+    @commands.command(name="set_spaceship", aliases=["add_spaceship"])
+    async def set_spaceship(self, ctx, name, capacity, type0, TL, cargo_capacity, seat_capacity, fuel_tank_capacity):
+        """Add a ship"""
 
-        if name in self.session_data.fleet:
-            raise NotAllowed("A starship with that name already exists! You need to remove it first")
+        self.session_data.set_spaceship(
+            name=name,
+            capacity=capacity,
+            type=type0,
+            TL=TL,
+            cargo_capacity=cargo_capacity,
+            seat_capacity=seat_capacity,
+            fuel_tank_capacity=fuel_tank_capacity,
+        )
 
-        self.session_data.fleet[name] = Starship(name)
-        self.session_data.starship_current = name
-        await ctx.send(f"The starship {name} was successfully added to the fleet.")
-        await self.current_starship(ctx)
+        await ctx.send(f"The ship {name} was successfully added to the fleet.")
+        await self.set_ship_curr(ctx, name)
 
-    @commands.command(name="remove_starship", aliases=["remove_spaceship", "remove_starcraft", "remove_ship"])
-    async def remove_starship(self, ctx, name):
-        """Remove a starship to the fleet"""
+    @commands.command(name="del_ship", aliases=[])
+    async def del_spaceship(self, ctx, name):
+        """Del ship"""
 
-        if name not in self.session_data.fleet:
-            await self.fleet(ctx)
-            raise InvalidArgument(f"Starship {name} not found.")
+        self.session_data.del_ship(name=name)
 
-        del self.session_data.fleet[name]
-        self.session_data.starship_current = ""
+        await ctx.send(f"The ship {name} was successfully deleted.")
+        await self.fleet(ctx)
 
-        await ctx.send(f"The starship {name} was successfully added to the fleet.")
-        await self.current_starship(ctx)
+    @commands.command(name="ship_curr", aliases=["ship"])
+    async def ship_curr(self, ctx):
+        """Current ship summary"""
 
-    @commands.command(
-        name="current_starship", aliases=["current_spaceship", "current_starcraft", "current_ship", "ship"]
-    )
-    async def current_starship(self, ctx):
-        """Current starship summary"""
+        cs = self.session_data.get_ship_curr()
 
-        cs = self.session_data.get_current_starship()
+        await ctx.send(cs.__str__(is_compact=False))
 
-        await ctx.send(cs.__str__())
+    @commands.command(name="set_ship_curr", aliases=[])
+    async def set_ship_curr(self, ctx, name):
+        """Set current ship"""
 
-    @commands.command(name="set_current_starship", aliases=["set_ship", "set_curr_ship"])
-    async def set_current_starship(self, ctx, name):
-        """Current starship summary"""
-        if name not in self.session_data.fleet:
-            await self.fleet(ctx)
-            raise InvalidArgument(f"Starship {name} not found.")
+        self.session_data.set_ship_curr(name)
 
-        self.session_data.starship_current = name
+        await self.ship_curr(ctx)
 
-        await self.current_starship(ctx)
-
-    @commands.command(name="fleet", aliases=["get_fleet"])
+    @commands.command(name="fleet", aliases=["ships"])
     async def fleet(self, ctx):
         """Fleet summary"""
 
-        await ctx.send(f"Starships in the fleet ({len(self.session_data.fleet)}): {', '.join(self.session_data.fleet)}")
+        await ctx.send(self.session_data.fleet.__str__(is_compact=False))
 
-    @commands.command(name="set_current_starship_attribute", aliases=["set_ship_att", "set_ship_attribute"])
-    async def set_current_starship_attribute(self, ctx, key, value):
-        """Set current starship attribute"""
-        cs = self.session_data.get_current_starship()
+    @commands.command(name="fuel", aliases=["add_fuel"])
+    async def add_fuel(self, ctx, value):
+        cs = self.session_data.get_ship_curr()
+        cs.add_fuel(value)
 
-        cs.set_attribute(key, value)
+        await self.ship_curr(ctx)
 
-        await ctx.send(f"Attribute {key} successfully set to {value}")
+    @commands.command(name="crew", aliases=["add_crew"])
+    async def add_crew(self, ctx, value):
+        cs = self.session_data.get_ship_curr()
+        cs.add_crew(value)
+
+        await self.ship_curr(ctx)
+
+    @commands.command(name="passenger", aliases=["add_passenger", "pass"])
+    async def add_passenger(self, ctx, value):
+        cs = self.session_data.get_ship_curr()
+        cs.add_passenger(value)
+
+        await self.ship_curr(ctx)
+
+    @commands.command(name="add_cargo", aliases=[])
+    async def add_cargo(self, ctx, name, count=1, size=0.0, capacity=1.0):
+        cs = self.session_data.get_ship_curr()
+
+        new_item = BbwObj(name=name, count=count, size=size, capacity=capacity)
+        cs.add_cargo(new_item)
+
+        await self.ship_curr(ctx)
+
+    @commands.command(name="del_cargo", aliases=[])
+    async def del_cargo(self, ctx, name, count=1):
+        cs = self.session_data.get_ship_curr()
+        cs.del_cargo(name=name, count=count)
+
+        await self.ship_curr(ctx)
