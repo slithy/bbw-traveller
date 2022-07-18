@@ -1,6 +1,7 @@
 from cogst5.vehicle import *
 from cogst5.base import *
 from cogst5.company import *
+from cogst5.calendar import *
 
 from .models.errors import *
 
@@ -10,6 +11,7 @@ class BbwSessionData(BbwObj):
         self._fleet = BbwContainer(name="fleet", capacity=None)
         self._ship_curr = ""
         self._company = BbwCompany()
+        self._calendar = BbwCalendar()
 
     def set_ship_curr(self, v):
         v = str(v)
@@ -29,3 +31,6 @@ class BbwSessionData(BbwObj):
 
     def company(self):
         return self._company
+
+    def calendar(self):
+        return self._calendar

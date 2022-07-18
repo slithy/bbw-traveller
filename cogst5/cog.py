@@ -147,10 +147,10 @@ class Game(commands.Cog):
         await self.ship_curr(ctx)
 
     @commands.command(name="add_person", aliases=[])
-    async def add_person(self, ctx, name, count=1, is_crew=0, salary=0, size=1.0, capacity=1.0):
+    async def add_person(self, ctx, name, count=1, is_crew=0, size=1.0, capacity=1.0):
         cs = self.session_data.get_ship_curr()
 
-        new_person = BbwPerson(name=name, count=count, is_crew=is_crew, salary=salary, size=size, capacity=capacity)
+        new_person = BbwPerson(name=name, count=count, is_crew=is_crew, size=size, capacity=capacity)
         cs.add_person(new_person)
 
         await self.ship_curr(ctx)
@@ -189,3 +189,19 @@ class Game(commands.Cog):
     @commands.command(name="money_status", aliases=["status", "money", "log"])
     async def money(self, ctx, log_lines=10):
         await ctx.send(self.session_data.company().__str__(log_lines))
+
+    @commands.command(name="date", aliases=[])
+    async def date(self, ctx):
+        await ctx.send(self.session_data.calendar().__str__(is_compact=False))
+
+    @commands.command(name="set_date", aliases=[])
+    async def set_date(self, ctx, day, year):
+        self.session_data.calendar().set_date(day, year)
+        await ctx.send("Date set successfully")
+        await self.date(ctx)
+
+    @commands.command(name="newday", aliases=["advance"])
+    async def newday(self, ctx, ndays=1):
+        self.session_data.calendar().add_t(ndays)
+        await ctx.send(f"Date advanced")
+        await self.date(ctx)
