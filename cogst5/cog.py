@@ -12,6 +12,7 @@ from cogst5.session_data import BbwSessionData
 from cogst5.base import *
 from cogst5.person import *
 from cogst5.vehicle import *
+from cogst5.company import *
 
 jsonpickle.set_encoder_options("json", sort_keys=True)
 
@@ -151,14 +152,15 @@ class Game(commands.Cog):
         cs = self.session_data.get_ship_curr()
 
         new_person = BbwPerson(name=name, count=count, is_crew=is_crew, size=size, capacity=capacity)
-        cs.add_person(new_person)
+        cs.seats().add_item(new_person)
 
         await self.ship_curr(ctx)
 
     @commands.command(name="del_person", aliases=[])
     async def del_person(self, ctx, name, count=1):
         cs = self.session_data.get_ship_curr()
-        cs.del_person(name=name, count=count)
+        person = cs.seats().get_item(name)
+        cs.seats().del_item(person.name(), count)
 
         await self.ship_curr(ctx)
 
@@ -167,17 +169,49 @@ class Game(commands.Cog):
         cs = self.session_data.get_ship_curr()
 
         new_item = BbwObj(name=name, count=count, size=size, capacity=capacity)
-
-        cs.add_cargo(new_item)
+        cs.cargo().add_item(new_item)
 
         await self.ship_curr(ctx)
 
     @commands.command(name="del_cargo", aliases=[])
     async def del_cargo(self, ctx, name, count=1):
         cs = self.session_data.get_ship_curr()
-        cs.del_cargo(name=name, count=count)
+        item = cs.cargo().get_item(name)
+        cs.cargo().del_item(name=item.name(), count=count)
 
         await self.ship_curr(ctx)
+
+
+    @commands.command(name="add_debt", aliases=[])
+    async def add_debt(self, ctx, name, count, due_day, due_year, period=None, end_day=None, end_year=None, size=0.0,
+                       capacity=1.0):
+
+        new_debt = BbwDebt(name=name, count=count, due_t=BbwCalendar.date2t(due_day, due_year), period=period,
+                           t_end=BbwCalendar.date2t(end_day, end_year), size=size,
+                           capacity=capacity)
+        self.session_data.company().debts().add_item(new_debt)
+
+        await self.money(ctx)
+
+    @commands.command(name="del_debt", aliases=[])
+    async def del_debt(self, ctx, name, count=1):
+        debt = self.session_data.company().debts().get_item(name)
+        self.session_data.company().debts().del_item(debt.name(), count)
+
+        await self.money(ctx)
+
+    @commands.command(name="pay_debt", aliases=[])
+    async def pay_debt(self, ctx, name):
+        debt = self.session_data.company().debts().get_item(name)
+        self.session_data.company().pay_debt(debt.name(), self.session_data.calendar().t())
+
+        await self.money(ctx)
+
+    @commands.command(name="pay_debts", aliases=[])
+    async def pay_debt(self, ctx):
+        self.session_data.company().pay_debts(self.session_data.calendar().t())
+
+        await self.money(ctx)
 
     @commands.command(name="add_money", aliases=["cr"])
     async def add_money(self, ctx, value=0, description="", time=None):

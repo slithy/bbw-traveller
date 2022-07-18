@@ -19,9 +19,9 @@ class BbwVehicle(BbwObj):
         super().__init__(*args, **kwargs)
         self.set_type(type)
         self.set_TL(TL)
-        self.cargo = BbwContainer(name="cargo", capacity=cargo_capacity)
-        self.seats = BbwContainer(name="seats", capacity=seat_capacity)
-        self.fuel_tank = BbwObj(name="fuel_tank", size=0, capacity=fuel_tank_capacity)
+        self._cargo = BbwContainer(name="cargo", capacity=cargo_capacity)
+        self._seats = BbwContainer(name="seats", capacity=seat_capacity)
+        self._fuel_tank = BbwObj(name="fuel_tank", size=0, capacity=fuel_tank_capacity)
 
     def set_type(self, v):
         v = str(v)
@@ -44,24 +44,19 @@ class BbwVehicle(BbwObj):
 
     def add_fuel(self, v):
         v = float(v)
-        self.fuel_tank.set_size(self.fuel_tank.size() + v)
+        self.fuel_tank().set_size(self.fuel_tank().size() + v)
 
     def crew_size(self):
-        return sum([v.capacity() for v in self.seats.values() if v.is_crew()])
+        return sum([v.capacity() for v in self.seats().values() if v.is_crew()])
 
-    def add_person(self, item):
-        self.seats.add_item(item)
+    def cargo(self):
+        return self._cargo
 
-    def del_person(self, name, count=1):
-        item = self.seats.get_item(name)
-        self.seats.del_item(item.name(), count)
+    def seats(self):
+        return self._seats
 
-    def add_cargo(self, item):
-        self.cargo.add_item(item)
-
-    def del_cargo(self, name, count=1):
-        item = self.cargo.get_item(name)
-        self.cargo.del_item(item.name(), count)
+    def fuel_tank(self):
+        return self._fuel_tank
 
     @staticmethod
     def _header(is_compact=True):
@@ -75,9 +70,9 @@ class BbwVehicle(BbwObj):
                 self.type(),
                 self.TL(),
                 self.hull(),
-                self.cargo.status(),
-                self.seats.status() + f" ({self.crew_size()})",
-                self.fuel_tank.status(),
+                self.cargo().status(),
+                self.seats().status() + f" ({self.crew_size()})",
+                self.fuel_tank().status(),
             ]
         ]
 
@@ -90,9 +85,9 @@ class BbwVehicle(BbwObj):
         if is_compact:
             return s
 
-        s += self.seats.__str__(is_compact=False)
+        s += self.seats().__str__(is_compact=False)
         s += "\n"
-        s += self.cargo.__str__(is_compact=False)
+        s += self.cargo().__str__(is_compact=False)
         return s
 
 

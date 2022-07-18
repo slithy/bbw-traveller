@@ -59,6 +59,11 @@ class BbwCalendar:
 
     @staticmethod
     def date2t(day, year):
+        if not day or not year:
+            return None
+
+        day = int(day)
+        year = int(year)
         return year*BbwCalendar._days_in_year+day-1
 
 
@@ -69,5 +74,9 @@ class BbwCalendar:
         s += f"week: {self.week()}, {self.weekday()}\n"
         return s
 
+
+# a = BbwCalendar(1)
+# print(a)
+# exit()
 
 

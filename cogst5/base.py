@@ -68,7 +68,7 @@ class BbwObj:
 
 
 class BbwContainer(dict):
-    def __init__(self, name="", capacity=0.0, d={}):
+    def __init__(self, name="", capacity=None, d={}):
         self.set_name(name)
         self.set_capacity(capacity)
         for k, v in d.items():
