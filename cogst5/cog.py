@@ -178,3 +178,14 @@ class Game(commands.Cog):
         cs.del_cargo(name=name, count=count)
 
         await self.ship_curr(ctx)
+
+    @commands.command(name="add_money", aliases=["cr"])
+    async def add_money(self, ctx, value=0, description="", time=None):
+        if value:
+            self.session_data.company().add_log_entry(value, description, time)
+
+        await self.money(ctx, 0)
+
+    @commands.command(name="money_status", aliases=["status", "money", "log"])
+    async def money(self, ctx, log_lines=10):
+        await ctx.send(self.session_data.company().__str__(log_lines))
