@@ -71,11 +71,15 @@ class BbwCompany:
 
         self.add_log_entry(-debt.count(), f"debt: {debt.name()}", curr_t)
 
+        if not debt.period():
+            del self.debts()[name]
+            return
+
         due_t = debt.due_t()
         new_due_t = due_t + debt.period()
         new_due_t += (BbwCalendar(due_t).year() != BbwCalendar(new_due_t).year())
 
-        if debt.t_end() and new_due_t >= debt.t_end():
+        if (debt.t_end() and new_due_t >= debt.t_end()):
             del self.debts()[name]
             return
 
