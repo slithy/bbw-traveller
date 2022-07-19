@@ -77,7 +77,7 @@ class BbwCompany:
 
         due_t = debt.due_t()
         new_due_t = due_t + debt.period()
-        new_due_t += (BbwCalendar(due_t).year() != BbwCalendar(new_due_t).year())
+        new_due_t += BbwCalendar(new_due_t).year()-(BbwCalendar(due_t).year())
 
         if (debt.t_end() and new_due_t >= debt.t_end()):
             del self.debts()[name]
