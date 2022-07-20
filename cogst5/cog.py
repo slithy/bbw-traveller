@@ -263,6 +263,14 @@ class Game(commands.Cog):
 
         await self.ship_curr(ctx)
 
+    @commands.command(name="rename_debt", aliases=[])
+    async def rename_debt(self, ctx, name, new_name):
+        debt = self.session_data.company().debts().get_item(name)
+        self.session_data.company().rename_item(debt, new_name)
+
+        await self.money(ctx)
+
+
     @commands.command(name="set_ship_attr", aliases=["set_ship_curr_attr"])
     async def set_attr_ship(self, ctx, attr_name, value):
         cs = self.session_data.get_ship_curr()
@@ -285,3 +293,10 @@ class Game(commands.Cog):
         person.set_attr(attr_name, value)
 
         await self.ship_curr(ctx)
+
+    @commands.command(name="set_debt_attr", aliases=[])
+    async def set_debt_attr(self, ctx, debt_name, attr_name, value):
+        debt = self.session_data.company().debts().get_item(debt_name)
+        debt.set_attr(attr_name, value)
+
+        await self.money(ctx)
