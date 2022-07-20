@@ -50,6 +50,16 @@ class BbwObj:
     def status(self):
         return f"{self._size}/{self._capacity}"
 
+    def set_attr(self, v, k):
+        if v == "name":
+            raise NotAllowed(f"Setting the name in this way is not allowed! Use rename instead")
+        if v == "capacity":
+            raise NotAllowed(f"Resetting the capacity is not allowed! You need to delete the item and create it again")
+
+        f = getattr(self, f"set_{v}")
+        f(k)
+
+
     def _str_table(self, is_compact=True):
         if is_compact:
             return [self.count(), self.name()]
@@ -65,6 +75,8 @@ class BbwObj:
             return ["count", "name"]
         else:
             return ["count", "status", "name"]
+
+
 
 
 class BbwContainer(dict):
@@ -103,6 +115,15 @@ class BbwContainer(dict):
         if self.capacity() is None:
             return ""
         return f"{self.size()}/{self.capacity()}"
+
+    def rename_item(self, item, new_name):
+        if new_name in self:
+            NotAllowed(f"You cannot rename {item.name()} into {new_name} because another item with that name already "
+                       f"exists! Delete it first")
+
+        self.del_item(item.name(), item.count())
+        item.set_name(new_name)
+        self.add_item(item)
 
     def add_item(self, v):
         if v.name() not in self:
@@ -189,3 +210,4 @@ class BbwContainer(dict):
             s += print_table(t, headers=h)
 
         return s
+

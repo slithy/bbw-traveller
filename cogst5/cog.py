@@ -138,7 +138,7 @@ class Game(commands.Cog):
     async def fleet(self, ctx):
         """Fleet summary"""
 
-        await ctx.send(self.session_data.fleet.__str__(is_compact=False))
+        await ctx.send(self.session_data.fleet().__str__(is_compact=False))
 
     @commands.command(name="fuel", aliases=["add_fuel"])
     async def add_fuel(self, ctx, value):
@@ -239,3 +239,49 @@ class Game(commands.Cog):
         self.session_data.calendar().add_t(ndays)
         await ctx.send(f"Date advanced")
         await self.date(ctx)
+
+    @commands.command(name="rename_ship_curr", aliases=["rename_ship"])
+    async def rename_ship(self, ctx, new_name):
+        cs = self.session_data.get_ship_curr()
+        self.session_data.fleet().rename_item(cs, new_name)
+
+        await self.set_ship_curr(ctx, new_name)
+
+    @commands.command(name="rename_cargo_item", aliases=["rename_item"])
+    async def rename_cargo_item(self, ctx, name, new_name):
+        cs = self.session_data.get_ship_curr()
+        item = cs.cargo().get_item(name)
+        cs.cargo().rename_item(item, new_name)
+
+        await self.ship_curr(ctx)
+
+    @commands.command(name="rename_person", aliases=[])
+    async def rename_person(self, ctx, name, new_name):
+        cs = self.session_data.get_ship_curr()
+        item = cs.seats().get_item(name)
+        cs.seats().rename_item(item, new_name)
+
+        await self.ship_curr(ctx)
+
+    @commands.command(name="set_ship_attr", aliases=["set_ship_curr_attr"])
+    async def set_attr_ship(self, ctx, attr_name, value):
+        cs = self.session_data.get_ship_curr()
+        cs.set_attr(attr_name, value)
+
+        await self.ship_curr(ctx)
+
+    @commands.command(name="set_cargo_item_attr", aliases=[])
+    async def set_cargo_item_attr(self, ctx, item_name, attr_name, value):
+        cs = self.session_data.get_ship_curr()
+        item = cs.cargo().get_item(item_name)
+        item.set_attr(attr_name, value)
+
+        await self.ship_curr(ctx)
+
+    @commands.command(name="set_person_attr", aliases=[])
+    async def set_person_attr(self, ctx, person_name, attr_name, value):
+        cs = self.session_data.get_ship_curr()
+        person = cs.seats().get_item(person_name)
+        person.set_attr(attr_name, value)
+
+        await self.ship_curr(ctx)
