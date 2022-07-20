@@ -18,7 +18,7 @@ class BbwPerson(BbwObj):
         if is_compact:
             return [self.count(), self.name()]
         else:
-            return [self.count(), self.name(), self.is_crew(), self.capacity()]
+            return [self.count(), self.name(), self.is_crew(), self.status()]
 
     def __str__(self, is_compact=True):
         return print_table(self._str_table(is_compact), headers=self._header(is_compact))
@@ -28,4 +28,4 @@ class BbwPerson(BbwObj):
         if is_compact:
             return ["count", "name"]
         else:
-            return ["count", "name", "is crew", "capacity"]
+            return ["count", "name", "is crew", "status"]
