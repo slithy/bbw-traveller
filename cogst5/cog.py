@@ -177,7 +177,7 @@ class Game(commands.Cog):
     async def del_cargo(self, ctx, name, count=1):
         cs = self.session_data.get_ship_curr()
         item = cs.cargo().get_item(name)
-        cs.cargo().del_item(name=item.name(), count=count)
+        cs.cargo().del_item(item.name(), count)
 
         await self.ship_curr(ctx)
 
