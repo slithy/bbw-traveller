@@ -2,6 +2,7 @@ from cogst5.vehicle import *
 from cogst5.base import *
 from cogst5.company import *
 from cogst5.calendar import *
+from cogst5.wishlist import *
 
 from .models.errors import *
 
@@ -9,6 +10,8 @@ from .models.errors import *
 class BbwSessionData(BbwObj):
     def __init__(self):
         self._fleet = BbwContainer(name="fleet", capacity=None)
+        self._wishlist = BbwWishlist(name="wishlist", capacity=None)
+
         self._ship_curr = ""
         self._company = BbwCompany()
         self._calendar = BbwCalendar()
@@ -34,3 +37,6 @@ class BbwSessionData(BbwObj):
 
     def calendar(self):
         return self._calendar
+
+    def wishlist(self):
+        return self._wishlist

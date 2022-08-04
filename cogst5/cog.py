@@ -13,6 +13,7 @@ from cogst5.base import *
 from cogst5.person import *
 from cogst5.vehicle import *
 from cogst5.company import *
+from cogst5.item import *
 
 jsonpickle.set_encoder_options("json", sort_keys=True)
 
@@ -27,7 +28,8 @@ class Game(commands.Cog):
 
     async def print_long_message(self, ctx, msg):
         """Split long messages to workaround the discord limit"""
-        max_length = 100
+
+        max_length = 2000
 
         if len(msg) <= max_length:
             await ctx.send(msg)
@@ -37,15 +39,17 @@ class Game(commands.Cog):
             j = 0
             l = 0
             for i in range(len(s)):
-                newl = l + len(s[i])
+                newl = l + len(s[i]) + (l != 0)
                 if newl <= max_length:
                     l = newl
-                    continue
-                await ctx.send("\n".join(s[j:i]))
-                j = i
-                l = 0
+                else:
+                    token = "\n".join(s[j:i])
+                    await ctx.send(token)
+                    j = i
+                    l = len(s[i])
 
-            await ctx.send("\n".join(s[j:]))
+            last_line = "\n".join(s[j:])
+            await ctx.send(last_line)
 
     # ==== commands ====
     @commands.command(name="library_data", aliases=["library", "lib", "l"])
@@ -86,8 +90,29 @@ class Game(commands.Cog):
 
         await ctx.send(f"Session data loaded from {filename}.")
 
-    @commands.command(name="set_spaceship", aliases=["add_spaceship"])
-    async def set_spaceship(self, ctx, name, capacity, type0, TL, seat_capacity, cargo_capacity, fuel_tank_capacity):
+    @commands.command(name="set_spaceship", aliases=["add_spaceship", "add_starship"])
+    async def set_spaceship(
+        self,
+        ctx,
+        name,
+        size,
+        capacity,
+        type,
+        TL,
+        armour,
+        cargo_capacity,
+        seat_capacity,
+        fuel_tank_capacity,
+        computer_capacity,
+        drive_m,
+        drive_j,
+        power_plant,
+        fuel_refiner_speed,
+        is_fuel_refined,
+        is_streamlined,
+        has_fuel_scoop,
+        has_cargo_crane,
+    ):
         """Add a ship"""
 
         if name in self.session_data.fleet():
@@ -97,12 +122,23 @@ class Game(commands.Cog):
 
         s = BbwSpaceShip(
             name=name,
-            type=type0,
-            TL=TL,
+            size=size,
             capacity=capacity,
+            type=type,
+            TL=TL,
+            armour=armour,
             cargo_capacity=cargo_capacity,
             seat_capacity=seat_capacity,
             fuel_tank_capacity=fuel_tank_capacity,
+            computer_capacity=computer_capacity,
+            drive_m=drive_m,
+            drive_j=drive_j,
+            power_plant=power_plant,
+            fuel_refiner_speed=fuel_refiner_speed,
+            is_fuel_refined=is_fuel_refined,
+            is_streamlined=is_streamlined,
+            has_fuel_scoop=has_fuel_scoop,
+            has_cargo_crane=has_cargo_crane,
         )
         self.session_data.fleet().set_item(s)
 
@@ -118,13 +154,20 @@ class Game(commands.Cog):
         await ctx.send(f"The ship {name} was successfully deleted.")
         await self.fleet(ctx)
 
+    @commands.command(name="rename_ship_curr", aliases=["rename_ship"])
+    async def rename_ship(self, ctx, new_name):
+        cs = self.session_data.get_ship_curr()
+        self.session_data.fleet().rename_item(cs, new_name)
+
+        await self.set_ship_curr(ctx, new_name)
+
     @commands.command(name="ship_curr", aliases=["ship"])
     async def ship_curr(self, ctx):
         """Current ship summary"""
 
         cs = self.session_data.get_ship_curr()
 
-        await ctx.send(cs.__str__(is_compact=False))
+        await self.print_long_message(ctx, cs.__str__(is_compact=False))
 
     @commands.command(name="set_ship_curr", aliases=[])
     async def set_ship_curr(self, ctx, name):
@@ -164,11 +207,19 @@ class Game(commands.Cog):
 
         await self.ship_curr(ctx)
 
+    @commands.command(name="rename_person", aliases=[])
+    async def rename_person(self, ctx, name, new_name):
+        cs = self.session_data.get_ship_curr()
+        item = cs.seats().get_item(name)
+        cs.seats().rename_item(item, new_name)
+
+        await self.ship_curr(ctx)
+
     @commands.command(name="add_cargo", aliases=[])
-    async def add_cargo(self, ctx, name, count=1, size=0.0, capacity=1.0):
+    async def add_cargo(self, ctx, name, count=1, size=0.0, capacity=1.0, value=0, TL=0):
         cs = self.session_data.get_ship_curr()
 
-        new_item = BbwObj(name=name, count=count, size=size, capacity=capacity)
+        new_item = BbwItem(name=name, count=count, size=size, capacity=capacity, value=value, TL=TL)
         cs.cargo().add_item(new_item)
 
         await self.ship_curr(ctx)
@@ -181,14 +232,55 @@ class Game(commands.Cog):
 
         await self.ship_curr(ctx)
 
+    @commands.command(name="rename_cargo_item", aliases=["rename_item"])
+    async def rename_cargo_item(self, ctx, name, new_name):
+        cs = self.session_data.get_ship_curr()
+        item = cs.cargo().get_item(name)
+        cs.cargo().rename_item(item, new_name)
+
+        await self.ship_curr(ctx)
+
+    @commands.command(name="wish", aliases=["wishes", "wishlist"])
+    async def wishlist(self, ctx):
+
+        await self.print_long_message(ctx, self.session_data.wishlist().__str__(is_compact=False))
+
+    @commands.command(name="add_wish", aliases=[])
+    async def add_wish(self, ctx, name, TL=0, value=0, count=1):
+
+        new_item = BbwItem(name=name, count=count, size=0.0, capacity=1.0, value=value, TL=TL)
+        self.session_data.wishlist().add_item(new_item)
+
+        await self.wishlist(ctx)
+
+    @commands.command(name="del_wish", aliases=[])
+    async def del_wish(self, ctx, name, count=1):
+        item = self.session_data.wishlist().get_item(name)
+        self.session_data.wishlist().del_item(item.name(), count)
+
+        await self.wishlist(ctx)
+
+    @commands.command(name="rename_wish", aliases=[])
+    async def rename_wish(self, ctx, name, new_name):
+        item = self.session_data.wishlist().get_item(name)
+        self.session_data.wishlist().rename_item(item, new_name)
+
+        await self.wishlist(ctx)
 
     @commands.command(name="add_debt", aliases=[])
-    async def add_debt(self, ctx, name, count, due_day, due_year, period=None, end_day=None, end_year=None, size=0.0,
-                       capacity=1.0):
+    async def add_debt(
+        self, ctx, name, count, due_day, due_year, period=None, end_day=None, end_year=None, size=0.0, capacity=1.0
+    ):
 
-        new_debt = BbwDebt(name=name, count=count, due_t=BbwCalendar.date2t(due_day, due_year), period=period,
-                           t_end=BbwCalendar.date2t(end_day, end_year), size=size,
-                           capacity=capacity)
+        new_debt = BbwDebt(
+            name=name,
+            count=count,
+            due_t=BbwCalendar.date2t(due_day, due_year),
+            period=period,
+            end_t=BbwCalendar.date2t(end_day, end_year),
+            size=size,
+            capacity=capacity,
+        )
         self.session_data.company().debts().add_item(new_debt)
 
         await self.money(ctx)
@@ -197,6 +289,13 @@ class Game(commands.Cog):
     async def del_debt(self, ctx, name, count=1):
         debt = self.session_data.company().debts().get_item(name)
         self.session_data.company().debts().del_item(debt.name(), count)
+
+        await self.money(ctx)
+
+    @commands.command(name="rename_debt", aliases=[])
+    async def rename_debt(self, ctx, name, new_name):
+        debt = self.session_data.company().debts().get_item(name)
+        self.session_data.company().rename_item(debt, new_name)
 
         await self.money(ctx)
 
@@ -222,7 +321,7 @@ class Game(commands.Cog):
 
     @commands.command(name="money_status", aliases=["status", "money", "log"])
     async def money(self, ctx, log_lines=10):
-        await ctx.send(self.session_data.company().__str__(log_lines))
+        await self.print_long_message(ctx, self.session_data.company().__str__(log_lines))
 
     @commands.command(name="date", aliases=[])
     async def date(self, ctx):
@@ -240,39 +339,8 @@ class Game(commands.Cog):
         await ctx.send(f"Date advanced")
         await self.date(ctx)
 
-    @commands.command(name="rename_ship_curr", aliases=["rename_ship"])
-    async def rename_ship(self, ctx, new_name):
-        cs = self.session_data.get_ship_curr()
-        self.session_data.fleet().rename_item(cs, new_name)
-
-        await self.set_ship_curr(ctx, new_name)
-
-    @commands.command(name="rename_cargo_item", aliases=["rename_item"])
-    async def rename_cargo_item(self, ctx, name, new_name):
-        cs = self.session_data.get_ship_curr()
-        item = cs.cargo().get_item(name)
-        cs.cargo().rename_item(item, new_name)
-
-        await self.ship_curr(ctx)
-
-    @commands.command(name="rename_person", aliases=[])
-    async def rename_person(self, ctx, name, new_name):
-        cs = self.session_data.get_ship_curr()
-        item = cs.seats().get_item(name)
-        cs.seats().rename_item(item, new_name)
-
-        await self.ship_curr(ctx)
-
-    @commands.command(name="rename_debt", aliases=[])
-    async def rename_debt(self, ctx, name, new_name):
-        debt = self.session_data.company().debts().get_item(name)
-        self.session_data.company().rename_item(debt, new_name)
-
-        await self.money(ctx)
-
-
     @commands.command(name="set_ship_attr", aliases=["set_ship_curr_attr"])
-    async def set_attr_ship(self, ctx, attr_name, value):
+    async def set_ship_attr(self, ctx, attr_name, value):
         cs = self.session_data.get_ship_curr()
         cs.set_attr(attr_name, value)
 
@@ -300,3 +368,10 @@ class Game(commands.Cog):
         debt.set_attr(attr_name, value)
 
         await self.money(ctx)
+
+    @commands.command(name="set_wish_attr", aliases=[])
+    async def set_wish_attr(self, ctx, item_name, attr_name, value):
+        item = self.session_data.wishlist().get_item(item_name)
+        item.set_attr(attr_name, value)
+
+        await self.wishlist(ctx)

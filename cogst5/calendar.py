@@ -3,6 +3,7 @@ from cogst5.models.errors import *
 from cogst5.base import *
 from cogst5.utils import *
 
+
 class BbwCalendar:
     _days_in_week = 7
     _days_in_month = 28
@@ -24,24 +25,24 @@ class BbwCalendar:
     def add_t(self, v):
         v = int(v)
         test_g("advance", v, 0)
-        self.set_t(self.t()+v)
+        self.set_t(self.t() + v)
 
     def t(self):
         return self._t
 
     def year(self):
-        return int(self.t()/self._days_in_year)
+        return int(self.t() / self._days_in_year)
 
     def month(self):
         if self.day() == 1:
             return "-"
 
-        return int(max(self.day()-2, 0)/self._days_in_month)+1
+        return int(max(self.day() - 2, 0) / self._days_in_month) + 1
 
     def week(self):
         if self.day() == 1:
             return "-"
-        return int(max(self.day()-2, 0)/self._days_in_week)+1
+        return int(max(self.day() - 2, 0) / self._days_in_week) + 1
 
     def weekday(self):
         day = self.day()
@@ -50,9 +51,8 @@ class BbwCalendar:
 
         return f"{max(self.day()-2, 0)%self._days_in_week+1}day"
 
-
     def day(self):
-        return self.t()%self._days_in_year+1
+        return self.t() % self._days_in_year + 1
 
     def date(self):
         return f"{self.day()}-{self.month()}-{self.year()}"
@@ -64,8 +64,7 @@ class BbwCalendar:
 
         day = int(day)
         year = int(year)
-        return year*BbwCalendar._days_in_year+day-1
-
+        return year * BbwCalendar._days_in_year + day - 1
 
     def __str__(self, is_compact=True):
         s = f"date: {self.date()}\n"
@@ -78,5 +77,3 @@ class BbwCalendar:
 # a = BbwCalendar(1)
 # print(a)
 # exit()
-
-

@@ -1,5 +1,6 @@
 from cogst5.base import *
 
+
 class BbwPerson(BbwObj):
     def __init__(self, is_crew=False, *args, **kwargs):
 
