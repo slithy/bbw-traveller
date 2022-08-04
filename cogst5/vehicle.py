@@ -1,5 +1,8 @@
 from cogst5.models.errors import *
 
+import math
+import d20
+
 from cogst5.base import *
 from cogst5.person import *
 from cogst5.utils import *
@@ -138,6 +141,19 @@ class BbwSpaceShip(BbwVehicle):
         self.set_has_cargo_crane(has_cargo_crane)
         self._computer = BbwContainer(name="computer", capacity=computer_capacity)
         super().__init__(*args, **kwargs)
+
+    def sector_jump_time(self, diam_beg_km, diam_end_km):
+        diam_beg_km = float(diam_beg_km)
+        diam_end_km = float(diam_end_km)
+        t1 = self._100diam_time_days(diam_beg_km)
+        t2 = (148 + d20.roll("6d6").total) / 24
+        t3 = self._100diam_time_days(diam_end_km)
+
+        ttot = t1 + t2 + t3
+        return conv_days_2_time(t1 + t2 + t3)
+
+    def _100diam_time_days(self, diam_km):
+        return math.sqrt(100 * 2 * 1000 * diam_km / (self.drive_j() * 10)) / (60 * 60 * 24)
 
     def set_has_cargo_crane(self, v):
         v = bool(v)

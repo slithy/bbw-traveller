@@ -33,7 +33,6 @@ def check_get_item_list(k, l):
 
 def print_table(t, headers=()):
     if len(t) and not isinstance(t[0], list):
-
         return tabulate([t], headers)
     else:
         return tabulate(t, headers)
@@ -47,3 +46,21 @@ def int_or_float(v):
         float(v)
         t = float
     return t
+
+
+def conv_days_2_time(d):
+    days = int(d)
+    d = d % 1
+    hours = int(24 * d)
+    d = (24 * d) % 1
+    minutes = int(60 * d)
+    d = (60 * d) % 1
+
+    ans = []
+    if days:
+        ans.append(f"{days}d")
+    if hours or len(ans):
+        ans.append(f"{hours}h")
+    ans.append(f"{minutes}m")
+
+    return "-".join(ans)

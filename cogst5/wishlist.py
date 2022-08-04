@@ -4,7 +4,6 @@ from cogst5.utils import *
 
 class BbwWishlist(BbwContainer):
     def __str__(self, is_compact=True):
-
         s = ""
         s += print_table(self._str_table(is_compact), headers=self._header(is_compact))
 

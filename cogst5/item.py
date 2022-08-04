@@ -3,7 +3,6 @@ from cogst5.base import *
 
 class BbwItem(BbwObj):
     def __init__(self, value=0, TL=0, *args, **kwargs):
-
         self.set_value(value)
         self.set_TL(TL)
 

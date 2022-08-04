@@ -58,7 +58,8 @@ class Game(commands.Cog):
 
         In a universe with no faster-than-light communication, there is no Galactic Internet. Every ship therefore carries its own database of information about a wide variety of subjects: worlds, lifeforms, corporations, politics, history, *etc.* Almost all ships in Traveller have this database in the form of the **Library/0** program. The Library database is periodically updated, when the ship is in port at a Class A or Class B starport.
 
-        `<search_term>` can be a single word, or a phrase. If there is an unambiguous partial match with an entry in the database, the Library Data for that entry will be returned. If there are multiple matching terms, a list of possible matches will be returned (try again with a more specific term from the list)."""
+        `<search_term>` can be a single word, or a phrase. If there is an unambiguous partial match with an entry in the database, the Library Data for that entry will be returned. If there are multiple matching terms, a list of possible matches will be returned (try again with a more specific term from the list).
+        """
         for arg in args:
             search_term = f"{search_term} {arg}"
         await self.print_long_message(ctx, self.library.search(search_term))
@@ -242,12 +243,10 @@ class Game(commands.Cog):
 
     @commands.command(name="wish", aliases=["wishes", "wishlist"])
     async def wishlist(self, ctx):
-
         await self.print_long_message(ctx, self.session_data.wishlist().__str__(is_compact=False))
 
     @commands.command(name="add_wish", aliases=[])
     async def add_wish(self, ctx, name, TL=0, value=0, count=1):
-
         new_item = BbwItem(name=name, count=count, size=0.0, capacity=1.0, value=value, TL=TL)
         self.session_data.wishlist().add_item(new_item)
 
@@ -271,7 +270,6 @@ class Game(commands.Cog):
     async def add_debt(
         self, ctx, name, count, due_day, due_year, period=None, end_day=None, end_year=None, size=0.0, capacity=1.0
     ):
-
         new_debt = BbwDebt(
             name=name,
             count=count,
@@ -375,3 +373,8 @@ class Game(commands.Cog):
         item.set_attr(attr_name, value)
 
         await self.wishlist(ctx)
+
+    @commands.command(name="jump_time", aliases=[])
+    async def set_wish_attr(self, ctx, diam_beg_km, diam_end_km):
+        cs = self.session_data.get_ship_curr()
+        await ctx.send(cs.sector_jump_time(diam_beg_km, diam_end_km))

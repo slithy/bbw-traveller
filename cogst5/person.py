@@ -3,7 +3,6 @@ from cogst5.base import *
 
 class BbwPerson(BbwObj):
     def __init__(self, is_crew=False, *args, **kwargs):
-
         self.set_is_crew(is_crew)
         super().__init__(*args, **kwargs)
 

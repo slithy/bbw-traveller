@@ -24,10 +24,19 @@ class Library:
             partial_match.remove(exact_match[0])
             all_matches = "\n • ".join(partial_match)
             see_also = "\n**See also:**" if (LibraryData[exact_match[0]].find("See also:") == -1) else ""
-            return f"**Information.** Library data available on **{exact_match[0]}**:\n{LibraryData[exact_match[0]]}{see_also}\n • {all_matches}"
+            return (
+                "**Information.** Library data available on"
+                f" **{exact_match[0]}**:\n{LibraryData[exact_match[0]]}{see_also}\n • {all_matches}"
+            )
 
         if len(partial_match) > 10:
-            return f"**Information.** Library contains {len(partial_match)} data items pertaining to *{term}*. Please be more specific."
+            return (
+                f"**Information.** Library contains {len(partial_match)} data items pertaining to *{term}*. Please be"
+                " more specific."
+            )
         else:
             all_matches = "\n • ".join(partial_match)
-            return f"**Information.** Library contains {len(partial_match)} data items pertaining to *{term}*. Please specify:\n • {all_matches}"
+            return (
+                f"**Information.** Library contains {len(partial_match)} data items pertaining to *{term}*. Please"
+                f" specify:\n • {all_matches}"
+            )

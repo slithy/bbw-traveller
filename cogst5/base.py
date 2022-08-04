@@ -117,7 +117,7 @@ class BbwContainer(dict):
         if new_name in self:
             NotAllowed(
                 f"You cannot rename {item.name()} into {new_name} because another item with that name already "
-                f"exists! Delete it first"
+                "exists! Delete it first"
             )
 
         self.del_item(item.name(), item.count())
@@ -196,7 +196,6 @@ class BbwContainer(dict):
         return [self.name(), self.status()]
 
     def __str__(self, is_compact=True):
-
         s = ""
         s += print_table(self._str_table(is_compact), headers=self._header(is_compact))
 
