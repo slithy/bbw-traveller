@@ -153,7 +153,12 @@ class BbwSpaceShip(BbwVehicle):
         return conv_days_2_time(t1 + t2 + t3)
 
     def _100diam_time_days(self, diam_km):
-        return math.sqrt(100 * 2 * 1000 * diam_km / (self.drive_j() * 10)) / (60 * 60 * 24)
+        """
+        We suppose that we start from 0 speed and we reach the destination with 0 speed. d is the distance we want to cover.
+        the time to cover half of the distance follows the equation: 1/2 * a * t**2 = d/2 -> t = sqrt(d/a). The time to cover
+        the distance is twice as much: t = 2 * sqrt(d/a). Other factors are added to convert units.
+        """
+        return 2 * math.sqrt(100 * 1000 * diam_km / (self.drive_j() * 10)) / (60 * 60 * 24)
 
     def set_has_cargo_crane(self, v):
         v = bool(v)
