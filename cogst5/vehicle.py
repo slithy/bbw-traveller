@@ -149,7 +149,6 @@ class BbwSpaceShip(BbwVehicle):
         t2 = (148 + d20.roll("6d6").total) / 24
         t3 = self._100diam_time_days(diam_end_km)
 
-        ttot = t1 + t2 + t3
         return conv_days_2_time(t1 + t2 + t3)
 
     def _100diam_time_days(self, diam_km):
