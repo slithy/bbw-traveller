@@ -91,25 +91,20 @@ class Game(commands.Cog):
 
         await ctx.send(f"Session data loaded from {filename}.")
 
-    @commands.command(name="set_spaceship", aliases=["add_spaceship", "add_starship"])
+    @commands.command(name="set_spaceship", aliases=["add_spaceship", "add_starship", "add_ship"])
     async def set_spaceship(
         self,
         ctx,
         name,
-        size,
         capacity,
         type,
         TL,
         armour,
-        cargo_capacity,
-        seat_capacity,
-        fuel_tank_capacity,
-        computer_capacity,
+        containers,
         drive_m,
         drive_j,
         power_plant,
         fuel_refiner_speed,
-        is_fuel_refined,
         is_streamlined,
         has_fuel_scoop,
         has_cargo_crane,
@@ -123,20 +118,15 @@ class Game(commands.Cog):
 
         s = BbwSpaceShip(
             name=name,
-            size=size,
             capacity=capacity,
             type=type,
             TL=TL,
             armour=armour,
-            cargo_capacity=cargo_capacity,
-            seat_capacity=seat_capacity,
-            fuel_tank_capacity=fuel_tank_capacity,
-            computer_capacity=computer_capacity,
+            containers=eval(containers),
             drive_m=drive_m,
             drive_j=drive_j,
             power_plant=power_plant,
             fuel_refiner_speed=fuel_refiner_speed,
-            is_fuel_refined=is_fuel_refined,
             is_streamlined=is_streamlined,
             has_fuel_scoop=has_fuel_scoop,
             has_cargo_crane=has_cargo_crane,
@@ -184,70 +174,13 @@ class Game(commands.Cog):
 
         await ctx.send(self.session_data.fleet().__str__(is_compact=False))
 
-    @commands.command(name="fuel", aliases=["add_fuel"])
-    async def add_fuel(self, ctx, value):
-        cs = self.session_data.get_ship_curr()
-        cs.add_fuel(value)
-
-        await self.ship_curr(ctx)
-
-    @commands.command(name="add_person", aliases=[])
-    async def add_person(self, ctx, name, count=1, is_crew=0, size=1.0, capacity=1.0):
-        cs = self.session_data.get_ship_curr()
-
-        new_person = BbwPerson(name=name, count=count, is_crew=is_crew, size=size, capacity=capacity)
-        cs.seats().add_item(new_person)
-
-        await self.ship_curr(ctx)
-
-    @commands.command(name="del_person", aliases=[])
-    async def del_person(self, ctx, name, count=1):
-        cs = self.session_data.get_ship_curr()
-        person = cs.seats().get_item(name)
-        cs.seats().del_item(person.name(), count)
-
-        await self.ship_curr(ctx)
-
-    @commands.command(name="rename_person", aliases=[])
-    async def rename_person(self, ctx, name, new_name):
-        cs = self.session_data.get_ship_curr()
-        item = cs.seats().get_item(name)
-        cs.seats().rename_item(item, new_name)
-
-        await self.ship_curr(ctx)
-
-    @commands.command(name="add_cargo", aliases=[])
-    async def add_cargo(self, ctx, name, count=1, size=0.0, capacity=1.0, value=0, TL=0):
-        cs = self.session_data.get_ship_curr()
-
-        new_item = BbwItem(name=name, count=count, size=size, capacity=capacity, value=value, TL=TL)
-        cs.cargo().add_item(new_item)
-
-        await self.ship_curr(ctx)
-
-    @commands.command(name="del_cargo", aliases=[])
-    async def del_cargo(self, ctx, name, count=1):
-        cs = self.session_data.get_ship_curr()
-        item = cs.cargo().get_item(name)
-        cs.cargo().del_item(item.name(), count)
-
-        await self.ship_curr(ctx)
-
-    @commands.command(name="rename_cargo_item", aliases=["rename_item"])
-    async def rename_cargo_item(self, ctx, name, new_name):
-        cs = self.session_data.get_ship_curr()
-        item = cs.cargo().get_item(name)
-        cs.cargo().rename_item(item, new_name)
-
-        await self.ship_curr(ctx)
-
     @commands.command(name="wish", aliases=["wishes", "wishlist"])
     async def wishlist(self, ctx):
         await self.print_long_message(ctx, self.session_data.wishlist().__str__(is_compact=False))
 
     @commands.command(name="add_wish", aliases=[])
-    async def add_wish(self, ctx, name, TL=0, value=0, count=1):
-        new_item = BbwItem(name=name, count=count, size=0.0, capacity=1.0, value=value, TL=TL)
+    async def add_wish(self, ctx, name, count=1, TL=0, value=0):
+        new_item = BbwItem(name=name, count=count, capacity=1.0, value=value, TL=TL)
         self.session_data.wishlist().add_item(new_item)
 
         await self.wishlist(ctx)
@@ -261,23 +194,19 @@ class Game(commands.Cog):
 
     @commands.command(name="rename_wish", aliases=[])
     async def rename_wish(self, ctx, name, new_name):
-        item = self.session_data.wishlist().get_item(name)
-        self.session_data.wishlist().rename_item(item, new_name)
+        self.session_data.wishlist().rename_item(name, new_name)
 
         await self.wishlist(ctx)
 
     @commands.command(name="add_debt", aliases=[])
-    async def add_debt(
-        self, ctx, name, count, due_day, due_year, period=None, end_day=None, end_year=None, size=0.0, capacity=1.0
-    ):
+    async def add_debt(self, ctx, name, count, due_day, due_year, period=None, end_day=None, end_year=None):
         new_debt = BbwDebt(
             name=name,
             count=count,
             due_t=BbwCalendar.date2t(due_day, due_year),
             period=period,
             end_t=BbwCalendar.date2t(end_day, end_year),
-            size=size,
-            capacity=capacity,
+            capacity=1.0,
         )
         self.session_data.company().debts().add_item(new_debt)
 
@@ -292,8 +221,7 @@ class Game(commands.Cog):
 
     @commands.command(name="rename_debt", aliases=[])
     async def rename_debt(self, ctx, name, new_name):
-        debt = self.session_data.company().debts().get_item(name)
-        self.session_data.company().rename_item(debt, new_name)
+        self.session_data.company().rename_item(name, new_name)
 
         await self.money(ctx)
 
@@ -344,22 +272,6 @@ class Game(commands.Cog):
 
         await self.ship_curr(ctx)
 
-    @commands.command(name="set_cargo_item_attr", aliases=[])
-    async def set_cargo_item_attr(self, ctx, item_name, attr_name, value):
-        cs = self.session_data.get_ship_curr()
-        item = cs.cargo().get_item(item_name)
-        item.set_attr(attr_name, value)
-
-        await self.ship_curr(ctx)
-
-    @commands.command(name="set_person_attr", aliases=[])
-    async def set_person_attr(self, ctx, person_name, attr_name, value):
-        cs = self.session_data.get_ship_curr()
-        person = cs.seats().get_item(person_name)
-        person.set_attr(attr_name, value)
-
-        await self.ship_curr(ctx)
-
     @commands.command(name="set_debt_attr", aliases=[])
     async def set_debt_attr(self, ctx, debt_name, attr_name, value):
         debt = self.session_data.company().debts().get_item(debt_name)
@@ -378,3 +290,60 @@ class Game(commands.Cog):
     async def set_wish_attr(self, ctx, diam_beg_km, diam_end_km):
         cs = self.session_data.get_ship_curr()
         await ctx.send(cs.sector_jump_time(diam_beg_km, diam_end_km))
+
+    @commands.command(name="container", aliases=[])
+    async def container(self, ctx, container_name):
+        cs = self.session_data.get_ship_curr()
+        container = cs.get_container(container_name)
+        await self.print_long_message(ctx, container.__str__(False))
+
+    @commands.command(name="add_person", aliases=[])
+    async def add_person(self, ctx, container_name, name, count=1, capacity=1.0, is_crew=0):
+        cs = self.session_data.get_ship_curr()
+        container = cs.get_container(container_name)
+
+        new_person = BbwPerson(name=name, count=count, is_crew=is_crew, capacity=capacity)
+        container.add_item(new_person)
+
+        await self.container(ctx, container.name())
+
+    @commands.command(name="add_item", aliases=[])
+    async def add_item(self, ctx, container_name, name, count=1, capacity=1.0, TL=0, value=0):
+        """add item to container"""
+        cs = self.session_data.get_ship_curr()
+        container = cs.get_container(container_name)
+
+        new_item = BbwItem(name=name, count=count, capacity=capacity, TL=TL, value=value)
+        container.add_item(new_item)
+
+        await self.container(ctx, container.name())
+
+    @commands.command(name="del_person", aliases=["del_item", "del"])
+    async def del_item(self, ctx, container_name, name, count=1):
+        cs = self.session_data.get_ship_curr()
+        container = cs.get_container(container_name)
+
+        item = container.get_item(name)
+        container.del_item(item.name(), count)
+
+        await self.container(ctx, container.name())
+
+    @commands.command(name="rename_person", aliases=["rename_item", "rename"])
+    async def rename_item(self, ctx, container_name, name, new_name):
+        cs = self.session_data.get_ship_curr()
+        container = cs.get_container(container_name)
+
+        container.rename_item(name, new_name)
+
+        await self.container(ctx, container.name())
+
+    @commands.command(name="set_person_attr", aliases=["set_item_attr"])
+    async def set_item_attr(self, ctx, container_name, item_name, attr_name, value):
+        cs = self.session_data.get_ship_curr()
+        container = cs.get_container(container_name)
+
+        item = container.get_item(item_name)
+
+        item.set_attr(attr_name, value)
+
+        await self.container(ctx, container.name())

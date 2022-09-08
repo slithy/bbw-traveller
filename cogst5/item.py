@@ -29,7 +29,7 @@ class BbwItem(BbwObj):
         if is_compact:
             return [self.count(), self.name()]
         else:
-            return [self.count(), self.name(), self.TL(), self.value(), self.status()]
+            return [self.count(), self.name(), self.TL(), self.value(), self.capacity()]
 
     def __str__(self, is_compact=True):
         return print_table(self._str_table(is_compact), headers=self._header(is_compact))
@@ -39,37 +39,4 @@ class BbwItem(BbwObj):
         if is_compact:
             return ["count", "name"]
         else:
-            return ["count", "name", "TL", "value", "status"]
-
-
-# class ctx:
-#     @staticmethod
-#     def send(msg):
-#         print("---")
-#         print(msg)
-#
-# def print_long_message(msg):
-#     """Split long messages to workaround the discord limit"""
-#     max_length = 10
-#
-#     if len(msg) <= max_length:
-#         ctx.send(msg)
-#     else:
-#         s = msg.split("\n")
-#
-#         j = 0
-#         l = 0
-#         for i in range(len(s)):
-#             newl = l + len(s[i])
-#             if newl <= max_length:
-#                 l = newl
-#                 continue
-#             ctx.send("\n".join(s[j:i]))
-#             j = i
-#             l = len(s[i])
-#
-#         last_line = "\n".join(s[j:])
-#         if last_line:
-#             ctx.send(last_line)
-#
-# print_long_message("aaaaaa\naaaa\naaaaaaaaa\naaaa")
+            return ["count", "name", "TL", "value", "capacity"]

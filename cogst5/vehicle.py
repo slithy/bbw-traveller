@@ -14,9 +14,7 @@ class BbwVehicle(BbwObj):
         type="",
         TL=0,
         armour=0,
-        cargo_capacity=0.0,
-        seat_capacity=0.0,
-        fuel_tank_capacity=0.0,
+        containers={"cargo": 0.0, "seats": 0.0, "fuel tank": 0.0},
         *args,
         **kwargs,
     ):
@@ -24,9 +22,9 @@ class BbwVehicle(BbwObj):
         self.set_type(type)
         self.set_TL(TL)
         self.set_armour(armour)
-        self._cargo = BbwContainer(name="cargo", capacity=cargo_capacity)
-        self._seats = BbwContainer(name="seats", capacity=seat_capacity)
-        self._fuel_tank = BbwObj(name="fuel_tank", size=0, capacity=fuel_tank_capacity)
+        self._containers = {
+            c_name: BbwContainer(name=c_name, capacity=c_capacity) for c_name, c_capacity in containers.items()
+        }
 
     def set_type(self, v):
         v = str(v)
@@ -47,28 +45,15 @@ class BbwVehicle(BbwObj):
     def hull(self):
         return self.capacity()
 
-    def add_fuel(self, v):
-        v = float(v)
-        self.fuel_tank().set_size(self.fuel_tank().size() + v)
+    def containers(self):
+        return self._containers
 
-    def crew_size(self):
-        return sum([v.capacity() for v in self.seats().values() if v.is_crew()])
-
-    def computer(self):
-        return self._computer
-
-    def cargo(self):
-        return self._cargo
-
-    def seats(self):
-        return self._seats
-
-    def fuel_tank(self):
-        return self._fuel_tank
+    def get_container(self, name):
+        return get_item(name, self.containers())
 
     @staticmethod
     def _header(is_compact=True):
-        s = ["name", "cargo", "seats (crew)", "fuel tank", "status"]
+        s = ["name", "hull", "containers"]
         if is_compact:
             return s
 
@@ -80,10 +65,8 @@ class BbwVehicle(BbwObj):
             str(i)
             for i in [
                 self.name(),
-                self.cargo().status(),
-                self.seats().status() + f" ({self.crew_size()})",
-                self.fuel_tank().status(),
-                self.status(),
+                self.hull(),
+                "\n".join([f"{k}: {v.status()}" for k, v in self.containers().items()]),
             ]
         ]
 
@@ -110,9 +93,10 @@ class BbwVehicle(BbwObj):
         if is_compact:
             return s
 
-        s += self.seats().__str__(is_compact=False)
-        s += "\n"
-        s += self.cargo().__str__(is_compact=False)
+        for i in self.containers():
+            s += "\n"
+            s += i.__str__(is_compact=False)
+
         return s
 
 
@@ -123,11 +107,9 @@ class BbwSpaceShip(BbwVehicle):
         drive_j=0,
         power_plant=0,
         fuel_refiner_speed=40,
-        is_fuel_refined=True,
         is_streamlined=True,
         has_fuel_scoop=True,
         has_cargo_crane=True,
-        computer_capacity=0.0,
         *args,
         **kwargs,
     ):
@@ -135,11 +117,9 @@ class BbwSpaceShip(BbwVehicle):
         self.set_drive_j(drive_j)
         self.set_power_plant(power_plant)
         self.set_fuel_refiner_speed(fuel_refiner_speed)
-        self.set_is_fuel_refined(is_fuel_refined)
         self.set_is_streamlined(is_streamlined)
         self.set_has_fuel_scoop(has_fuel_scoop)
         self.set_has_cargo_crane(has_cargo_crane)
-        self._computer = BbwContainer(name="computer", capacity=computer_capacity)
         super().__init__(*args, **kwargs)
 
     def sector_jump_time(self, diam_beg_km, diam_end_km):
@@ -160,32 +140,25 @@ class BbwSpaceShip(BbwVehicle):
         return 2 * math.sqrt(100 * 1000 * diam_km / (self.drive_j() * 10)) / (60 * 60 * 24)
 
     def set_has_cargo_crane(self, v):
-        v = bool(v)
+        v = bool(int(v))
         self._has_cargo_crane = v
 
     def has_cargo_crane(self):
         return self._has_cargo_crane
 
     def set_has_fuel_scoop(self, v):
-        v = bool(v)
+        v = bool(int(v))
         self._has_fuel_scoop = v
 
     def has_fuel_scoop(self):
         return self._has_fuel_scoop
 
     def set_is_streamlined(self, v):
-        v = bool(v)
+        v = bool(int(v))
         self._is_streamlined = v
 
     def is_streamlined(self):
         return self._is_streamlined
-
-    def set_is_fuel_refined(self, v):
-        v = bool(v)
-        self._is_fuel_refined = v
-
-    def is_fuel_refined(self):
-        return self._is_fuel_refined
 
     def set_armour(self, v):
         v = int(v)
@@ -229,16 +202,13 @@ class BbwSpaceShip(BbwVehicle):
 
     @staticmethod
     def _header(is_compact=True):
-        s = ["name", "cargo", "seats (crew)", "fuel tank", "computer"]
+        s = BbwVehicle._header(is_compact)
+
         if is_compact:
             return s
 
         s = [
             *s,
-            "status",
-            "type",
-            "TL",
-            "armour",
             "drive m",
             "drive j",
             "power plant",
@@ -253,11 +223,7 @@ class BbwSpaceShip(BbwVehicle):
         s = [
             str(i)
             for i in [
-                self.name(),
-                self.cargo().status(),
-                self.seats().status() + f" ({self.crew_size()})",
-                self.fuel_tank().status(),
-                self.computer().status(),
+                *super()._str_table(is_compact),
             ]
         ]
 
@@ -267,10 +233,6 @@ class BbwSpaceShip(BbwVehicle):
         s2 = [
             str(i)
             for i in [
-                self.status(),
-                self.type(),
-                self.TL(),
-                self.armour(),
                 self.drive_m(),
                 self.drive_j(),
                 self.power_plant(),
@@ -292,9 +254,8 @@ class BbwSpaceShip(BbwVehicle):
         if is_compact:
             return s
 
-        s += self.seats().__str__(is_compact=False)
-        s += "\n"
-        s += self.cargo().__str__(is_compact=False)
-        s += "\n"
-        s += self.computer().__str__(is_compact=False)
+        for i in self.containers().values():
+            s += "\n"
+            s += i.__str__(is_compact=False)
+
         return s
