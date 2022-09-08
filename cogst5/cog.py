@@ -96,6 +96,7 @@ class Game(commands.Cog):
         self,
         ctx,
         name,
+        size,
         capacity,
         type,
         TL,
@@ -118,6 +119,7 @@ class Game(commands.Cog):
 
         s = BbwSpaceShip(
             name=name,
+            size=size,
             capacity=capacity,
             type=type,
             TL=TL,
@@ -308,12 +310,12 @@ class Game(commands.Cog):
         await self.container(ctx, container.name())
 
     @commands.command(name="add_item", aliases=[])
-    async def add_item(self, ctx, container_name, name, count=1, capacity=1.0, TL=0, value=0):
+    async def add_item(self, ctx, container_name, name, count=1, capacity=1.0, TL=0, value=0, size=None):
         """add item to container"""
         cs = self.session_data.get_ship_curr()
         container = cs.get_container(container_name)
 
-        new_item = BbwItem(name=name, count=count, capacity=capacity, TL=TL, value=value)
+        new_item = BbwItem(name=name, count=count, capacity=capacity, TL=TL, value=value, size=size)
         container.add_item(new_item)
 
         await self.container(ctx, container.name())

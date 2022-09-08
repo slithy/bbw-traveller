@@ -43,7 +43,7 @@ class BbwVehicle(BbwObj):
         return self._TL
 
     def hull(self):
-        return self.capacity()
+        return self.status()
 
     def containers(self):
         return self._containers
@@ -110,6 +110,7 @@ class BbwSpaceShip(BbwVehicle):
         is_streamlined=True,
         has_fuel_scoop=True,
         has_cargo_crane=True,
+        info="",
         *args,
         **kwargs,
     ):
@@ -120,6 +121,7 @@ class BbwSpaceShip(BbwVehicle):
         self.set_is_streamlined(is_streamlined)
         self.set_has_fuel_scoop(has_fuel_scoop)
         self.set_has_cargo_crane(has_cargo_crane)
+        self.set_info(info)
         super().__init__(*args, **kwargs)
 
     def sector_jump_time(self, diam_beg_km, diam_end_km):
@@ -167,6 +169,10 @@ class BbwSpaceShip(BbwVehicle):
 
     def armour(self):
         return self._armour
+    def info(self):
+        return self._info
+    def set_info(self, v):
+        self._info = str(v)
 
     def set_fuel_refiner_speed(self, v):
         v = int(v)
@@ -216,6 +222,7 @@ class BbwSpaceShip(BbwVehicle):
             "streamlined",
             "scoop",
             "c. crane",
+            "info",
         ]
         return s
 
@@ -240,6 +247,7 @@ class BbwSpaceShip(BbwVehicle):
                 self.is_streamlined(),
                 self.has_fuel_scoop(),
                 self.has_cargo_crane(),
+                self.info(),
             ]
         ]
 

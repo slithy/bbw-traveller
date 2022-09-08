@@ -4,10 +4,20 @@ import copy
 
 
 class BbwObj:
-    def __init__(self, name="", capacity=0.0, count=1):
+    def __init__(self, name="", capacity=0.0, count=1, size=None):
+        if size is None:
+            size = capacity
+
         self.set_name(name)
         self.set_count(count)
         self.set_capacity(capacity)
+        self.set_size(size)
+
+    def set_size(self, v):
+        v = float(v)
+        test_geq("size", v, 0.0)
+        test_leq("size", v, self._capacity)
+        self._size = v
 
     def set_capacity(self, v):
         v = float(v)
@@ -31,8 +41,18 @@ class BbwObj:
     def name(self):
         return self._name
 
+    def size(self):
+        try:
+            return self._size * self._count
+        except AttributeError:
+            self._size = self._capacity
+            return self._size * self._count
+
     def capacity(self):
         return self._capacity * self._count
+
+    def status(self):
+        return f"({self.size()}/{self._capacity()})"
 
     def set_attr(self, v, k):
         if v == "name":
