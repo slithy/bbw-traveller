@@ -49,7 +49,13 @@ class BbwVehicle(BbwObj):
         return self._containers
 
     def get_container(self, name):
-        return get_item(name, self.containers())
+        _, v = get_item(name, self.containers())
+        return v
+
+    def get_people(self):
+        return [
+            item for container in self.containers().values() for item in container.values() if type(item) is BbwPerson
+        ]
 
     @staticmethod
     def _header(is_compact=True):
@@ -169,8 +175,10 @@ class BbwSpaceShip(BbwVehicle):
 
     def armour(self):
         return self._armour
+
     def info(self):
         return self._info
+
     def set_info(self, v):
         self._info = str(v)
 

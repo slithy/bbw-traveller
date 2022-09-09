@@ -7,6 +7,11 @@ def test_g(k, v, tr):
         raise InvalidArgument(f"{k}: {v} must be > {tr}!")
 
 
+def test_l(k, v, tr):
+    if v >= tr:
+        raise InvalidArgument(f"{k}: {v} must be < {tr}!")
+
+
 def test_leq(k, v, tr):
     if v >= tr:
         raise InvalidArgument(f"{k}: {v} must be < {tr}!")
@@ -24,11 +29,11 @@ def test_leq(k, v, tr):
 
 def check_get_item_list(k, l):
     if len(l) == 1:
-        return l[0][1], True
+        return k, l[0][1], True
     if len(l) > 0:
         keys, _ = zip(*l)
         raise SelectionException(f"Multiple matches for key {k}: {keys}")
-    return None, False
+    return None, None, False
 
 
 def print_table(t, headers=()):
@@ -67,25 +72,25 @@ def conv_days_2_time(d):
 
 
 def get_item(key, d):
-    ans, valid = check_get_item_list(key, [(k, v) for k, v in d.items() if key == k])
+    k, v, valid = check_get_item_list(key, [(k, v) for k, v in d.items() if key == k])
 
     if valid:
-        return ans
-    ans, valid = check_get_item_list(key, [(k, v) for k, v in d.items() if key.lower() == k.lower()])
+        return k, v
+    k, v, valid = check_get_item_list(key, [(k, v) for k, v in d.items() if key.lower() == k.lower()])
     if valid:
-        return ans
+        return k, v
     # If we want to check by prefix, reenable this
     # ans = self.check_getitem_list(key, [(k, v) for k, v in self.items() if k.startswith(key)])
     # if ans:
-    #     return ans
+    #     return k, v
     # ans = self.check_getitem_list(key, [(k, v) for k, v in self.items() if k.lower().startswith(key.lower())])
     # if ans:
-    #     return ans
-    ans, valid = check_get_item_list(key, [(k, v) for k, v in d.items() if key in k])
+    #     return k, v
+    k, v, valid = check_get_item_list(key, [(k, v) for k, v in d.items() if key in k])
     if valid:
-        return ans
-    ans, valid = check_get_item_list(key, [(k, v) for k, v in d.items() if key.lower() in k.lower()])
+        return k, v
+    k, v, valid = check_get_item_list(key, [(k, v) for k, v in d.items() if key.lower() in k.lower()])
     if valid:
-        return ans
+        return k, v
 
     raise SelectionException(f"Unknown key: {key}. Possible options: {', '.join(d.keys())}")

@@ -72,7 +72,7 @@ class BbwCompany:
     def debts(self):
         return self._debts
 
-    def pay_debt(self, name, curr_t):
+    def _pay_debt(self, curr_t, name):
         debt = self.debts()[name]
 
         self.add_log_entry(-debt.count(), f"debt: {debt.name()}", curr_t)
@@ -91,10 +91,21 @@ class BbwCompany:
 
         debt.set_due_t(new_due_t)
 
-    def pay_debts(self, curr_t):
-        debts = list(self.debts().keys())
+    def pay_debts(self, curr_t, name=None):
+        if name is None:
+            debts = list(self.debts().keys())
+        else:
+            debts = [name]
         for i in debts:
-            self.pay_debt(i, curr_t)
+            self._pay_debt(curr_t, i)
+
+    def pay_salaries(self, people, time):
+        tot = 0
+        for i in people:
+            if i.is_crew():
+                tot += i.salary_ticket()
+
+        self.add_log_entry(tot, f"salaries for: {', '.join([i.name() for i in people if i.is_crew()])}", time)
 
     def money(self):
         return self._money
@@ -118,7 +129,7 @@ class BbwCompany:
                 str(i[0]) if i[0] > 0 else "",
                 str(i[0]) if i[0] < 0 else "",
                 str(i[1]),
-                str(BbwCalendar(i[2]).date()) if i[2] else "",
+                str(BbwCalendar(i[2]).date()) if i[2] is not None else "",
             ]
             for i in reversed(self._log[max(len(self._log) - log_lines, 0) :])
         ]
@@ -132,16 +143,3 @@ class BbwCompany:
         s += self.debts().__str__(is_compact=False)
         s += "\n"
         return s
-
-
-#
-# a = BbwCompany()
-#
-# new_debt = BbwDebt(name="spaceship mortgage", count=1000, due_t=BbwCalendar.date2t(29+28+1, 0), period=28, end_t=None)
-# a.debts().add_item(new_debt)
-# a.debts().del_item(new_debt.name(), c=5)
-#
-# print(a)
-#
-#
-# exit()

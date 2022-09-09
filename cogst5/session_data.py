@@ -27,7 +27,8 @@ class BbwSessionData(BbwObj):
         if not self.ship_curr():
             raise InvalidArgument("curr ship not set!")
 
-        return self.fleet().get_item(self.ship_curr())
+        _, v = self.fleet().get_item(self.ship_curr())
+        return v
 
     def fleet(self):
         return self._fleet

@@ -189,7 +189,7 @@ class Game(commands.Cog):
 
     @commands.command(name="del_wish", aliases=[])
     async def del_wish(self, ctx, name, count=1):
-        item = self.session_data.wishlist().get_item(name)
+        _, item = self.session_data.wishlist().get_item(name)
         self.session_data.wishlist().del_item(item.name(), count)
 
         await self.wishlist(ctx)
@@ -216,7 +216,7 @@ class Game(commands.Cog):
 
     @commands.command(name="del_debt", aliases=[])
     async def del_debt(self, ctx, name, count=1):
-        debt = self.session_data.company().debts().get_item(name)
+        _, debt = self.session_data.company().debts().get_item(name)
         self.session_data.company().debts().del_item(debt.name(), count)
 
         await self.money(ctx)
@@ -227,23 +227,19 @@ class Game(commands.Cog):
 
         await self.money(ctx)
 
-    @commands.command(name="pay_debt", aliases=[])
-    async def pay_debt(self, ctx, name):
-        debt = self.session_data.company().debts().get_item(name)
-        self.session_data.company().pay_debt(debt.name(), self.session_data.calendar().t())
+    @commands.command(name="pay_debt", aliases=["pay_debts"])
+    async def pay_debts(self, ctx, name=None):
+        if name is None:
+            await self.save_session_data(ctx)
 
-        await self.money(ctx)
-
-    @commands.command(name="pay_debts", aliases=[])
-    async def pay_debt(self, ctx):
-        self.session_data.company().pay_debts(self.session_data.calendar().t())
+        self.session_data.company().pay_debts(self.session_data.calendar().t(), name)
 
         await self.money(ctx)
 
     @commands.command(name="add_money", aliases=["cr"])
-    async def add_money(self, ctx, value=0, description="", time=None):
+    async def add_money(self, ctx, value=0, description=""):
         if value:
-            self.session_data.company().add_log_entry(value, description, time)
+            self.session_data.company().add_log_entry(value, description, self.session_data.calendar().t())
 
         await self.money(ctx, 0)
 
@@ -276,14 +272,14 @@ class Game(commands.Cog):
 
     @commands.command(name="set_debt_attr", aliases=[])
     async def set_debt_attr(self, ctx, debt_name, attr_name, value):
-        debt = self.session_data.company().debts().get_item(debt_name)
+        _, debt = self.session_data.company().debts().get_item(debt_name)
         debt.set_attr(attr_name, value)
 
         await self.money(ctx)
 
     @commands.command(name="set_wish_attr", aliases=[])
     async def set_wish_attr(self, ctx, item_name, attr_name, value):
-        item = self.session_data.wishlist().get_item(item_name)
+        _, item = self.session_data.wishlist().get_item(item_name)
         item.set_attr(attr_name, value)
 
         await self.wishlist(ctx)
@@ -300,11 +296,11 @@ class Game(commands.Cog):
         await self.print_long_message(ctx, container.__str__(False))
 
     @commands.command(name="add_person", aliases=[])
-    async def add_person(self, ctx, container_name, name, count=1, capacity=1.0, is_crew=0):
+    async def add_person(self, ctx, container_name, name, role, salary_ticket=None, capacity=None, count=1):
         cs = self.session_data.get_ship_curr()
         container = cs.get_container(container_name)
 
-        new_person = BbwPerson(name=name, count=count, is_crew=is_crew, capacity=capacity)
+        new_person = BbwPerson(name=name, count=count, role=role, salary_ticket=salary_ticket, capacity=capacity)
         container.add_item(new_person)
 
         await self.container(ctx, container.name())
@@ -325,7 +321,7 @@ class Game(commands.Cog):
         cs = self.session_data.get_ship_curr()
         container = cs.get_container(container_name)
 
-        item = container.get_item(name)
+        _, item = container.get_item(name)
         container.del_item(item.name(), count)
 
         await self.container(ctx, container.name())
@@ -344,8 +340,15 @@ class Game(commands.Cog):
         cs = self.session_data.get_ship_curr()
         container = cs.get_container(container_name)
 
-        item = container.get_item(item_name)
+        _, item = container.get_item(item_name)
 
         item.set_attr(attr_name, value)
 
         await self.container(ctx, container.name())
+
+    @commands.command(name="pay_salaries", aliases=[])
+    async def pay_salaries(self, ctx):
+        cs = self.session_data.get_ship_curr()
+        self.session_data.company().pay_salaries(cs.get_people(), self.session_data.calendar().t())
+
+        await self.money(ctx, 10)
