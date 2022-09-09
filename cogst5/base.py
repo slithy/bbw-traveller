@@ -52,7 +52,7 @@ class BbwObj:
         return self._capacity * self._count
 
     def status(self):
-        return f"({self.size()}/{self._capacity()})"
+        return f"({self.size()}/{self.capacity()})"
 
     def set_attr(self, v, k):
         if v == "name":
