@@ -1,6 +1,8 @@
 from cogst5.models.errors import *
 from tabulate import tabulate
 
+import bisect
+
 
 def test_g(k, v, tr):
     if v <= tr:
@@ -17,6 +19,18 @@ def test_leq(k, v, tr):
         raise InvalidArgument(f"{k}: {v} must be < {tr}!")
 
 
+def test_hexstr(k, v, n):
+    if type(v) is not str:
+        raise InvalidArgument(f"{k}: {v} must be a str!")
+
+    if len(v) != n:
+        raise InvalidArgument(f"{k}: {v} len must be {n}!")
+
+    for i in v:
+        test_geq(k, int(i, 16), 0)
+        test_leq(k, int(i, 16), 15)
+
+
 def test_geq(k, v, tr):
     if v < tr:
         raise InvalidArgument(f"{k}: {v} must be >= {tr}!")
@@ -29,7 +43,7 @@ def test_leq(k, v, tr):
 
 def check_get_item_list(k, l):
     if len(l) == 1:
-        return k, l[0][1], True
+        return l[0][0], l[0][1], True
     if len(l) > 0:
         keys, _ = zip(*l)
         raise SelectionException(f"Multiple matches for key {k}: {keys}")
@@ -94,3 +108,7 @@ def get_item(key, d):
         return k, v
 
     raise SelectionException(f"Unknown key: {key}. Possible options: {', '.join(d.keys())}")
+
+
+def get_modifier(key, ll):
+    return ll[1][bisect.bisect_left(ll[0], key)]

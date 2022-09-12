@@ -17,6 +17,8 @@ from cogst5.item import *
 
 jsonpickle.set_encoder_options("json", sort_keys=True)
 
+hrline = "__                                                                 __\n"
+
 
 class Game(commands.Cog):
     """Traveller 5 commands."""
@@ -26,7 +28,7 @@ class Game(commands.Cog):
         self.library = Library()
         self.session_data = BbwSessionData()
 
-    async def print_long_message(self, ctx, msg):
+    async def send(self, ctx, msg):
         """Split long messages to workaround the discord limit"""
 
         max_length = 2000
@@ -62,7 +64,7 @@ class Game(commands.Cog):
         """
         for arg in args:
             search_term = f"{search_term} {arg}"
-        await self.print_long_message(ctx, self.library.search(search_term))
+        await self.send(ctx, self.library.search(search_term))
 
     @commands.command(name="save")
     async def save_session_data(self, ctx, filename: str = "session_data"):
@@ -160,7 +162,7 @@ class Game(commands.Cog):
 
         cs = self.session_data.get_ship_curr()
 
-        await self.print_long_message(ctx, cs.__str__(is_compact=False))
+        await self.send(ctx, cs.__str__(is_compact=False))
 
     @commands.command(name="set_ship_curr", aliases=[])
     async def set_ship_curr(self, ctx, name):
@@ -178,7 +180,7 @@ class Game(commands.Cog):
 
     @commands.command(name="wish", aliases=["wishes", "wishlist"])
     async def wishlist(self, ctx):
-        await self.print_long_message(ctx, self.session_data.wishlist().__str__(is_compact=False))
+        await self.send(ctx, self.session_data.wishlist().__str__(is_compact=False))
 
     @commands.command(name="add_wish", aliases=[])
     async def add_wish(self, ctx, name, count=1, TL=0, value=0):
@@ -241,15 +243,15 @@ class Game(commands.Cog):
         if value:
             self.session_data.company().add_log_entry(value, description, self.session_data.calendar().t())
 
-        await self.money(ctx, 0)
+        await self.money(ctx, 10)
 
     @commands.command(name="money_status", aliases=["status", "money", "log"])
     async def money(self, ctx, log_lines=10):
-        await self.print_long_message(ctx, self.session_data.company().__str__(log_lines))
+        await self.send(ctx, self.session_data.company().__str__(log_lines))
 
     @commands.command(name="date", aliases=[])
     async def date(self, ctx):
-        await ctx.send(self.session_data.calendar().__str__(is_compact=False))
+        await self.send(ctx, self.session_data.calendar().__str__(is_compact=False))
 
     @commands.command(name="set_date", aliases=[])
     async def set_date(self, ctx, day, year):
@@ -260,7 +262,7 @@ class Game(commands.Cog):
     @commands.command(name="newday", aliases=["advance"])
     async def newday(self, ctx, ndays=1):
         self.session_data.calendar().add_t(ndays)
-        await ctx.send(f"Date advanced")
+        await self.send(ctx, f"{hrline}Date advanced")
         await self.date(ctx)
 
     @commands.command(name="set_ship_attr", aliases=["set_ship_curr_attr"])
@@ -284,23 +286,28 @@ class Game(commands.Cog):
 
         await self.wishlist(ctx)
 
-    @commands.command(name="jump_time", aliases=[])
-    async def set_wish_attr(self, ctx, diam_beg_km, diam_end_km):
-        cs = self.session_data.get_ship_curr()
-        await ctx.send(cs.sector_jump_time(diam_beg_km, diam_end_km))
-
     @commands.command(name="container", aliases=[])
     async def container(self, ctx, container_name):
         cs = self.session_data.get_ship_curr()
         container = cs.get_container(container_name)
-        await self.print_long_message(ctx, container.__str__(False))
+        await self.send(ctx, container.__str__(False))
 
     @commands.command(name="add_person", aliases=[])
-    async def add_person(self, ctx, container_name, name, role, salary_ticket=None, capacity=None, count=1):
+    async def add_person(
+        self, ctx, container_name, name, role, upp=None, salary_ticket=None, capacity=None, reinvest=False, count=1
+    ):
         cs = self.session_data.get_ship_curr()
         container = cs.get_container(container_name)
 
-        new_person = BbwPerson(name=name, count=count, role=role, salary_ticket=salary_ticket, capacity=capacity)
+        new_person = BbwPerson(
+            name=name,
+            count=count,
+            role=role,
+            salary_ticket=salary_ticket,
+            capacity=capacity,
+            reinvest=reinvest,
+            upp=upp,
+        )
         container.add_item(new_person)
 
         await self.container(ctx, container.name())
@@ -352,3 +359,198 @@ class Game(commands.Cog):
         self.session_data.company().pay_salaries(cs.get_people(), self.session_data.calendar().t())
 
         await self.money(ctx, 10)
+
+    @commands.command(name="flight_time_m_drive", aliases=["m_drive_t", "m_drive"])
+    async def flight_time_m_drive(self, ctx, d_km):
+        cs = self.session_data.get_ship_curr()
+
+        t = conv_days_2_time(cs.flight_time_m_drive(d_km))
+
+        await ctx.send(f"{hrline}the m drive {cs.drive_m()} travel time to cover {d_km} km is: {t}")
+
+    @commands.command(name="flight_time_j_drive", aliases=["j_drive_t", "j_drive"])
+    async def flight_time_j_drive(self, ctx, n_jumps=1):
+        cs = self.session_data.get_ship_curr()
+
+        t = conv_days_2_time(cs.flight_time_j_drive(n_jumps))
+
+        await ctx.send(f"{hrline}the j drive {cs.j_drive()} travel time to do {n_jumps} jumps is: {t}")
+
+    @commands.command(name="flight_time_p2p", aliases=["flight_p2p", "p2p"])
+    async def flight_time_planet_2_planet(self, ctx, d1_km, d2_km, n_jumps=1):
+        cs = self.session_data.get_ship_curr()
+
+        t1, t2, t3 = cs.flight_time_planet_2_planet(d1_km, d2_km, n_jumps)
+
+        tab = [
+            [f"m drive ({round(100 * float(d1_km))} km)", conv_days_2_time(t1)],
+            [f"j drive ({n_jumps} jumps)", conv_days_2_time(t2)],
+            [f"m drive ({round(100 * float(d2_km))} km)", conv_days_2_time(t3)],
+        ]
+
+        await self.send(ctx, f"{hrline}the total travel time is:\n{print_table(tab)}\n= {conv_days_2_time(t1+t2+t3)}")
+
+        return t1 + t2 + t3
+
+    @commands.command(name="trip_accounting_life_support", aliases=[])
+    async def trip_accounting_life_support(self, ctx, t):
+        cs = self.session_data.get_ship_curr()
+        life_support_costs = cs.var_life_support(t)
+        self.session_data.company().add_log_entry(
+            -life_support_costs, f"variable life support", self.session_data.calendar().t()
+        )
+
+        await ctx.send(f"{hrline}variable life support costs: {life_support_costs} Cr")
+
+    @commands.command(name="trip_accounting_payback", aliases=[])
+    async def trip_accounting_payback(self, ctx, t):
+        cs = self.session_data.get_ship_curr()
+
+        msg = f"{hrline}"
+        crew = [i for i in cs.get_people() if i.is_crew()]
+        for i in crew:
+            payback = i.trip_payback(t)
+
+            if payback is None:
+                msg += f"I do not know {i.name()} upp. I cannot calculate his/her/their payback!\n"
+            else:
+                if i.reinvest():
+                    self.session_data.company().add_log_entry(
+                        payback, f"{i.name()} reinvested the payback", self.session_data.calendar().t()
+                    )
+                msg += f"{i.name()} gets back {payback} Cr {'' if i.reinvest() else '(reinvested)'}\n"
+
+        await self.send(ctx, msg)
+
+    @commands.command(name="find_passengers", aliases=[])
+    async def find_passengers(self, ctx, carouse_or_broker_or_streetwise_mod, SOC_mod, n_sectors, w0, w1):
+        cs = self.session_data.get_ship_curr()
+        if type(w0) is str:
+            w0 = eval(w0)
+        if type(w1) is str:
+            w1 = eval(w1)
+
+        header = ("high", "middle", "basic", "low")
+        np = [cs.find_passengers(carouse_or_broker_or_streetwise_mod, SOC_mod, i, n_sectors, w0, w1) for i in header]
+
+        await self.send(ctx, f"{hrline}passengers:\n{print_table(np, headers=header)}")
+
+    @commands.command(name="find_mail_and_cargo", aliases=[])
+    async def find_mail_and_cargo(
+        self,
+        ctx,
+        brocker_or_streetwise_mod,
+        SOC_mod,
+        max_naval_or_scout_rank,
+        max_SOC_mod,
+        n_sectors,
+        w0,
+        w1,
+    ):
+        cs = self.session_data.get_ship_curr()
+        if type(w0) is str:
+            w0 = eval(w0)
+        if type(w1) is str:
+            w1 = eval(w1)
+
+        header = ("mail", "major", "minor", "incidental")
+        mail = cs.find_mail(brocker_or_streetwise_mod, SOC_mod, max_naval_or_scout_rank, max_SOC_mod, n_sectors, w0, w1)
+        np = [mail, *[cs.find_cargo(brocker_or_streetwise_mod, SOC_mod, i, n_sectors, w0, w1) for i in header[1:]]]
+
+        await self.send(ctx, f"{hrline}mail and cargo:\n{print_table(np, headers=header)}")
+
+    @commands.command(name="unload_passengers", aliases=[])
+    async def unload_passengers(self, ctx):
+        cs = self.session_data.get_ship_curr()
+
+        passengers = [i for i in cs.get_people() if not i.is_crew()]
+        tot = 0
+        for p in passengers:
+            container = cs.get_main_stateroom() if "low" not in p.name() else cs.get_main_lowberth()
+            container.del_item(p.name(), c=p.count())
+            cargo = cs.get_main_cargo()
+            cargo.del_item(p.name())
+            tot += p.salary_ticket()
+
+        self.session_data.company().add_log_entry(tot, f"passenger tickets", self.session_data.calendar().t())
+
+        await self.send(ctx, f"{hrline}passenger tickets: {int(tot)} Cr")
+
+    @commands.command(name="unload_mail_and_cargo", aliases=["unload_mail"])
+    async def unload_mail_and_cargo(self, ctx):
+        cs = self.session_data.get_ship_curr()
+
+        tot = 0
+        for container in cs.get_all_cargo_containers():
+            cargo_items = [i for i in container.values() if "cargo" in i.name()]
+            for item in cargo_items:
+                tot += item.value()
+                container.del_item(item.name(), c=item.count())
+        self.session_data.company().add_log_entry(tot, f"mail and cargo", self.session_data.calendar().t())
+
+        await self.send(ctx, f"{hrline}mail and cargo: {int(tot)} Cr")
+
+    @commands.command(name="unload_ship", aliases=[])
+    async def unload(self, ctx):
+        await self.unload_passengers(ctx)
+        await self.unload_mail_and_cargo(ctx)
+
+    @commands.command(name="fly", aliases=[])
+    async def fly(self, ctx, d1_km, d2_km, n_jumps=1, save=True):
+        # save
+        if int(save):
+            await self.save_session_data(ctx)
+
+        # jump time
+        t = await self.flight_time_planet_2_planet(ctx, d1_km, d2_km, n_jumps)
+
+        # life support
+        await self.trip_accounting_life_support(ctx, t)
+
+        # payback
+        await self.trip_accounting_payback(ctx, t)
+
+        await self.newday(ctx, math.floor(t))
+
+    @commands.command(name="auto_fly", aliases=[])
+    async def auto_fly(
+        self,
+        ctx,
+        carouse_or_broker_or_streetwise_mod,
+        brocker_or_streetwise_mod,
+        SOC_mod,
+        max_naval_or_scout_rank,
+        max_SOC_mod,
+        n_sectors,
+        n_jumps,
+        w0,
+        w1,
+    ):
+        if type(w0) is str:
+            w0 = eval(w0)
+        if type(w1) is str:
+            w1 = eval(w1)
+
+        # save
+        await self.save_session_data(ctx)
+
+        # load passengers
+        await self.find_passengers(ctx, carouse_or_broker_or_streetwise_mod, SOC_mod, n_sectors, w0, w1)
+
+        # load mail and cargo
+        await self.find_mail_and_cargo(
+            ctx,
+            brocker_or_streetwise_mod,
+            SOC_mod,
+            max_naval_or_scout_rank,
+            max_SOC_mod,
+            n_sectors,
+            w0,
+            w1,
+        )
+
+        # fly
+        await self.fly(ctx, d1_km=w0["d"], d2_km=w1["d"], n_jumps=n_jumps, save=False)
+
+        # unload
+        await self.unload(ctx)

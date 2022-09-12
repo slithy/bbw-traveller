@@ -59,7 +59,7 @@ class BbwCalendar:
 
     @staticmethod
     def date2t(day, year):
-        if not day or not year:
+        if day is None or year is None:
             return None
 
         day = int(day)

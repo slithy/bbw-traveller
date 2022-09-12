@@ -156,6 +156,8 @@ class BbwContainer(dict):
         c = int(c)
         test_g("Count", c, 0)
 
+        k, _ = self.get_item(k)
+
         if k not in self:
             raise InvalidArgument(f"Item {k} not found. Possible options: {', '.join(self.keys())}")
 

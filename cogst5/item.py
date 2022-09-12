@@ -12,7 +12,7 @@ class BbwItem(BbwObj):
         return self._TL
 
     def value(self):
-        return self._value
+        return self._value * self.count()
 
     def set_TL(self, v):
         v = int(v)
