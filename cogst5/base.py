@@ -22,7 +22,6 @@ class BbwObj:
     def set_capacity(self, v):
         v = float(v)
 
-        test_geq("capacity", v, 0.0)
         self._capacity = v
 
     def set_name(self, v):
@@ -117,26 +116,29 @@ class BbwContainer(dict):
             return ""
         return f"{self.size()}/{self.capacity()}"
 
-    def rename_item(self, name, new_name):
-        item = self.get_item(name)
+    def rename_item(self, name, new_name, on_capacity=False):
+        name, item = self.get_item(name)
 
-        if new_name in self:
+        if new_name in self and not on_capacity:
             NotAllowed(
-                f"You cannot rename {item.name()} into {new_name} because another item with that name already "
+                f"You cannot rename {name} into {new_name} because another item with that name already "
                 "exists! Delete it first"
             )
 
-        self.del_item(item.name(), item.count())
+        self.del_item(name, c=(item.capacity() if on_capacity else item.count()), on_capacity=on_capacity)
         item.set_name(new_name)
-        self.add_item(item)
+        self.add_item(item, on_capacity)
 
-    def add_item(self, v):
+    def add_item(self, v, on_capacity=False):
         if v.name() not in self:
             self.set_item(v)
             return
 
         old_item = copy.deepcopy(self[v.name()])
-        old_item.set_count(old_item.count() + v.count())
+        if on_capacity and old_item.count() == 1:
+            old_item.set_capacity(old_item.capacity() + v.capacity())
+        else:
+            old_item.set_count(old_item.count() + v.count())
 
         self.set_item(old_item)
 
@@ -151,10 +153,14 @@ class BbwContainer(dict):
 
         self[k] = v
 
-    def del_item(self, k, c=1):
+    def del_item(self, k, c=1, on_capacity=False):
         k = str(k)
-        c = int(c)
-        test_g("Count", c, 0)
+        if on_capacity:
+            c = float(c)
+            test_g("Capacity", c, 0.0)
+        else:
+            c = int(c)
+            test_g("Count", c, 0)
 
         k, _ = self.get_item(k)
 
@@ -165,13 +171,21 @@ class BbwContainer(dict):
             del self[k]
             return
 
-        new_count = self[k].count() - c
-        test_geq(f"{k} count", new_count, 0)
-        if new_count == 0:
-            del self[k]
-            return
+        if self[k].count() == 1 and on_capacity:
+            new_capacity = self[k].capacity() - c
+            test_geq(f"{k} capacity", new_capacity, 0.0)
+            if new_capacity == 0:
+                del self[k]
+                return
+            self[k].set_capacity(new_capacity)
+        else:
+            new_count = self[k].count() - c
+            test_geq(f"{k} count", new_count, 0)
+            if new_count == 0:
+                del self[k]
+                return
 
-        self[k].set_count(new_count)
+            self[k].set_count(new_count)
 
     def get_item(self, key):
         return get_item(key, self)

@@ -11,7 +11,9 @@ class BbwSessionData(BbwObj):
     def __init__(self):
         self._fleet = BbwContainer(name="fleet", capacity=None)
         self._wishlist = BbwWishlist(name="wishlist", capacity=None)
+        self._charted_space = BbwContainer(name="charted space", capacity=None)
 
+        self._world_curr = ""
         self._ship_curr = ""
         self._company = BbwCompany()
         self._calendar = BbwCalendar()
@@ -30,8 +32,25 @@ class BbwSessionData(BbwObj):
         _, v = self.fleet().get_item(self.ship_curr())
         return v
 
-    def fleet(self):
-        return self._fleet
+    def charted_space(self):
+        return self._charted_space
+
+    def set_world_curr(self, v):
+        v = str(v)
+        self._world_curr = v
+
+    def world_curr(self):
+        return self._world_curr
+
+    def get_world_curr(self):
+        if not self.world_curr():
+            raise InvalidArgument("curr world not set!")
+
+        _, v = self.charted_space().get_item(self.world_curr())
+        return v
+
+    def charted_space(self):
+        return self._charted_space
 
     def company(self):
         return self._company
@@ -41,3 +60,6 @@ class BbwSessionData(BbwObj):
 
     def wishlist(self):
         return self._wishlist
+
+    def fleet(self):
+        return self._fleet

@@ -14,6 +14,8 @@ from cogst5.person import *
 from cogst5.vehicle import *
 from cogst5.company import *
 from cogst5.item import *
+from cogst5.world import *
+
 
 jsonpickle.set_encoder_options("json", sort_keys=True)
 
@@ -203,14 +205,14 @@ class Game(commands.Cog):
         await self.wishlist(ctx)
 
     @commands.command(name="add_debt", aliases=[])
-    async def add_debt(self, ctx, name, count, due_day, due_year, period=None, end_day=None, end_year=None):
+    async def add_debt(self, ctx, name, capacity, due_day, due_year, period=None, end_day=None, end_year=None):
         new_debt = BbwDebt(
             name=name,
-            count=count,
+            count=1,
             due_t=BbwCalendar.date2t(due_day, due_year),
             period=period,
             end_t=BbwCalendar.date2t(end_day, end_year),
-            capacity=1.0,
+            capacity=capacity,
         )
         self.session_data.company().debts().add_item(new_debt)
 
@@ -231,9 +233,6 @@ class Game(commands.Cog):
 
     @commands.command(name="pay_debt", aliases=["pay_debts"])
     async def pay_debts(self, ctx, name=None):
-        if name is None:
-            await self.save_session_data(ctx)
-
         self.session_data.company().pay_debts(self.session_data.calendar().t(), name)
 
         await self.money(ctx)
@@ -261,7 +260,9 @@ class Game(commands.Cog):
 
     @commands.command(name="newday", aliases=["advance"])
     async def newday(self, ctx, ndays=1):
-        self.session_data.calendar().add_t(ndays)
+        n_months = self.session_data.calendar().add_t(ndays)
+        for i in range(n_months):
+            await self.close_month(ctx)
         await self.send(ctx, f"{hrline}Date advanced")
         await self.date(ctx)
 
@@ -354,11 +355,12 @@ class Game(commands.Cog):
         await self.container(ctx, container.name())
 
     @commands.command(name="pay_salaries", aliases=[])
-    async def pay_salaries(self, ctx):
+    async def pay_salaries(self, ctx, print_recap=True):
         cs = self.session_data.get_ship_curr()
         self.session_data.company().pay_salaries(cs.get_crew(), self.session_data.calendar().t())
 
-        await self.money(ctx, 10)
+        if print_recap:
+            await self.money(ctx, 10)
 
     @commands.command(name="flight_time_m_drive", aliases=["m_drive_t", "m_drive"])
     async def flight_time_m_drive(self, ctx, d_km):
@@ -377,20 +379,25 @@ class Game(commands.Cog):
         await ctx.send(f"{hrline}the j drive {cs.j_drive()} travel time to do {n_jumps} jumps is: {t}")
 
     @commands.command(name="flight_time_p2p", aliases=["flight_p2p", "p2p"])
-    async def flight_time_planet_2_planet(self, ctx, d1_km, d2_km, n_jumps=1):
+    async def flight_time_planet_2_planet(self, ctx, w_to_name, w_from_name=None):
         cs = self.session_data.get_ship_curr()
+        _, w1 = self.session_data.charted_space().get_item(w_to_name)
+        if w_from_name == None:
+            w0 = self.session_data.get_world_curr()
+        else:
+            _, w0 = self.session_data.charted_space().get_item(w_from_name)
 
-        t1, t2, t3 = cs.flight_time_planet_2_planet(d1_km, d2_km, n_jumps)
+        t1, t2, t3, n_sectors, n_jumps = cs.flight_time_planet_2_planet(w0, w1)
 
         tab = [
-            [f"m drive ({round(100 * float(d1_km))} km)", conv_days_2_time(t1)],
+            [f"m drive ({round(100 * float(w0.d_km()))} km)", conv_days_2_time(t1)],
             [f"j drive ({n_jumps} jumps)", conv_days_2_time(t2)],
-            [f"m drive ({round(100 * float(d2_km))} km)", conv_days_2_time(t3)],
+            [f"m drive ({round(100 * float(w1.d_km()))} km)", conv_days_2_time(t3)],
         ]
 
         await self.send(ctx, f"{hrline}the total travel time is:\n{print_table(tab)}\n= {conv_days_2_time(t1+t2+t3)}")
 
-        return t1 + t2 + t3
+        return (t1 + t2 + t3, n_sectors)
 
     @commands.command(name="trip_accounting_life_support", aliases=[])
     async def trip_accounting_life_support(self, ctx, t):
@@ -423,37 +430,25 @@ class Game(commands.Cog):
         await self.send(ctx, msg)
 
     @commands.command(name="find_passengers", aliases=[])
-    async def find_passengers(self, ctx, carouse_or_broker_or_streetwise_mod, SOC_mod, n_sectors, w0, w1):
+    async def find_passengers(self, ctx, carouse_or_broker_or_streetwise_mod, SOC_mod, w_to_name):
         cs = self.session_data.get_ship_curr()
-        if type(w0) is str:
-            w0 = eval(w0)
-        if type(w1) is str:
-            w1 = eval(w1)
+        w0 = self.session_data.get_world_curr()
+        _, w1 = self.session_data.charted_space().get_item(w_to_name)
 
         header = ("high", "middle", "basic", "low")
-        np = [cs.find_passengers(carouse_or_broker_or_streetwise_mod, SOC_mod, i, n_sectors, w0, w1) for i in header]
+        np = [cs.find_passengers(carouse_or_broker_or_streetwise_mod, SOC_mod, i, w0, w1) for i in header]
 
         await self.send(ctx, f"{hrline}passengers:\n{print_table(np, headers=header)}")
 
     @commands.command(name="find_mail_and_cargo", aliases=[])
-    async def find_mail_and_cargo(
-        self,
-        ctx,
-        brocker_or_streetwise_mod,
-        SOC_mod,
-        n_sectors,
-        w0,
-        w1,
-    ):
+    async def find_mail_and_cargo(self, ctx, brocker_or_streetwise_mod, SOC_mod, w_to_name):
         cs = self.session_data.get_ship_curr()
-        if type(w0) is str:
-            w0 = eval(w0)
-        if type(w1) is str:
-            w1 = eval(w1)
+        w0 = self.session_data.get_world_curr()
+        _, w1 = self.session_data.charted_space().get_item(w_to_name)
 
         header = ("mail", "major", "minor", "incidental")
-        mail = cs.find_mail(brocker_or_streetwise_mod, SOC_mod, n_sectors, w0, w1)
-        np = [mail, *[cs.find_cargo(brocker_or_streetwise_mod, SOC_mod, i, n_sectors, w0, w1) for i in header[1:]]]
+        mail = cs.find_mail(brocker_or_streetwise_mod, SOC_mod, w0, w1)
+        np = [mail, *[cs.find_cargo(brocker_or_streetwise_mod, SOC_mod, i, w0, w1) for i in header[1:]]]
 
         await self.send(ctx, f"{hrline}mail and cargo:\n{print_table(np, headers=header)}")
 
@@ -493,14 +488,50 @@ class Game(commands.Cog):
         await self.unload_passengers(ctx)
         await self.unload_mail_and_cargo(ctx)
 
+    @commands.command(name="get_fuel", aliases=["add_fuel"])
+    async def add_fuel(self, ctx, source, q=1000):
+        cs = self.session_data.get_ship_curr()
+        q, price = cs.add_fuel(source, q)
+
+        if price != 0:
+            self.session_data.company().add_log_entry(
+                -price, f"{source} fuel ({q} tons)", self.session_data.calendar().t()
+            )
+
+        await self.send(ctx, f"{hrline}{q} tons of fuel added for a total cost of: {price} Cr")
+
+    @commands.command(name="consume_fuel", aliases=[])
+    async def consume_fuel(self, ctx, q):
+        cs = self.session_data.get_ship_curr()
+        cs.consume_fuel(q)
+
+        await self.send(ctx, f"{hrline}{q} tons of fuel consumed\n{cs.get_fuel_tank().__str__(False)}")
+
+    @commands.command(name="refine_fuel", aliases=[])
+    async def refine_fuel(self, ctx):
+        cs = self.session_data.get_ship_curr()
+        q, t = cs.refine_fuel()
+
+        await self.send(ctx, f"{hrline}{q} tons of fuel refined in: {conv_days_2_time(t)}")
+
+        t = math.floor(t)
+        if t > 0:
+            await self.newday(ctx, ndays=math.floor(t))
+
+    @commands.command(name="close_month", aliases=[])
+    async def close_month(self, ctx):
+        await self.consume_fuel(ctx, 1)
+        await self.pay_salaries(ctx, False)
+        await self.pay_debts(ctx)
+
     @commands.command(name="fly", aliases=[])
-    async def fly(self, ctx, d1_km, d2_km, n_jumps=1, save=True):
+    async def fly(self, ctx, w_to_name, save=True):
         # save
         if int(save):
             await self.save_session_data(ctx)
 
         # jump time
-        t = await self.flight_time_planet_2_planet(ctx, d1_km, d2_km, n_jumps)
+        t, n_sectors = await self.flight_time_planet_2_planet(ctx, w_to_name)
 
         # life support
         await self.trip_accounting_life_support(ctx, t)
@@ -508,7 +539,11 @@ class Game(commands.Cog):
         # payback
         await self.trip_accounting_payback(ctx, t)
 
-        await self.newday(ctx, math.floor(t))
+        await self.consume_fuel(ctx, 20 * n_sectors)
+
+        t = math.floor(t)
+        if t > 0:
+            await self.newday(ctx, t)
 
     @commands.command(name="auto_fly", aliases=[])
     async def auto_fly(
@@ -517,34 +552,79 @@ class Game(commands.Cog):
         carouse_or_broker_or_streetwise_mod,
         brocker_or_streetwise_mod,
         SOC_mod,
-        n_sectors,
-        n_jumps,
-        w0,
-        w1,
+        w_to_name,
     ):
-        if type(w0) is str:
-            w0 = eval(w0)
-        if type(w1) is str:
-            w1 = eval(w1)
-
         # save
         await self.save_session_data(ctx)
 
+        await self.add_fuel(ctx, "unrefined")
+        await self.refine_fuel(ctx)
+
         # load passengers
-        await self.find_passengers(ctx, carouse_or_broker_or_streetwise_mod, SOC_mod, n_sectors, w0, w1)
+        await self.find_passengers(ctx, carouse_or_broker_or_streetwise_mod, SOC_mod, w_to_name)
 
         # load mail and cargo
         await self.find_mail_and_cargo(
             ctx,
             brocker_or_streetwise_mod,
             SOC_mod,
-            n_sectors,
-            w0,
-            w1,
+            w_to_name,
         )
 
         # fly
-        await self.fly(ctx, d1_km=w0["d"], d2_km=w1["d"], n_jumps=n_jumps, save=False)
+        await self.fly(ctx, w_to_name=w_to_name, save=False)
 
         # unload
         await self.unload(ctx)
+
+    @commands.command(name="set_world", aliases=["add_world", "set_planet", "add_planet"])
+    async def set_world(self, ctx, name, uwp, d_km, zone, hex):
+        """Add a world"""
+
+        if name in self.session_data.charted_space():
+            raise InvalidArgument(
+                f"A ship with that name: {name} already exists! If you really want to replace it, delete it first"
+            )
+
+        w = BbwWorld(name=name, uwp=uwp, d_km=d_km, zone=zone, hex=hex)
+        self.session_data.charted_space().set_item(w)
+
+        await ctx.send(f"The world {name} was successfully added to the charted space")
+
+    @commands.command(name="del_world", aliases=["del_planet"])
+    async def del_world(self, ctx, name):
+        """Del world"""
+
+        self.session_data.fleet.del_world(name=name)
+
+        await ctx.send(f"The world {name} was successfully deleted")
+        await self.charted_space(ctx)
+
+    @commands.command(name="rename_world_curr", aliases=["rename_world", "rename_planet"])
+    async def rename_world(self, ctx, new_name):
+        cs = self.session_data.get_world_curr()
+        self.session_data.fleet().rename_item(cs, new_name)
+
+        await self.set_world_curr(ctx, new_name)
+
+    @commands.command(name="world_curr", aliases=["world", "planet"])
+    async def world_curr(self, ctx):
+        """Current world summary"""
+
+        cs = self.session_data.get_world_curr()
+
+        await self.send(ctx, cs.__str__(is_compact=False))
+
+    @commands.command(name="set_world_curr", aliases=["set_planet_curr"])
+    async def set_world_curr(self, ctx, name):
+        """Set current world"""
+
+        self.session_data.set_world_curr(name)
+
+        await self.world_curr(ctx)
+
+    @commands.command(name="charted_space", aliases=["galaxy"])
+    async def charted_space(self, ctx):
+        """charted space summary"""
+
+        await ctx.send(self.session_data.charted_space().__str__(is_compact=False))

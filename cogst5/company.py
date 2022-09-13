@@ -13,6 +13,13 @@ class BbwDebt(BbwObj):
         self.set_period(period)
         super().__init__(*args, **kwargs)
 
+    def set_attr(self, v, k):
+        if v == "name":
+            raise NotAllowed(f"Setting the name in this way is not allowed! Use rename instead")
+
+        f = getattr(self, f"set_{v}")
+        f(k)
+
     def set_due_t(self, v):
         v = int(v)
         test_geq("due t", v, 0)
@@ -48,7 +55,7 @@ class BbwDebt(BbwObj):
     def _str_table(self, is_compact=True):
         return [
             self.name(),
-            self.count(),
+            self.capacity(),
             BbwCalendar(self.due_t()).date(),
             self.period(),
             BbwCalendar(self.end_t()).date() if self.end_t() else "",
@@ -75,7 +82,7 @@ class BbwCompany:
     def _pay_debt(self, curr_t, name):
         debt = self.debts()[name]
 
-        self.add_log_entry(-debt.count(), f"debt: {debt.name()}", curr_t)
+        self.add_log_entry(debt.capacity(), f"debt: {debt.name()}", curr_t)
 
         if not debt.period():
             del self.debts()[name]
@@ -101,10 +108,19 @@ class BbwCompany:
 
     def pay_salaries(self, crew, time):
         tot = 0
+
         for i in crew:
             tot += i.salary_ticket()
 
-        self.add_log_entry(tot, f"salaries for: {', '.join(crew)}", time)
+        no_reinvest_crew = [i for i in crew if not i.reinvest()]
+        tot_not_reinvested = 0
+        for i in no_reinvest_crew:
+            tot_not_reinvested += i.salary_ticket()
+
+        self.add_log_entry(tot, f"salaries for: {', '.join([i.name() for i in crew])}", time)
+        self.add_log_entry(
+            -tot_not_reinvested, f"safeguard salaries for: {', '.join([i.name() for i in no_reinvest_crew])}", time
+        )
 
     def money(self):
         return self._money

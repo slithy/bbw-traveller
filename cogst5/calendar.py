@@ -24,8 +24,17 @@ class BbwCalendar:
 
     def add_t(self, v):
         v = int(v)
-        test_g("advance", v, 0)
+
+        old_month = self.month()
+        old_year = self.year()
         self.set_t(self.t() + v)
+        if v < 0:
+            return 0
+
+        if self.year() == old_year:
+            return self.month() - old_month
+
+        return 12 - old_month + (self.year() - old_year - 1) * 12 + self.month()
 
     def t(self):
         return self._t
@@ -35,9 +44,15 @@ class BbwCalendar:
 
     def month(self):
         if self.day() == 1:
-            return "-"
+            return 0
 
         return int(max(self.day() - 2, 0) / self._days_in_month) + 1
+
+    def monthday(self):
+        if self.day() == 1:
+            return 0
+
+        return int(max(self.day() - 2, 0) % self._days_in_month) + 1
 
     def week(self):
         if self.day() == 1:
@@ -74,6 +89,8 @@ class BbwCalendar:
         return s
 
 
-# a = BbwCalendar(1)
+#
+# a = BbwCalendar(29)
 # print(a)
+# print(a.monthday())
 # exit()
