@@ -23,12 +23,12 @@ def test_hexstr(k, v, n):
     if type(v) is not str:
         raise InvalidArgument(f"{k}: {v} must be a str!")
 
-    if len(v) != n:
-        raise InvalidArgument(f"{k}: {v} len must be {n}!")
+    if len(v) not in n:
+        raise InvalidArgument(f"{k}: {v} len must be {','.join(n)}!")
 
     for i in v:
-        test_geq(k, int(i, 16), 0)
-        test_leq(k, int(i, 16), 15)
+        test_geq(k, int(i, 36), 0)
+        test_leq(k, int(i, 36), 15)
 
 
 def test_geq(k, v, tr):

@@ -60,6 +60,12 @@ class BbwVehicle(BbwObj):
             item for container in self.containers().values() for item in container.values() if type(item) is BbwPerson
         ]
 
+    def get_crew(self):
+        return [i for i in self.get_people() if i.is_crew()]
+
+    def get_passengers(self):
+        return [i for i in self.get_people() if not i.is_crew()]
+
     @staticmethod
     def _header(is_compact=True):
         s = ["name", "hull", "containers"]
@@ -142,8 +148,8 @@ class BbwSpaceShip(BbwVehicle):
 
     def __init__(
         self,
-        drive_m=0,
-        drive_j=0,
+        m_drive=0,
+        j_drive=0,
         power_plant=0,
         fuel_refiner_speed=40,
         is_streamlined=True,
@@ -153,8 +159,8 @@ class BbwSpaceShip(BbwVehicle):
         *args,
         **kwargs,
     ):
-        self.set_drive_m(drive_m)
-        self.set_drive_j(drive_j)
+        self.set_m_drive(m_drive)
+        self.set_j_drive(j_drive)
         self.set_power_plant(power_plant)
         self.set_fuel_refiner_speed(fuel_refiner_speed)
         self.set_is_streamlined(is_streamlined)
@@ -174,7 +180,7 @@ class BbwSpaceShip(BbwVehicle):
         d_km = float(d_km)
         test_geq("d_km", d_km, 0)
 
-        return 2 * math.sqrt(1000 * d_km / (self.drive_m() * 10)) / (60 * 60 * 24)
+        return 2 * math.sqrt(1000 * d_km / (self.m_drive() * 10)) / (60 * 60 * 24)
 
     def flight_time_j_drive(self, n_jumps):
         """
@@ -256,21 +262,21 @@ class BbwSpaceShip(BbwVehicle):
     def fuel_refiner_speed(self):
         return self._fuel_refiner_speed
 
-    def set_drive_m(self, v):
+    def set_m_drive(self, v):
         v = int(v)
         test_geq("drive m", v, 0)
-        self._drive_m = v
+        self._m_drive = v
 
-    def drive_m(self):
-        return self._drive_m
+    def m_drive(self):
+        return self._m_drive
 
-    def set_drive_j(self, v):
+    def set_j_drive(self, v):
         v = int(v)
         test_geq("drive j", v, 0)
-        self._drive_j = v
+        self._j_drive = v
 
-    def drive_j(self):
-        return self._drive_j
+    def j_drive(self):
+        return self._j_drive
 
     def set_power_plant(self, v):
         v = int(v)
@@ -294,9 +300,9 @@ class BbwSpaceShip(BbwVehicle):
 
     def find_passengers(self, carouse_or_broker_or_streetwise_mod, SOC_mod, kind, n_sectors, w0, w1):
         """
-        - distance: in parsec
         - carouse_brocker_or_streetwise_mod: carouse or broker or streetwise modifier
         - SOC_mod: SOC modifier
+        - n_sectors: distance
         - w0: departure world data (pop, starport, zone)
         - w1: arrival world data (pop, starport, zone)
         """
@@ -305,7 +311,7 @@ class BbwSpaceShip(BbwVehicle):
         n_sectors = int(n_sectors)
         test_geq("n_sectors", n_sectors, 0)
 
-        kind, _ = get_item(kind, BbwPerson.std_roles)
+        kind, _ = get_item(kind, BbwPerson._std_roles)
 
         r = d20.roll("2d6").total + carouse_or_broker_or_streetwise_mod + SOC_mod - 8
 
@@ -349,9 +355,9 @@ class BbwSpaceShip(BbwVehicle):
 
     def _cargo_traffic_table_roll(self, brocker_or_streetwise_mod, SOC_mod, kind, n_sectors, w0, w1):
         """
-        - n_sectors: distance in parsec
         - brocker_or_streetwise_mod: broker or streetwise modifier
         - SOC_mod: SOC modifier
+        - n_sectors: distance in parsec
         - w0: departure world data (pop, starport, TL, zone)
         - w1: arrival world data (pop, starport, TL, zone)
         """
@@ -408,22 +414,20 @@ class BbwSpaceShip(BbwVehicle):
         self,
         brocker_or_streetwise_mod,
         SOC_mod,
-        max_naval_or_scout_rank,
-        max_SOC_mod,
         n_sectors,
         w0,
         w1,
     ):
         """
-        - n_sectors: distance in parsec
         - brocker_or_streetwise_mod: broker or streetwise modifier
         - SOC_mod: SOC modifier
-        - max_naval_or_scout_rank: max naval or scount rank of the crew
-        - max_SOC_mod: max SOC modifier of the crew
+        - n_sectors: distance in parsec
         - w0: departure world data (pop, starport, TL, zone)
         - w1: arrival world data (pop, starport, TL, zone)
         """
-        max_naval_or_scout_rank, max_SOC_mod = int(max_naval_or_scout_rank), int(max_SOC_mod)
+        crew = self.get_crew()
+        max_naval_or_scout_rank = max(BbwPerson.max_rank(crew, "navy"), BbwPerson.max_rank(crew, "scout"))
+        _, max_SOC_mod = BbwPerson.max_stat(crew, "SOC")
 
         nd, _ = self._cargo_traffic_table_roll(brocker_or_streetwise_mod, SOC_mod, "mail", n_sectors, w0, w1)
         r = (
@@ -527,8 +531,8 @@ class BbwSpaceShip(BbwVehicle):
         s2 = [
             str(i)
             for i in [
-                self.drive_m(),
-                self.drive_j(),
+                self.m_drive(),
+                self.j_drive(),
                 self.power_plant(),
                 self.fuel_refiner_speed(),
                 self.is_streamlined(),
@@ -563,8 +567,8 @@ class BbwSpaceShip(BbwVehicle):
 
 # a = BbwSpaceShip(
 #         name="test",
-#         drive_m=1,
-#         drive_j=2,
+#         m_drive=1,
+#         j_drive=2,
 #         power_plant=105,
 #         fuel_refiner_speed=40,
 #         is_streamlined=True,

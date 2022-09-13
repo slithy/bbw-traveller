@@ -99,13 +99,12 @@ class BbwCompany:
         for i in debts:
             self._pay_debt(curr_t, i)
 
-    def pay_salaries(self, people, time):
+    def pay_salaries(self, crew, time):
         tot = 0
-        for i in people:
-            if i.is_crew():
-                tot += i.salary_ticket()
+        for i in crew:
+            tot += i.salary_ticket()
 
-        self.add_log_entry(tot, f"salaries for: {', '.join([i.name() for i in people if i.is_crew()])}", time)
+        self.add_log_entry(tot, f"salaries for: {', '.join(crew)}", time)
 
     def money(self):
         return self._money

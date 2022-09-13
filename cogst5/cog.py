@@ -104,8 +104,8 @@ class Game(commands.Cog):
         TL,
         armour,
         containers,
-        drive_m,
-        drive_j,
+        m_drive,
+        j_drive,
         power_plant,
         fuel_refiner_speed,
         is_streamlined,
@@ -127,8 +127,8 @@ class Game(commands.Cog):
             TL=TL,
             armour=armour,
             containers=eval(containers),
-            drive_m=drive_m,
-            drive_j=drive_j,
+            m_drive=m_drive,
+            j_drive=j_drive,
             power_plant=power_plant,
             fuel_refiner_speed=fuel_refiner_speed,
             is_streamlined=is_streamlined,
@@ -349,14 +349,14 @@ class Game(commands.Cog):
 
         _, item = container.get_item(item_name)
 
-        item.set_attr(attr_name, value)
+        item.set_attr(attr_name, eval(value))
 
         await self.container(ctx, container.name())
 
     @commands.command(name="pay_salaries", aliases=[])
     async def pay_salaries(self, ctx):
         cs = self.session_data.get_ship_curr()
-        self.session_data.company().pay_salaries(cs.get_people(), self.session_data.calendar().t())
+        self.session_data.company().pay_salaries(cs.get_crew(), self.session_data.calendar().t())
 
         await self.money(ctx, 10)
 
@@ -366,7 +366,7 @@ class Game(commands.Cog):
 
         t = conv_days_2_time(cs.flight_time_m_drive(d_km))
 
-        await ctx.send(f"{hrline}the m drive {cs.drive_m()} travel time to cover {d_km} km is: {t}")
+        await ctx.send(f"{hrline}the m drive {cs.m_drive()} travel time to cover {d_km} km is: {t}")
 
     @commands.command(name="flight_time_j_drive", aliases=["j_drive_t", "j_drive"])
     async def flight_time_j_drive(self, ctx, n_jumps=1):
@@ -407,7 +407,7 @@ class Game(commands.Cog):
         cs = self.session_data.get_ship_curr()
 
         msg = f"{hrline}"
-        crew = [i for i in cs.get_people() if i.is_crew()]
+        crew = cs.get_crew()
         for i in crew:
             payback = i.trip_payback(t)
 
@@ -441,8 +441,6 @@ class Game(commands.Cog):
         ctx,
         brocker_or_streetwise_mod,
         SOC_mod,
-        max_naval_or_scout_rank,
-        max_SOC_mod,
         n_sectors,
         w0,
         w1,
@@ -454,7 +452,7 @@ class Game(commands.Cog):
             w1 = eval(w1)
 
         header = ("mail", "major", "minor", "incidental")
-        mail = cs.find_mail(brocker_or_streetwise_mod, SOC_mod, max_naval_or_scout_rank, max_SOC_mod, n_sectors, w0, w1)
+        mail = cs.find_mail(brocker_or_streetwise_mod, SOC_mod, n_sectors, w0, w1)
         np = [mail, *[cs.find_cargo(brocker_or_streetwise_mod, SOC_mod, i, n_sectors, w0, w1) for i in header[1:]]]
 
         await self.send(ctx, f"{hrline}mail and cargo:\n{print_table(np, headers=header)}")
@@ -463,7 +461,7 @@ class Game(commands.Cog):
     async def unload_passengers(self, ctx):
         cs = self.session_data.get_ship_curr()
 
-        passengers = [i for i in cs.get_people() if not i.is_crew()]
+        passengers = cs.get_passengers()
         tot = 0
         for p in passengers:
             container = cs.get_main_stateroom() if "low" not in p.name() else cs.get_main_lowberth()
@@ -519,8 +517,6 @@ class Game(commands.Cog):
         carouse_or_broker_or_streetwise_mod,
         brocker_or_streetwise_mod,
         SOC_mod,
-        max_naval_or_scout_rank,
-        max_SOC_mod,
         n_sectors,
         n_jumps,
         w0,
@@ -542,8 +538,6 @@ class Game(commands.Cog):
             ctx,
             brocker_or_streetwise_mod,
             SOC_mod,
-            max_naval_or_scout_rank,
-            max_SOC_mod,
             n_sectors,
             w0,
             w1,
