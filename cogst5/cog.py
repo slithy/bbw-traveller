@@ -262,7 +262,7 @@ class Game(commands.Cog):
         n_months = self.session_data.calendar().add_t(ndays)
         for i in range(n_months):
             await self.close_month(ctx)
-        await self.send(ctx, f"Date advanced")
+        await self.send(ctx, f"Date advanced by {ndays}d")
         await self.date(ctx)
 
     @commands.command(name="set_ship_attr", aliases=["set_ship_curr_attr"])

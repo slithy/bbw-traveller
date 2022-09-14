@@ -118,7 +118,7 @@ class BbwVehicle(BbwObj):
 
 class BbwSpaceShip(BbwVehicle):
     _passenger_wp_table = [[1, 5, 7, 16], [-4, 0, 1, 3]]
-    _passenger_starport_table = [["A", "B", "D", "E", "X"], [2, 1, 0, -1, -3]]
+    _passenger_starport_table = [[int("A", 36), int("B", 36), int("D", 36), int("E", 36), int("X", 36)], [2, 1, 0, -1, -3]]
     _passenger_traffic_table = [[1, 3, 6, 10, 13, 15, 16, 17, 18, 19, 1000], [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]]
     _passenger_zone_dict = {"normal": 0, "amber": 1, "red": -4}
 
@@ -337,7 +337,7 @@ class BbwSpaceShip(BbwVehicle):
 
         for w in [w0, w1]:
             r += get_modifier(w.POP()[1], self._passenger_wp_table)
-            r += get_modifier(w.SP()[0], self._passenger_starport_table)
+            r += get_modifier(w.SP()[1], self._passenger_starport_table)
             r += self._passenger_zone_dict[w.zone()]
 
         r -= n_sectors - 1
@@ -391,7 +391,7 @@ class BbwSpaceShip(BbwVehicle):
 
         for w in [w0, w1]:
             r += get_modifier(w.POP()[1], self._cargo_wp_table)
-            r += get_modifier(w.SP()[0], self._cargo_starport_table)
+            r += get_modifier(w.SP()[1], self._cargo_starport_table)
             r += get_modifier(w.TL()[1], self._cargo_TL_table)
             r += self._cargo_zone_dict[w.zone()]
 
