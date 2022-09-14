@@ -314,7 +314,7 @@ class Game(commands.Cog):
             name=name,
             count=count,
             role=role,
-            ranks=ranks,
+            ranks=eval(ranks),
             salary_ticket=salary_ticket,
             capacity=capacity,
             reinvest=reinvest,
