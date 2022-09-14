@@ -613,7 +613,7 @@ class Game(commands.Cog):
     async def del_world(self, ctx, name):
         """Del world"""
 
-        self.session_data.charted_space().del_world(name=name)
+        self.session_data.charted_space().del_item(name=name)
 
         await self.send(ctx, f"The world {name} was successfully deleted")
         await self.charted_space(ctx)
