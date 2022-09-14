@@ -146,7 +146,7 @@ class Game(commands.Cog):
     async def del_ship(self, ctx, name):
         """Del ship"""
 
-        self.session_data.fleet.del_ship(name=name)
+        self.session_data.fleet().del_item(k=name)
 
         await self.send(ctx, f"The ship {name} was successfully deleted.")
         await self.fleet(ctx)
@@ -613,7 +613,7 @@ class Game(commands.Cog):
     async def del_world(self, ctx, name):
         """Del world"""
 
-        self.session_data.charted_space().del_item(name=name)
+        self.session_data.charted_space().del_item(k=name)
 
         await self.send(ctx, f"The world {name} was successfully deleted")
         await self.charted_space(ctx)
