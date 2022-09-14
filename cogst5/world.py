@@ -30,7 +30,7 @@ class BbwWorld(BbwObj):
         self._zone = v
 
     def d_km(self):
-        return 1600 * (self.SIZE()[1] + 0.5)
+        return 1600 * self.SIZE()[1]
 
     def set_hex(self, v):
         v = str(v)
