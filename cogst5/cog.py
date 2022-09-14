@@ -481,14 +481,14 @@ class Game(commands.Cog):
     @commands.command(name="get_fuel", aliases=["add_fuel"])
     async def add_fuel(self, ctx, source, q=1000):
         cs = self.session_data.get_ship_curr()
-        q, price = cs.add_fuel(source, q)
+        q, price, t = cs.add_fuel(source, q)
 
         if price != 0:
             self.session_data.company().add_log_entry(
                 -price, f"{source} fuel ({q} tons)", self.session_data.calendar().t()
             )
 
-        await self.send(ctx, f"{q} tons of fuel added for a total cost of: {price} Cr")
+        await self.send(ctx, f"{q} tons of fuel added for {price} Cr and {conv_days_2_time(t)}")
 
     @commands.command(name="consume_fuel", aliases=[])
     async def consume_fuel(self, ctx, q):

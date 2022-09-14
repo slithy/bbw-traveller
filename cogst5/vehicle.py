@@ -147,7 +147,7 @@ class BbwSpaceShip(BbwVehicle):
         "cargo": [1000, 1600, 2600, 4400, 8500, 32000],
     }
 
-    _fuel_sources = {"gas giant": 0, "unrefined": 100, "refined": 500, "planet": 0}
+    _fuel_sources = {"gas giant": 0, "unrefined": 100, "refined": 500, "planet": 0, "world": 0}
 
     _cargo_traffic_table_2_mail_table = [[-10, -5, 4, 9, 1000], [-2, -1, 0, 1, 2]]
     _mail_TL_table = [[5, 1000], [-4, 0]]
@@ -581,7 +581,7 @@ class BbwSpaceShip(BbwVehicle):
 
         tank = self.get_fuel_tank()
         if tank.free_space() == 0:
-            return 0, 0
+            return 0, 0, 0
 
         if source in ["gas giant", "planet"] and not self.has_fuel_scoop():
             raise InvalidArgument(f"the spaceship cannot scoop fuel from a {source} without a fuel scoop!")
@@ -590,7 +590,10 @@ class BbwSpaceShip(BbwVehicle):
 
         fuel = BbwItem(name=f"{'refined' if source == 'refined' else 'unrefined'} fuel", capacity=q)
         tank.add_item(fuel, True)
-        return fuel.capacity(), fuel.capacity() * cost_per_ton
+
+        t = d20.roll(f"1d6").total / 24
+
+        return (fuel.capacity(), (fuel.capacity() * cost_per_ton), t)
 
     def refine_fuel(self):
         tank = self.get_fuel_tank()
@@ -637,6 +640,10 @@ class BbwSpaceShip(BbwVehicle):
 #     size=180,
 #     containers={"main cargo": 21, "cargo 2": 8, "cargo 3": 8, "main stateroom": 26, "fuel tank": 41}
 #     )
+#
+#
+# print(conv_days_2_time(a.add_fuel("gas", 1)[2]))
+# exit()
 # w = BbwWorld(name="regina", uwp="A788899-C", zone="normal", d_km="11200", hex="1424")
 #
 # new_person = BbwPerson(
