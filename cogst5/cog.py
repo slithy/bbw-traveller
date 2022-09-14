@@ -19,9 +19,6 @@ from cogst5.world import *
 
 jsonpickle.set_encoder_options("json", sort_keys=True)
 
-hrline = "__                                                                 __\n"
-
-
 class Game(commands.Cog):
     """Traveller 5 commands."""
 
@@ -32,6 +29,8 @@ class Game(commands.Cog):
 
     async def send(self, ctx, msg):
         """Split long messages to workaround the discord limit"""
+
+        msg = "__                                                                          __\n" + msg
 
         max_length = 2000
 
@@ -83,7 +82,7 @@ class Game(commands.Cog):
         with open(p_backup, "w") as f:
             json.dump(json.loads(enc_data), f, indent=2)
 
-        await ctx.send(f"Session data saved as: {basename(p)}. Backup in: {basename(p_backup)}")
+        await self.send(ctx, f"Session data saved as: {basename(p)}. Backup in: {basename(p_backup)}")
 
     @commands.command(name="load")
     async def load_session_data(self, ctx, filename: str = "session_data.json"):
@@ -93,7 +92,7 @@ class Game(commands.Cog):
             enc_data = json.dumps(json.load(f))
             self.session_data = jsonpickle.decode(enc_data)
 
-        await ctx.send(f"Session data loaded from {filename}.")
+        await self.send(ctx, f"Session data loaded from {filename}.")
 
     @commands.command(name="set_spaceship", aliases=["add_spaceship", "add_starship", "add_ship"])
     async def set_spaceship(
@@ -139,7 +138,7 @@ class Game(commands.Cog):
         )
         self.session_data.fleet().set_item(s)
 
-        await ctx.send(f"The ship {name} was successfully added to the fleet.")
+        await self.send(ctx, f"The ship {name} was successfully added to the fleet.")
         await self.set_ship_curr(ctx, name)
 
     @commands.command(name="del_ship", aliases=[])
@@ -148,7 +147,7 @@ class Game(commands.Cog):
 
         self.session_data.fleet.del_ship(name=name)
 
-        await ctx.send(f"The ship {name} was successfully deleted.")
+        await self.send(ctx, f"The ship {name} was successfully deleted.")
         await self.fleet(ctx)
 
     @commands.command(name="rename_ship_curr", aliases=["rename_ship"])
@@ -178,7 +177,7 @@ class Game(commands.Cog):
     async def fleet(self, ctx):
         """Fleet summary"""
 
-        await ctx.send(self.session_data.fleet().__str__(is_compact=False))
+        await self.send(ctx, self.session_data.fleet().__str__(is_compact=False))
 
     @commands.command(name="wish", aliases=["wishes", "wishlist"])
     async def wishlist(self, ctx):
@@ -255,7 +254,7 @@ class Game(commands.Cog):
     @commands.command(name="set_date", aliases=[])
     async def set_date(self, ctx, day, year):
         self.session_data.calendar().set_date(day, year)
-        await ctx.send("Date set successfully")
+        await self.send(ctx, "Date set successfully")
         await self.date(ctx)
 
     @commands.command(name="newday", aliases=["advance"])
@@ -263,8 +262,7 @@ class Game(commands.Cog):
         n_months = self.session_data.calendar().add_t(ndays)
         for i in range(n_months):
             await self.close_month(ctx)
-        await self.send(ctx, f"{hrline}Date advanced")
-        await self.date(ctx)
+        await self.send(ctx, f"Date advanced\n{self.date(ctx)}")
 
     @commands.command(name="set_ship_attr", aliases=["set_ship_curr_attr"])
     async def set_ship_attr(self, ctx, attr_name, value):
@@ -368,7 +366,7 @@ class Game(commands.Cog):
 
         t = conv_days_2_time(cs.flight_time_m_drive(d_km))
 
-        await ctx.send(f"{hrline}the m drive {cs.m_drive()} travel time to cover {d_km} km is: {t}")
+        await self.send(ctx, f"the m drive {cs.m_drive()} travel time to cover {d_km} km is: {t}")
 
     @commands.command(name="flight_time_j_drive", aliases=["j_drive_t", "j_drive"])
     async def flight_time_j_drive(self, ctx, n_jumps=1):
@@ -376,7 +374,7 @@ class Game(commands.Cog):
 
         t = conv_days_2_time(cs.flight_time_j_drive(n_jumps))
 
-        await ctx.send(f"{hrline}the j drive {cs.j_drive()} travel time to do {n_jumps} jumps is: {t}")
+        await self.send(ctx, f"the j drive {cs.j_drive()} travel time to do {n_jumps} jumps is: {t}")
 
     @commands.command(name="flight_time_p2p", aliases=["flight_p2p", "p2p"])
     async def flight_time_planet_2_planet(self, ctx, w_to_name, w_from_name=None):
@@ -395,7 +393,7 @@ class Game(commands.Cog):
             [f"m drive ({round(100 * float(w1.d_km()))} km)", conv_days_2_time(t3)],
         ]
 
-        await self.send(ctx, f"{hrline}the total travel time is:\n{print_table(tab)}\n= {conv_days_2_time(t1+t2+t3)}")
+        await self.send(ctx, f"the total travel time is:\n{print_table(tab)}\n= {conv_days_2_time(t1+t2+t3)}")
 
         return (t1 + t2 + t3, n_sectors)
 
@@ -407,13 +405,13 @@ class Game(commands.Cog):
             -life_support_costs, f"variable life support", self.session_data.calendar().t()
         )
 
-        await ctx.send(f"{hrline}variable life support costs: {life_support_costs} Cr")
+        await self.send(ctx, f"variable life support costs: {life_support_costs} Cr")
 
     @commands.command(name="trip_accounting_payback", aliases=[])
     async def trip_accounting_payback(self, ctx, t):
         cs = self.session_data.get_ship_curr()
 
-        msg = f"{hrline}"
+        msg = f""
         crew = cs.get_crew()
         for i in crew:
             payback = i.trip_payback(t)
@@ -438,7 +436,7 @@ class Game(commands.Cog):
         header = ("high", "middle", "basic", "low")
         np = [cs.find_passengers(carouse_or_broker_or_streetwise_mod, SOC_mod, i, w0, w1) for i in header]
 
-        await self.send(ctx, f"{hrline}passengers:\n{print_table(np, headers=header)}")
+        await self.send(ctx, f"passengers:\n{print_table(np, headers=header)}")
 
     @commands.command(name="find_mail_and_cargo", aliases=[])
     async def find_mail_and_cargo(self, ctx, brocker_or_streetwise_mod, SOC_mod, w_to_name):
@@ -450,7 +448,7 @@ class Game(commands.Cog):
         mail = cs.find_mail(brocker_or_streetwise_mod, SOC_mod, w0, w1)
         np = [mail, *[cs.find_cargo(brocker_or_streetwise_mod, SOC_mod, i, w0, w1) for i in header[1:]]]
 
-        await self.send(ctx, f"{hrline}mail and cargo:\n{print_table(np, headers=header)}")
+        await self.send(ctx, f"mail and cargo:\n{print_table(np, headers=header)}")
 
     @commands.command(name="unload_passengers", aliases=[])
     async def unload_passengers(self, ctx):
@@ -467,7 +465,7 @@ class Game(commands.Cog):
 
         self.session_data.company().add_log_entry(tot, f"passenger tickets", self.session_data.calendar().t())
 
-        await self.send(ctx, f"{hrline}passenger tickets: {int(tot)} Cr")
+        await self.send(ctx, f"passenger tickets: {int(tot)} Cr")
 
     @commands.command(name="unload_mail_and_cargo", aliases=["unload_mail"])
     async def unload_mail_and_cargo(self, ctx):
@@ -481,7 +479,7 @@ class Game(commands.Cog):
                 container.del_item(item.name(), c=item.count())
         self.session_data.company().add_log_entry(tot, f"mail and cargo", self.session_data.calendar().t())
 
-        await self.send(ctx, f"{hrline}mail and cargo: {int(tot)} Cr")
+        await self.send(ctx, f"mail and cargo: {int(tot)} Cr")
 
     @commands.command(name="unload_ship", aliases=[])
     async def unload(self, ctx):
@@ -498,21 +496,21 @@ class Game(commands.Cog):
                 -price, f"{source} fuel ({q} tons)", self.session_data.calendar().t()
             )
 
-        await self.send(ctx, f"{hrline}{q} tons of fuel added for a total cost of: {price} Cr")
+        await self.send(ctx, f"{q} tons of fuel added for a total cost of: {price} Cr")
 
     @commands.command(name="consume_fuel", aliases=[])
     async def consume_fuel(self, ctx, q):
         cs = self.session_data.get_ship_curr()
         cs.consume_fuel(q)
 
-        await self.send(ctx, f"{hrline}{q} tons of fuel consumed\n{cs.get_fuel_tank().__str__(False)}")
+        await self.send(ctx, f"{q} tons of fuel consumed\n{cs.get_fuel_tank().__str__(False)}")
 
     @commands.command(name="refine_fuel", aliases=[])
     async def refine_fuel(self, ctx):
         cs = self.session_data.get_ship_curr()
         q, t = cs.refine_fuel()
 
-        await self.send(ctx, f"{hrline}{q} tons of fuel refined in: {conv_days_2_time(t)}")
+        await self.send(ctx, f"{q} tons of fuel refined in: {conv_days_2_time(t)}")
 
         t = math.floor(t)
         if t > 0:
@@ -544,6 +542,8 @@ class Game(commands.Cog):
         t = math.floor(t)
         if t > 0:
             await self.newday(ctx, t)
+
+        await self.set_world_curr(ctx, w_to_name)
 
     @commands.command(name="auto_fly", aliases=[])
     async def auto_fly(
@@ -589,7 +589,7 @@ class Game(commands.Cog):
         w = BbwWorld(name=name, uwp=uwp, d_km=d_km, zone=zone, hex=hex)
         self.session_data.charted_space().set_item(w)
 
-        await ctx.send(f"The world {name} was successfully added to the charted space")
+        await self.send(ctx, f"The world {name} was successfully added to the charted space")
 
     @commands.command(name="del_world", aliases=["del_planet"])
     async def del_world(self, ctx, name):
@@ -597,7 +597,7 @@ class Game(commands.Cog):
 
         self.session_data.fleet.del_world(name=name)
 
-        await ctx.send(f"The world {name} was successfully deleted")
+        await self.send(ctx, f"The world {name} was successfully deleted")
         await self.charted_space(ctx)
 
     @commands.command(name="rename_world_curr", aliases=["rename_world", "rename_planet"])
@@ -613,7 +613,7 @@ class Game(commands.Cog):
 
         cs = self.session_data.get_world_curr()
 
-        await self.send(ctx, cs.__str__(is_compact=False))
+        await self.send(ctx, f"current world:\n{cs.__str__(is_compact=False)}")
 
     @commands.command(name="set_world_curr", aliases=["set_planet_curr"])
     async def set_world_curr(self, ctx, name):
@@ -627,4 +627,4 @@ class Game(commands.Cog):
     async def charted_space(self, ctx):
         """charted space summary"""
 
-        await ctx.send(self.session_data.charted_space().__str__(is_compact=False))
+        await self.send(ctx, self.session_data.charted_space().__str__(is_compact=False))
