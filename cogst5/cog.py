@@ -19,6 +19,7 @@ from cogst5.world import *
 
 jsonpickle.set_encoder_options("json", sort_keys=True)
 
+
 class Game(commands.Cog):
     """Traveller 5 commands."""
 
@@ -294,7 +295,17 @@ class Game(commands.Cog):
 
     @commands.command(name="add_person", aliases=[])
     async def add_person(
-        self, ctx, container_name, name, role, upp=None, salary_ticket=None, capacity=None, reinvest=False, count=1
+        self,
+        ctx,
+        container_name,
+        name,
+        role,
+        ranks,
+        upp=None,
+        salary_ticket=None,
+        capacity=None,
+        reinvest=False,
+        count=1,
     ):
         cs = self.session_data.get_ship_curr()
         container = cs.get_container(container_name)
@@ -303,6 +314,7 @@ class Game(commands.Cog):
             name=name,
             count=count,
             role=role,
+            ranks=ranks,
             salary_ticket=salary_ticket,
             capacity=capacity,
             reinvest=reinvest,

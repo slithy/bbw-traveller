@@ -118,7 +118,10 @@ class BbwVehicle(BbwObj):
 
 class BbwSpaceShip(BbwVehicle):
     _passenger_wp_table = [[1, 5, 7, 16], [-4, 0, 1, 3]]
-    _passenger_starport_table = [[int("A", 36), int("B", 36), int("D", 36), int("E", 36), int("X", 36)], [2, 1, 0, -1, -3]]
+    _passenger_starport_table = [
+        [int("A", 36), int("B", 36), int("D", 36), int("E", 36), int("X", 36)],
+        [2, 1, 0, -1, -3],
+    ]
     _passenger_traffic_table = [[1, 3, 6, 10, 13, 15, 16, 17, 18, 19, 1000], [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]]
     _passenger_zone_dict = {"normal": 0, "amber": 1, "red": -4}
 
@@ -322,6 +325,8 @@ class BbwSpaceShip(BbwVehicle):
 
         crew = self.get_crew()
         max_steward = BbwPerson.max_rank(crew, "steward")
+
+        print(max_steward)
 
         n_sectors = BbwWorld.distance(w0, w1)
 
@@ -630,8 +635,25 @@ class BbwSpaceShip(BbwVehicle):
 #         info="",
 #         capacity=200,
 #     size=180,
-#     containers={"main cargo": 21, "cargo 2": 8, "cargo 3": 8, "staterooms": 26, "fuel tank": 41}
+#     containers={"main cargo": 21, "cargo 2": 8, "cargo 3": 8, "main stateroom": 26, "fuel tank": 41}
 #     )
+# w = BbwWorld(name="regina", uwp="A788899-C", zone="normal", d_km="11200", hex="1424")
+#
+# new_person = BbwPerson(
+#     name="aaa",
+#     count=1,
+#     role="crew: other",
+#     salary_ticket=-1,
+#     capacity=1,
+#     reinvest=False,
+#     upp="337CCF",
+#     ranks={'steward':1},
+# )
+# a.get_main_stateroom().add_item(new_person)
+# # print(a.__str__(False))
+# print(a.find_passengers(2, 3, "high", w, w))
+# exit()
+
 #
 #
 #
