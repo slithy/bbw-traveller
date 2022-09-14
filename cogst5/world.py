@@ -5,9 +5,8 @@ from cogst5.utils import *
 class BbwWorld(BbwObj):
     _zones = {"normal": 0, "amber": 0, "red": 0}
 
-    def __init__(self, uwp, d_km, zone, hex, *args, **kwargs):
+    def __init__(self, uwp, zone, hex, *args, **kwargs):
         self.set_uwp(uwp)
-        self.set_d_km(d_km)
         self.set_zone(zone)
         self.set_hex(hex)
 
@@ -31,12 +30,7 @@ class BbwWorld(BbwObj):
         self._zone = v
 
     def d_km(self):
-        return self._d_km
-
-    def set_d_km(self, v):
-        v = float(v)
-        test_geq("d_km", v, 0.0)
-        self._d_km = v
+        return 1600 * (self.SIZE()[1] + 0.5)
 
     def set_hex(self, v):
         v = str(v)
@@ -118,15 +112,19 @@ class BbwWorld(BbwObj):
             return [
                 "name",
                 "uwp",
-                "d (km)",
+                "d_km",
                 "zone",
                 "hex",
             ]
 
 
-# a = BbwWorld(name="regina", uwp="A788899-C", zone="normal", d_km="11200", hex="1424")
-# b = BbwWorld(name="regina", uwp="A788899-C", zone="normal", d_km="11200", hex="1923")
+a = BbwWorld(name="feri", uwp="B384879-B", zone="normal", hex="2005")
+print(a.__str__(False))
+# b = BbwWorld(name="regina", uwp="A788899-C", zone="normal", hex="1923")
 #
-# print(BbwWorld.distance(a, b))
-#
+# print(a.SIZE())
+# print(a.d_km())
+# #
+# # print(BbwWorld.distance(a, b))
+# #
 # exit()

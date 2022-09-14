@@ -596,7 +596,7 @@ class Game(commands.Cog):
         await self.unload(ctx)
 
     @commands.command(name="set_world", aliases=["add_world", "set_planet", "add_planet"])
-    async def set_world(self, ctx, name, uwp, d_km, zone, hex):
+    async def set_world(self, ctx, name, uwp, zone, hex):
         """Add a world"""
 
         if name in self.session_data.charted_space():
@@ -604,7 +604,7 @@ class Game(commands.Cog):
                 f"A ship with that name: {name} already exists! If you really want to replace it, delete it first"
             )
 
-        w = BbwWorld(name=name, uwp=uwp, d_km=d_km, zone=zone, hex=hex)
+        w = BbwWorld(name=name, uwp=uwp, zone=zone, hex=hex)
         self.session_data.charted_space().set_item(w)
 
         await self.send(ctx, f"The world {name} was successfully added to the charted space")
