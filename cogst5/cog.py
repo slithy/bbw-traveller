@@ -613,7 +613,7 @@ class Game(commands.Cog):
     async def del_world(self, ctx, name):
         """Del world"""
 
-        self.session_data.fleet.del_world(name=name)
+        self.session_data.charted_space().del_world(name=name)
 
         await self.send(ctx, f"The world {name} was successfully deleted")
         await self.charted_space(ctx)
@@ -646,3 +646,11 @@ class Game(commands.Cog):
         """charted space summary"""
 
         await self.send(ctx, self.session_data.charted_space().__str__(is_compact=False))
+
+
+    @commands.command(name="set_world_attr", aliases=["set_world_curr_attr", "set_planet_curr_attr"])
+    async def set_world_attr(self, ctx, attr_name, value):
+        cw = self.session_data.get_world_curr()
+        cw.set_attr(attr_name, value)
+
+        await self.world_curr(ctx)
