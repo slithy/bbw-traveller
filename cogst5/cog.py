@@ -647,7 +647,6 @@ class Game(commands.Cog):
 
         await self.send(ctx, self.session_data.charted_space().__str__(is_compact=False))
 
-
     @commands.command(name="set_world_attr", aliases=["set_world_curr_attr", "set_planet_curr_attr"])
     async def set_world_attr(self, ctx, attr_name, value):
         cw = self.session_data.get_world_curr()
