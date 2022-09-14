@@ -389,27 +389,6 @@ class Game(commands.Cog):
 
         await self.send(ctx, f"the j drive {cs.j_drive()} travel time to do {n_jumps} jumps is: {t}")
 
-    @commands.command(name="flight_time_p2p", aliases=["flight_p2p", "p2p"])
-    async def flight_time_planet_2_planet(self, ctx, w_to_name, w_from_name=None):
-        cs = self.session_data.get_ship_curr()
-        _, w1 = self.session_data.charted_space().get_item(w_to_name)
-        if w_from_name == None:
-            w0 = self.session_data.get_world_curr()
-        else:
-            _, w0 = self.session_data.charted_space().get_item(w_from_name)
-
-        t1, t2, t3, n_sectors, n_jumps = cs.flight_time_planet_2_planet(w0, w1)
-
-        tab = [
-            [f"m drive ({round(100 * float(w0.d_km()))} km)", conv_days_2_time(t1)],
-            [f"j drive ({n_jumps} jumps)", conv_days_2_time(t2)],
-            [f"m drive ({round(100 * float(w1.d_km()))} km)", conv_days_2_time(t3)],
-        ]
-
-        await self.send(ctx, f"the total travel time is:\n{print_table(tab)}\n= {conv_days_2_time(t1+t2+t3)}")
-
-        return (t1 + t2 + t3, n_sectors)
-
     @commands.command(name="trip_accounting_life_support", aliases=[])
     async def trip_accounting_life_support(self, ctx, t):
         cs = self.session_data.get_ship_curr()
@@ -535,14 +514,38 @@ class Game(commands.Cog):
         await self.pay_salaries(ctx, False)
         await self.pay_debts(ctx)
 
-    @commands.command(name="fly", aliases=[])
-    async def fly(self, ctx, w_to_name, save=True):
+    @commands.command(name="jump_time", aliases=["p2p", "w2w"])
+    async def jump_time_world_2_world(self, ctx, w_to_name, w_from_name=None):
+        cs = self.session_data.get_ship_curr()
+        _, w1 = self.session_data.charted_space().get_item(w_to_name)
+        if w_from_name == None:
+            w0 = self.session_data.get_world_curr()
+        else:
+            _, w0 = self.session_data.charted_space().get_item(w_from_name)
+
+        t1, t2, t3, n_sectors, n_jumps = cs.jump_time_world_2_world(w0, w1)
+
+        tab = [
+            [f"m drive ({round(100 * float(w0.d_km()))} km)", conv_days_2_time(t1)],
+            [f"j drive ({n_jumps} jumps)", conv_days_2_time(t2)],
+            [f"m drive ({round(100 * float(w1.d_km()))} km)", conv_days_2_time(t3)],
+        ]
+
+        await self.send(
+            ctx, f"the total travel time is:\n{print_table(tab)}\n= {conv_days_2_time(t1+t2+t3)} ({n_sectors} sectors)"
+        )
+
+        return (t1 + t2 + t3, n_sectors)
+
+    @commands.command(name="jump", aliases=[])
+    async def jump(self, ctx, w_to_name, save=True):
+        """all the operations necessary to jump from current world to w_to_name world"""
         # save
         if int(save):
             await self.save_session_data(ctx)
 
         # jump time
-        t, n_sectors = await self.flight_time_planet_2_planet(ctx, w_to_name)
+        t, n_sectors = await self.jump_time_world_2_world(ctx, w_to_name)
 
         # life support
         await self.trip_accounting_life_support(ctx, t)
@@ -558,8 +561,8 @@ class Game(commands.Cog):
 
         await self.set_world_curr(ctx, w_to_name)
 
-    @commands.command(name="auto_fly", aliases=[])
-    async def auto_fly(
+    @commands.command(name="auto_jump", aliases=[])
+    async def auto_jump(
         self,
         ctx,
         carouse_or_broker_or_streetwise_mod,
@@ -567,6 +570,8 @@ class Game(commands.Cog):
         SOC_mod,
         w_to_name,
     ):
+        """automatic jump with loading and unloading of fuel, cargo, mail, passengers + accounting and time increase"""
+
         # save
         await self.save_session_data(ctx)
 
@@ -584,8 +589,8 @@ class Game(commands.Cog):
             w_to_name,
         )
 
-        # fly
-        await self.fly(ctx, w_to_name=w_to_name, save=False)
+        # jump
+        await self.jump(ctx, w_to_name=w_to_name, save=False)
 
         # unload
         await self.unload(ctx)

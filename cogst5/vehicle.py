@@ -198,7 +198,7 @@ class BbwSpaceShip(BbwVehicle):
 
         return (148 * n_jumps + d20.roll(f"{6*n_jumps}d6").total) / 24
 
-    def flight_time_planet_2_planet(self, w0, w1):
+    def jump_time_world_2_world(self, w0, w1):
         d1_km = float(w0.d_km())
         test_geq("d1_km", d1_km, 0)
         d2_km = float(w1.d_km())
