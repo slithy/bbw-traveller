@@ -44,6 +44,8 @@ class BbwPerson(BbwObj):
         super().__init__(*args, **kwargs)
 
     def set_ranks(self, ranks):
+        if type(ranks) is str:
+            ranks = eval(ranks)
         if type(ranks) is not dict:
             raise InvalidArgument(f"{ranks}: must be a dict!")
 

@@ -118,8 +118,8 @@ class BbwWorld(BbwObj):
             ]
 
 
-a = BbwWorld(name="feri", uwp="B384879-B", zone="normal", hex="2005")
-print(a.__str__(False))
+# a = BbwWorld(name="feri", uwp="B384879-B", zone="normal", hex="2005")
+# print(a.__str__(False))
 # b = BbwWorld(name="regina", uwp="A788899-C", zone="normal", hex="1923")
 #
 # print(a.SIZE())

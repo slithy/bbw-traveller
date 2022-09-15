@@ -1,3 +1,5 @@
+import copy
+
 from cogst5.models.errors import *
 
 import math
@@ -405,28 +407,29 @@ class BbwSpaceShip(BbwVehicle):
         return r, get_modifier(r, self._passenger_traffic_table)
 
     def _distribute_cargo(self, item):
-        cargos = self.get_all_cargo_containers()
-        tot_free_space = 0
-        for i in cargos:
-            tot_free_space += i.free_space()
+        cargos = [
+            self.get_main_cargo(),
+            *[i for i in self.get_all_cargo_containers() if i.name() is not self.get_main_cargo().name()],
+        ]
 
-        if tot_free_space < item.capacity():
-            return None
+        n = item.count()
+        item.set_count(1)
 
-        main_cargo = self.get_main_cargo()
-        self._fill_container(main_cargo, item)
-        for i in cargos:
-            self._fill_container(i, item)
+        ans = n
+        for _ in range(n):
+            for i in cargos:
+                if i.free_space() >= item.capacity():
+                    i.add_item(item)
+                    ans -= 1
+                    break
 
-    def _fill_container(self, c, item):
-        if item.size() == 0 or c.free_space() == 0:
-            return
+        if ans != 0:
+            for i in cargos:
+                if item.name() in i:
+                    i.del_item(item.name(), i[item.name()].count())
+            return n
 
-        v = min(item.size(), c.free_space())
-
-        new_item = BbwItem(name=item.name(), capacity=v, value=item.value() * v / item.capacity())
-        c.add_item(new_item, on_capacity=True)
-        item.set_size(item.size() - v)
+        return 0
 
     def find_mail(
         self,
@@ -460,21 +463,20 @@ class BbwSpaceShip(BbwVehicle):
             r += 2
 
         if r < 12:
-            return "not qualified"
+            return "not qualified", 0
 
         n_canisters = d20.roll("1d6").total
-        tot_mail = BbwItem(
+        mail = BbwItem(
             name=f"mail cargo",
-            capacity=self._cargo_lot_ton_multi_dict["mail"] * n_canisters,
-            value=25000 * n_canisters,
-            count=1,
+            capacity=5,
+            value=25000,
+            count=n_canisters,
         )
-        self._distribute_cargo(tot_mail)
-
-        if tot_mail.size() == 0:
-            return str(n_canisters)
-
-        return f"no space"
+        remaining_count = self._distribute_cargo(mail)
+        if remaining_count == 0:
+            return f"{n_canisters}", n_canisters * 25000
+        else:
+            return f"no space ({remaining_count})", 0
 
     def find_cargo(
         self,
@@ -504,14 +506,14 @@ class BbwSpaceShip(BbwVehicle):
 
         for i in range(n_lots):
             tot_cargo = BbwItem(
-                name=f"{kind} cargo",
+                name=f"{kind} cargo (lot {i})",
                 capacity=tons_per_lot,
                 value=self._ticket_dict["cargo"][n_sectors] * tons_per_lot,
                 count=1,
             )
-            self._distribute_cargo(tot_cargo)
-            if tot_cargo.size() != 0:
-                return f"{i}/{n_lots} lots"
+            remaining_count = self._distribute_cargo(tot_cargo)
+            if remaining_count != 0:
+                return f"{i}/{n_lots} lots ({tons_per_lot})"
 
     @staticmethod
     def _header(is_compact=True):
@@ -638,13 +640,32 @@ class BbwSpaceShip(BbwVehicle):
 #         info="",
 #         capacity=200,
 #     size=180,
-#     containers={"main cargo": 21, "cargo 2": 8, "cargo 3": 8, "main stateroom": 26, "fuel tank": 41}
+#     containers={"main cargo": 16, "cargo 2": 8, "cargo 3": 4, "main stateroom": 26, "fuel tank": 41}
 #     )
+# w = BbwWorld(name="regina", uwp="AAAAAAA-A", zone="normal", hex="1424")
+# new_person = BbwPerson(
+#     name="aaa",
+#     count=1,
+#     role="crew: other",
+#     salary_ticket=-1,
+#     capacity=1,
+#     reinvest=False,
+#     upp="337CCF",
+#     ranks={'steward':1, 'scout':1},
+# )
+# a.get_main_stateroom().add_item(new_person)
+#
+# print(a.find_mail(2, 3, w, w))
+# print(a.find_cargo(2, 3, "minor", w, w))
+# print(a.__str__())
+#
+# exit()
+
 #
 #
 # print(conv_days_2_time(a.add_fuel("gas", 1)[2]))
 # exit()
-# w = BbwWorld(name="regina", uwp="A788899-C", zone="normal", d_km="11200", hex="1424")
+
 #
 # new_person = BbwPerson(
 #     name="aaa",

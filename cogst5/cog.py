@@ -293,6 +293,18 @@ class Game(commands.Cog):
         container = cs.get_container(container_name)
         await self.send(ctx, container.__str__(False))
 
+    @commands.command(name="cargo", aliases=[])
+    async def cargo(self, ctx):
+        cs = self.session_data.get_ship_curr()
+        container = cs.get_main_cargo()
+        await self.send(ctx, container.__str__(False))
+
+    @commands.command(name="stateroom", aliases=[])
+    async def stateroom(self, ctx):
+        cs = self.session_data.get_ship_curr()
+        container = cs.get_main_stateroom()
+        await self.send(ctx, container.__str__(False))
+
     @commands.command(name="add_person", aliases=[])
     async def add_person(
         self,
@@ -300,10 +312,9 @@ class Game(commands.Cog):
         container_name,
         name,
         role,
-        ranks,
-        upp=None,
         salary_ticket=None,
         capacity=None,
+        upp=None,
         reinvest=False,
         count=1,
     ):
@@ -314,7 +325,6 @@ class Game(commands.Cog):
             name=name,
             count=count,
             role=role,
-            ranks=eval(ranks),
             salary_ticket=salary_ticket,
             capacity=capacity,
             reinvest=reinvest,
@@ -324,8 +334,63 @@ class Game(commands.Cog):
 
         await self.container(ctx, container.name())
 
+    @commands.command(name="move", aliases=[])
+    async def move(self, ctx, name, to0, from0=None):
+        """add item to container"""
+        cs = self.session_data.get_ship_curr()
+        container_to0 = cs.get_container(to0)
+        if from0 is None:
+            container_from0 = cs.get_main_cargo()
+        else:
+            container_from0 = cs.get_container(from0)
+
+        _, item = container_from0.get_item(name)
+        container_to0.add_item(item)
+        container_from0.del_item(item.name(), item.count())
+
+        await self.send(ctx, f"{item.name()} moved from {container_from0.name()} to {container_to0.name()}")
+
+    @commands.command(name="buy", aliases=[])
+    async def buy(self, ctx, container_name, name, value=0, count=1, capacity=0, TL=0, size=None, price_payed=None):
+        """add item to container"""
+        cs = self.session_data.get_ship_curr()
+        container = cs.get_container(container_name)
+
+        new_item = BbwItem(name=name, count=count, capacity=capacity, TL=TL, value=value, size=size)
+        container.add_item(new_item)
+
+        self.session_data.company().add_log_entry(
+            -new_item.value() if price_payed is None else -price_payed,
+            f"{new_item.name()} ({new_item.count()})",
+            self.session_data.calendar().t(),
+        )
+
+        await self.send(ctx, new_item.__str__(False))
+
+    @commands.command(name="sell", aliases=[])
+    async def sell(self, ctx, container_name, name, count=1, price_payed=None):
+        """add item to container"""
+        cs = self.session_data.get_ship_curr()
+        container = cs.get_container(container_name)
+
+        name, item = container.get_item(name)
+
+        old_count = item.count()
+        if price_payed is None:
+            item.set_count(count)
+            price_payed = item.value()
+            item.set_count(old_count)
+
+        self.session_data.company().add_log_entry(
+            price_payed, f"{item.name()} ({count})", self.session_data.calendar().t()
+        )
+
+        container.del_item(name, count)
+
+        await self.send(ctx, f"{name} ({count}) was sold for: {price_payed} Cr. Remaining count: {old_count-count}")
+
     @commands.command(name="add_item", aliases=[])
-    async def add_item(self, ctx, container_name, name, count=1, capacity=1.0, TL=0, value=0, size=None):
+    async def add_item(self, ctx, container_name, name, count=1, capacity=0.0, TL=0, value=0, size=None):
         """add item to container"""
         cs = self.session_data.get_ship_curr()
         container = cs.get_container(container_name)
@@ -361,7 +426,7 @@ class Game(commands.Cog):
 
         _, item = container.get_item(item_name)
 
-        item.set_attr(attr_name, eval(value))
+        item.set_attr(attr_name, value)
 
         await self.container(ctx, container.name())
 
@@ -415,7 +480,7 @@ class Game(commands.Cog):
                     self.session_data.company().add_log_entry(
                         payback, f"{i.name()} reinvested the payback", self.session_data.calendar().t()
                     )
-                msg += f"{i.name()} gets back {payback} Cr {'' if i.reinvest() else '(reinvested)'}\n"
+                msg += f"{i.name()} gets back {payback} Cr {'(reinvested)' if i.reinvest() else ''}\n"
 
         await self.send(ctx, msg)
 
@@ -437,29 +502,38 @@ class Game(commands.Cog):
         _, w1 = self.session_data.charted_space().get_item(w_to_name)
 
         header = ("mail", "major", "minor", "incidental")
-        mail = cs.find_mail(brocker_or_streetwise_mod, SOC_mod, w0, w1)
+        mail, mail_money = cs.find_mail(brocker_or_streetwise_mod, SOC_mod, w0, w1)
         np = [mail, *[cs.find_cargo(brocker_or_streetwise_mod, SOC_mod, i, w0, w1) for i in header[1:]]]
+
+        if mail_money:
+            self.session_data.company().add_log_entry(mail_money, f"mail", self.session_data.calendar().t())
 
         await self.send(ctx, f"mail and cargo:\n{print_table(np, headers=header)}")
 
     @commands.command(name="unload_passengers", aliases=[])
-    async def unload_passengers(self, ctx):
+    async def unload_passengers(self, ctx, except_set="set()"):
         cs = self.session_data.get_ship_curr()
+        except_set = eval(except_set)
+        except_dict = {i: 0 for i in except_set}
 
         passengers = cs.get_passengers()
         tot = 0
         for p in passengers:
-            container = cs.get_main_stateroom() if "low" not in p.name() else cs.get_main_lowberth()
-            container.del_item(p.name(), c=p.count())
-            cargo = cs.get_main_cargo()
-            cargo.del_item(p.name())
             tot += p.salary_ticket()
+            try:
+                _, _ = get_item(p.name(), except_dict)
+            except SelectionException:
+                if p.luggage() > 0:
+                    cargo = cs.get_main_cargo()
+                    cargo.del_item(p.name())
+                container = cs.get_main_stateroom() if "low" not in p.name() else cs.get_main_lowberth()
+                container.del_item(p.name(), c=p.count())
 
         self.session_data.company().add_log_entry(tot, f"passenger tickets", self.session_data.calendar().t())
 
         await self.send(ctx, f"passenger tickets: {int(tot)} Cr")
 
-    @commands.command(name="unload_mail_and_cargo", aliases=["unload_mail"])
+    @commands.command(name="unload_mail_and_cargo", aliases=[])
     async def unload_mail_and_cargo(self, ctx):
         cs = self.session_data.get_ship_curr()
 
@@ -467,15 +541,16 @@ class Game(commands.Cog):
         for container in cs.get_all_cargo_containers():
             cargo_items = [i for i in container.values() if "cargo" in i.name()]
             for item in cargo_items:
-                tot += item.value()
+                if "mail" not in item.name():
+                    tot += item.value()
                 container.del_item(item.name(), c=item.count())
-        self.session_data.company().add_log_entry(tot, f"mail and cargo", self.session_data.calendar().t())
+        self.session_data.company().add_log_entry(tot, f"cargo", self.session_data.calendar().t())
 
-        await self.send(ctx, f"mail and cargo: {int(tot)} Cr")
+        await self.send(ctx, f"cargo: {int(tot)} Cr")
 
     @commands.command(name="unload_ship", aliases=[])
-    async def unload(self, ctx):
-        await self.unload_passengers(ctx)
+    async def unload(self, ctx, except_set="{}"):
+        await self.unload_passengers(ctx, except_set)
         await self.unload_mail_and_cargo(ctx)
 
     @commands.command(name="get_fuel", aliases=["add_fuel"])
@@ -538,11 +613,8 @@ class Game(commands.Cog):
         return (t1 + t2 + t3, n_sectors)
 
     @commands.command(name="jump", aliases=[])
-    async def jump(self, ctx, w_to_name, save=True):
+    async def jump(self, ctx, w_to_name):
         """all the operations necessary to jump from current world to w_to_name world"""
-        # save
-        if int(save):
-            await self.save_session_data(ctx)
 
         # jump time
         t, n_sectors = await self.jump_time_world_2_world(ctx, w_to_name)
@@ -561,23 +633,8 @@ class Game(commands.Cog):
 
         await self.set_world_curr(ctx, w_to_name)
 
-    @commands.command(name="auto_jump", aliases=[])
-    async def auto_jump(
-        self,
-        ctx,
-        carouse_or_broker_or_streetwise_mod,
-        brocker_or_streetwise_mod,
-        SOC_mod,
-        w_to_name,
-    ):
-        """automatic jump with loading and unloading of fuel, cargo, mail, passengers + accounting and time increase"""
-
-        # save
-        await self.save_session_data(ctx)
-
-        await self.add_fuel(ctx, "unrefined")
-        await self.refine_fuel(ctx)
-
+    @commands.command(name="load_ship", aliases=[])
+    async def load_ship(self, ctx, carouse_or_broker_or_streetwise_mod, brocker_or_streetwise_mod, SOC_mod, w_to_name):
         # load passengers
         await self.find_passengers(ctx, carouse_or_broker_or_streetwise_mod, SOC_mod, w_to_name)
 
@@ -588,12 +645,6 @@ class Game(commands.Cog):
             SOC_mod,
             w_to_name,
         )
-
-        # jump
-        await self.jump(ctx, w_to_name=w_to_name, save=False)
-
-        # unload
-        await self.unload(ctx)
 
     @commands.command(name="set_world", aliases=["add_world", "set_planet", "add_planet"])
     async def set_world(self, ctx, name, uwp, zone, hex):
