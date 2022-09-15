@@ -127,12 +127,12 @@ class BbwSpaceShip(BbwVehicle):
     _passenger_traffic_table = [[1, 3, 6, 10, 13, 15, 16, 17, 18, 19, 1000], [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]]
     _passenger_zone_dict = {"normal": 0, "amber": 1, "red": -4}
 
-    _cargo_wp_table = [[1, 5, 7, 16], [-4, 0, 2, 4]]
-    _cargo_starport_table = _passenger_starport_table
-    _cargo_TL_table = [[6, 8, 1000], [-1, 0, 2]]
-    _cargo_traffic_table = [[1, 3, 5, 8, 11, 14, 16, 17, 18, 19, 1000], [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]]
-    _cargo_zone_dict = {"normal": 0, "amber": -2, "red": -6}
-    _cargo_lot_ton_multi_dict = {"major": 10, "minor": 5, "incidental": 1, "mail": 5}
+    _freight_wp_table = [[1, 5, 7, 16], [-4, 0, 2, 4]]
+    _freight_starport_table = _passenger_starport_table
+    _freight_TL_table = [[6, 8, 1000], [-1, 0, 2]]
+    _freight_traffic_table = [[1, 3, 5, 8, 11, 14, 16, 17, 18, 19, 1000], [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]]
+    _freight_zone_dict = {"normal": 0, "amber": -2, "red": -6}
+    _freight_lot_ton_multi_dict = {"major": 10, "minor": 5, "incidental": 1, "mail": 5}
 
     _ticket_dict = {
         "high": [
@@ -146,12 +146,12 @@ class BbwSpaceShip(BbwVehicle):
         "middle": [6500, 10000, 14000, 23000, 40000, 130000],
         "basic": [2000, 3000, 5000, 8000, 14000, 55000],
         "low": [700, 1300, 2200, 3900, 7200, 27000],
-        "cargo": [1000, 1600, 2600, 4400, 8500, 32000],
+        "freight": [1000, 1600, 2600, 4400, 8500, 32000],
     }
 
     _fuel_sources = {"gas giant": 0, "unrefined": 100, "refined": 500, "planet": 0, "world": 0}
 
-    _cargo_traffic_table_2_mail_table = [[-10, -5, 4, 9, 1000], [-2, -1, 0, 1, 2]]
+    _freight_traffic_table_2_mail_table = [[-10, -5, 4, 9, 1000], [-2, -1, 0, 1, 2]]
     _mail_TL_table = [[5, 1000], [-4, 0]]
 
     def __init__(
@@ -406,7 +406,7 @@ class BbwSpaceShip(BbwVehicle):
 
         return r, get_modifier(r, self._passenger_traffic_table)
 
-    def _distribute_cargo(self, item):
+    def _dist_item(self, item):
         cargos = [
             self.get_main_cargo(),
             *[i for i in self.get_all_cargo_containers() if i.name() is not self.get_main_cargo().name()],
@@ -449,9 +449,9 @@ class BbwSpaceShip(BbwVehicle):
         max_naval_or_scout_rank = max(BbwPerson.max_rank(crew, "navy"), BbwPerson.max_rank(crew, "scout"))
         _, max_SOC_mod = BbwPerson.max_stat(crew, "SOC")
 
-        nd, _ = self._cargo_traffic_table_roll(brocker_or_streetwise_mod, SOC_mod, "mail", w0, w1)
+        nd, _ = self._freight_traffic_table_roll(brocker_or_streetwise_mod, SOC_mod, "mail", w0, w1)
         r = (
-            get_modifier(nd, self._cargo_traffic_table_2_mail_table)
+            get_modifier(nd, self._freight_traffic_table_2_mail_table)
             + max_naval_or_scout_rank
             + max_SOC_mod
             + d20.roll(f"2d6").total
@@ -467,18 +467,18 @@ class BbwSpaceShip(BbwVehicle):
 
         n_canisters = d20.roll("1d6").total
         mail = BbwItem(
-            name=f"mail cargo",
+            name=f"mail",
             capacity=5,
             value=25000,
             count=n_canisters,
         )
-        remaining_count = self._distribute_cargo(mail)
+        remaining_count = self._distribute_item(mail)
         if remaining_count == 0:
             return f"{n_canisters}", n_canisters * 25000
         else:
             return f"no space ({remaining_count})", 0
 
-    def find_cargo(
+    def find_freight(
         self,
         brocker_or_streetwise_mod,
         SOC_mod,
@@ -495,23 +495,23 @@ class BbwSpaceShip(BbwVehicle):
         """
         n_sectors = BbwWorld.distance(w0, w1)
 
-        _, nd = self._cargo_traffic_table_roll(brocker_or_streetwise_mod, SOC_mod, kind, w0, w1)
+        _, nd = self._freight_traffic_table_roll(brocker_or_streetwise_mod, SOC_mod, kind, w0, w1)
 
         if nd == 0:
             return f"not qualified"
 
-        tons_per_lot = d20.roll(f"1d6").total * self._cargo_lot_ton_multi_dict[kind]
+        tons_per_lot = d20.roll(f"1d6").total * self._freight_lot_ton_multi_dict[kind]
 
         n_lots = d20.roll(f"{nd}d6").total
 
         for i in range(n_lots):
-            tot_cargo = BbwItem(
-                name=f"{kind} cargo (lot {i})",
+            tot_freight = BbwItem(
+                name=f"{kind} freight (lot {i})",
                 capacity=tons_per_lot,
-                value=self._ticket_dict["cargo"][n_sectors] * tons_per_lot,
+                value=self._ticket_dict["freight"][n_sectors] * tons_per_lot,
                 count=1,
             )
-            remaining_count = self._distribute_cargo(tot_cargo)
+            remaining_count = self._dist_item(tot_freight)
             if remaining_count != 0:
                 return f"{i}/{n_lots} lots ({tons_per_lot})"
 
@@ -656,7 +656,7 @@ class BbwSpaceShip(BbwVehicle):
 # a.get_main_stateroom().add_item(new_person)
 #
 # print(a.find_mail(2, 3, w, w))
-# print(a.find_cargo(2, 3, "minor", w, w))
+# print(a.find_freight(2, 3, "minor", w, w))
 # print(a.__str__())
 #
 # exit()

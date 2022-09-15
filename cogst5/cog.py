@@ -495,20 +495,20 @@ class Game(commands.Cog):
 
         await self.send(ctx, f"passengers:\n{print_table(np, headers=header)}")
 
-    @commands.command(name="find_mail_and_cargo", aliases=[])
-    async def find_mail_and_cargo(self, ctx, brocker_or_streetwise_mod, SOC_mod, w_to_name):
+    @commands.command(name="find_mail_and_freight", aliases=[])
+    async def find_mail_and_freight(self, ctx, brocker_or_streetwise_mod, SOC_mod, w_to_name):
         cs = self.session_data.get_ship_curr()
         w0 = self.session_data.get_world_curr()
         _, w1 = self.session_data.charted_space().get_item(w_to_name)
 
         header = ("mail", "major", "minor", "incidental")
         mail, mail_money = cs.find_mail(brocker_or_streetwise_mod, SOC_mod, w0, w1)
-        np = [mail, *[cs.find_cargo(brocker_or_streetwise_mod, SOC_mod, i, w0, w1) for i in header[1:]]]
+        np = [mail, *[cs.find_freight(brocker_or_streetwise_mod, SOC_mod, i, w0, w1) for i in header[1:]]]
 
         if mail_money:
             self.session_data.company().add_log_entry(mail_money, f"mail", self.session_data.calendar().t())
 
-        await self.send(ctx, f"mail and cargo:\n{print_table(np, headers=header)}")
+        await self.send(ctx, f"mail and freight:\n{print_table(np, headers=header)}")
 
     @commands.command(name="unload_passengers", aliases=[])
     async def unload_passengers(self, ctx, except_set="set()"):
@@ -533,27 +533,37 @@ class Game(commands.Cog):
 
         await self.send(ctx, f"passenger tickets: {int(tot)} Cr")
 
-    @commands.command(name="unload_mail_and_cargo", aliases=[])
-    async def unload_mail_and_cargo(self, ctx):
+    @commands.command(name="unload_mail_and_freight", aliases=[])
+    async def unload_mail_and_freight(self, ctx):
         cs = self.session_data.get_ship_curr()
 
         tot = 0
         for container in cs.get_all_cargo_containers():
-            cargo_items = [i for i in container.values() if "cargo" in i.name()]
-            for item in cargo_items:
-                if "mail" not in item.name():
-                    tot += item.value()
+            freight_items = [i for i in container.values() if "freight" in i.name()]
+            for item in freight_items:
+                tot += item.value()
                 container.del_item(item.name(), c=item.count())
-        self.session_data.company().add_log_entry(tot, f"cargo", self.session_data.calendar().t())
 
-        await self.send(ctx, f"cargo: {int(tot)} Cr")
+            mail_items = [i for i in container.values() if "mail" in i.name()]
+            for item in mail_items:
+                container.del_item(item.name(), c=item.count())
+        self.session_data.company().add_log_entry(tot, f"freight", self.session_data.calendar().t())
+
+        await self.send(ctx, f"freight: {int(tot)} Cr")
 
     @commands.command(name="unload_ship", aliases=[])
     async def unload(self, ctx, except_set="{}"):
         await self.unload_passengers(ctx, except_set)
-        await self.unload_mail_and_cargo(ctx)
+        await self.unload_mail_and_freight(ctx)
 
-    @commands.command(name="get_fuel", aliases=["add_fuel"])
+
+    @commands.command(name="fuel", aliases=[])
+    async def fuel(self, ctx, source, q=1000):
+        if q > 0:
+            await self.add_fuel(ctx, q)
+        else:
+            await self.consume_fuel(ctx, q)
+    @commands.command(name="get_fuel", aliases=["add_fuel", "refuel"])
     async def add_fuel(self, ctx, source, q=1000):
         cs = self.session_data.get_ship_curr()
         q, price, t = cs.add_fuel(source, q)
@@ -638,8 +648,8 @@ class Game(commands.Cog):
         # load passengers
         await self.find_passengers(ctx, carouse_or_broker_or_streetwise_mod, SOC_mod, w_to_name)
 
-        # load mail and cargo
-        await self.find_mail_and_cargo(
+        # load mail and freight
+        await self.find_mail_and_freight(
             ctx,
             brocker_or_streetwise_mod,
             SOC_mod,
