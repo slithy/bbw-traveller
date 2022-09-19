@@ -14,7 +14,7 @@ class BbwCalendar:
 
     def set_t(self, v):
         v = int(v)
-        test_geq("integral time", v, 0)
+        BbwUtils.test_geq("integral time", v, 0)
         self._t = v
 
     def set_date(self, day, year):

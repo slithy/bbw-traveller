@@ -5,7 +5,7 @@ from cogst5.utils import *
 class BbwWishlist(BbwContainer):
     def __str__(self, is_compact=True):
         s = ""
-        s += print_table(self._str_table(is_compact), headers=self._header(is_compact))
+        s += BbwUtils.print_table(self._str_table(is_compact), headers=self._header(is_compact))
 
         if not is_compact and len(self.keys()):
             entries_is_compact = False
@@ -14,6 +14,6 @@ class BbwWishlist(BbwContainer):
 
             vals = sorted(self.values(), key=lambda x: (x.TL(), x.value()))
             t = [i._str_table(is_compact=entries_is_compact) for i in vals]
-            s += print_table(t, headers=h)
+            s += BbwUtils.print_table(t, headers=h)
 
         return s

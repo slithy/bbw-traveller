@@ -22,9 +22,9 @@ class BbwDebt(BbwObj):
 
     def set_due_t(self, v):
         v = int(v)
-        test_geq("due t", v, 0)
+        BbwUtils.test_geq("due t", v, 0)
         if self.end_t():
-            test_leq("due t", v, self.end_t())
+            BbwUtils.test_leq("due t", v, self.end_t())
         self._due_t = v
 
     def due_t(self):
@@ -33,7 +33,7 @@ class BbwDebt(BbwObj):
     def set_period(self, v):
         if v:
             v = int(v)
-            test_g("period", v, 0)
+            BbwUtils.test_g("period", v, 0)
         self._period = v
 
     def period(self):
@@ -42,7 +42,7 @@ class BbwDebt(BbwObj):
     def set_end_t(self, v):
         if v:
             v = int(v)
-            test_g("t end", v, self.due_t())
+            BbwUtils.test_g("t end", v, self.due_t())
         self._end_t = v
 
     def end_t(self):
@@ -68,7 +68,7 @@ class BbwCompany:
     def __init__(self):
         self._money = 0
         self._log = []
-        self._debts = BbwContainer(name="debts", capacity=None)
+        self._debts = BbwContainer(name="debts")
 
     def add_log_entry(self, v, des="", t=None):
         self.add_money(v)
@@ -80,12 +80,12 @@ class BbwCompany:
         return self._debts
 
     def _pay_debt(self, curr_t, name):
-        debt = self.debts()[name]
+        debt = self.debts().get_objs(name=name, only_one=True).objs()[0][0]
 
         self.add_log_entry(debt.capacity(), f"debt: {debt.name()}", curr_t)
 
         if not debt.period():
-            del self.debts()[name]
+            self.debts().del_obj(name=debt.name())
             return
 
         due_t = debt.due_t()
@@ -93,7 +93,7 @@ class BbwCompany:
         new_due_t += BbwCalendar(new_due_t).year() - (BbwCalendar(due_t).year())
 
         if debt.end_t() and new_due_t >= debt.end_t():
-            del self.debts()[name]
+            self.debts().del_obj(name=debt.name())
             return
 
         debt.set_due_t(new_due_t)
@@ -118,16 +118,17 @@ class BbwCompany:
             tot_not_reinvested += i.salary_ticket()
 
         self.add_log_entry(tot, f"salaries for: {', '.join([i.name() for i in crew])}", time)
-        self.add_log_entry(
-            -tot_not_reinvested, f"safeguard salaries for: {', '.join([i.name() for i in no_reinvest_crew])}", time
-        )
+        if tot_not_reinvested:
+            self.add_log_entry(
+                -tot_not_reinvested, f"safeguard salaries for: {', '.join([i.name() for i in no_reinvest_crew])}", time
+            )
 
     def money(self):
         return self._money
 
     def set_money(self, v):
         v = int(v)
-        test_geq("money", v, 0)
+        BbwUtils.test_geq("money", v, 0)
         self._money = v
 
     def add_money(self, v):

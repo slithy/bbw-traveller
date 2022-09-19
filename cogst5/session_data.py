@@ -9,9 +9,9 @@ from .models.errors import *
 
 class BbwSessionData(BbwObj):
     def __init__(self):
-        self._fleet = BbwContainer(name="fleet", capacity=None)
-        self._wishlist = BbwWishlist(name="wishlist", capacity=None)
-        self._charted_space = BbwContainer(name="charted space", capacity=None)
+        self._fleet = BbwContainer(name="fleet")
+        self._wishlist = BbwWishlist(name="wishlist")
+        self._charted_space = BbwContainer(name="charted space")
 
         self._world_curr = ""
         self._ship_curr = ""
@@ -20,7 +20,12 @@ class BbwSessionData(BbwObj):
 
     def set_ship_curr(self, v):
         v = str(v)
-        self._ship_curr = v
+        if v == "":
+            self._ship_curr = ""
+            return
+
+        res = self.fleet().get_objs(name=v, only_one=True)
+        self._ship_curr = res.objs()[0][0].name()
 
     def ship_curr(self):
         return self._ship_curr
@@ -29,25 +34,28 @@ class BbwSessionData(BbwObj):
         if not self.ship_curr():
             raise InvalidArgument("curr ship not set!")
 
-        _, v = self.fleet().get_item(self.ship_curr())
-        return v
+        return self.fleet().get_objs(name=self.ship_curr(), only_one=True).objs()[0][0]
 
     def charted_space(self):
         return self._charted_space
 
     def set_world_curr(self, v):
         v = str(v)
-        self._world_curr = v
+        if v == "":
+            self._world_curr = ""
+            return
+
+        res = self.charted_space().get_objs(name=v, only_one=True)
+        self._world_curr = res.objs()[0][0].name()
 
     def world_curr(self):
         return self._world_curr
 
     def get_world_curr(self):
-        if not self.world_curr():
+        if self.world_curr() == "":
             raise InvalidArgument("curr world not set!")
 
-        _, v = self.charted_space().get_item(self.world_curr())
-        return v
+        return self.charted_space().get_objs(name=self.world_curr(), only_one=True).objs()[0][0]
 
     def charted_space(self):
         return self._charted_space

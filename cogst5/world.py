@@ -3,7 +3,7 @@ from cogst5.utils import *
 
 
 class BbwWorld(BbwObj):
-    _zones = {"normal": 0, "amber": 0, "red": 0}
+    _zones = ["normal", "amber", "red"]
 
     def __init__(self, uwp, zone, hex, *args, **kwargs):
         self.set_uwp(uwp)
@@ -18,7 +18,7 @@ class BbwWorld(BbwObj):
     def set_uwp(self, v):
         v = str(v)
         v = v.replace("-", "")
-        test_hexstr("uwp", v, [8])
+        BbwUtils.test_hexstr("uwp", v, [8])
         self._uwp = v
 
     def zone(self):
@@ -26,7 +26,7 @@ class BbwWorld(BbwObj):
 
     def set_zone(self, v):
         v = str(v)
-        v, _ = get_item(v, self._zones)
+        v = BbwUtils.get_objs(self._zones, v, only_one=True)[0]
         self._zone = v
 
     def d_km(self):
@@ -102,7 +102,7 @@ class BbwWorld(BbwObj):
             ]
 
     def __str__(self, is_compact=True):
-        return print_table(self._str_table(is_compact), headers=self._header(is_compact))
+        return BbwUtils.print_table(self._str_table(is_compact), headers=self._header(is_compact))
 
     @staticmethod
     def _header(is_compact=True):
