@@ -143,7 +143,7 @@ class BbwContainer(dict):
         if v is not None:
             v = float(v)
 
-            BbwUtils.test_geq("capacity", v, 0.0)
+        BbwUtils.test_geq("capacity", v, 0.0)
         self._capacity = v
 
     def name(self):
@@ -337,10 +337,10 @@ class BbwContainer(dict):
 
     @staticmethod
     def _header(is_compact=True):
-        return ["name", "status"]
+        return ["", "name", "status"]
 
     def _str_table(self, is_compact=True):
-        return [self.name(), self.status()]
+        return [None, self.name(), self.status()]
 
     def __str__(self, is_compact=True):
         s = ""
@@ -355,8 +355,7 @@ class BbwContainer(dict):
             h = type(list(self.values())[maxIndex])._header(is_compact=entries_is_compact)
 
             t = [i._str_table(is_compact=entries_is_compact) for i in self.values()]
-            s += "\n```\n"
-            s += BbwUtils.print_table(t, headers=h, is_compact=True) + "\n```\n"
+            s += BbwUtils.print_table(t, headers=h, is_compact=False)
         return s
 
     def get_objs(self, name=None, recursive=True, self_included=False, only_one=False, cont=None, *args, **kwargs):

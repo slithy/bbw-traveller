@@ -152,9 +152,9 @@ class BbwCompany:
 
     def __str__(self, log_lines=10):
         log_lines = int(log_lines)
-        s = f"money: {self.money()}\n"
+        s = f"money: `{self.money()}`\n"
         if log_lines != 0:
-            s += tabulate(self._str_table(log_lines), headers=self._header())
+            s += BbwUtils.print_table(self._str_table(log_lines), headers=self._header())
             s += "\n"
         s += self.debts().__str__(is_compact=False)
         s += "\n"

@@ -37,9 +37,13 @@ class Game(commands.Cog):
         if type(msg) is not str:
             msg = msg.__str__()
         msg = "__                                                                          __\n" + msg
-        max_length = 2000
 
-        for i in BbwUtils.split_md_compatible(msg, max_length):
+        # with open(f"/save/debug.txt", "w") as f:
+        #     f.write(msg)
+
+        for idx, i in enumerate(BbwUtils.split_md_compatible(msg)):
+            # with open(f"/save/debug{idx}.txt", "w") as f:
+            #     f.write(msg)
             await ctx.send(i)
 
     # ==== commands ====
@@ -488,7 +492,7 @@ class Game(commands.Cog):
         else:
             if type(args[0]) is str:
                 for i in args:
-                    res = [i for i, _ in cs.containers().get_objs(name=i, type0=BbwContainer)]
+                    res = [i for i, _ in cs.containers().get_objs(name=i, type0=BbwContainer).objs()]
             else:
                 res = args
 
@@ -550,10 +554,10 @@ class Game(commands.Cog):
 
     @commands.command(name="add_person", aliases=["add_passenger"])
     async def add_person(
-        self, ctx, name, count=1, n_sectors=1, cont=None, cont_luggage=None, unbreakable=False, mute=False
+        self, ctx, name, count=1, capacity=0.5, n_sectors=1, cont=None, cont_luggage=None, unbreakable=False, mute=False
     ):
         cs = self.session_data.get_ship_curr()
-        new_person = BbwPerson.factory(name=name, n_sectors=n_sectors, count=1, only_std=True)
+        new_person = BbwPerson.factory(name=name, n_sectors=n_sectors, count=count, capacity=capacity)
         new_luggage = BbwItem.factory(name=new_person.name(), count=1, only_std=True)
         with_any_tags_p = {"lowberth"} if BbwUtils.has_any_tags(new_person, "low") else {"stateroom"}
         with_any_tags_l = {"cargo"}
@@ -580,13 +584,12 @@ class Game(commands.Cog):
             res_l = cs.containers().dist_obj(
                 obj=new_luggage, unbreakable=False, cont=cont_luggage, with_any_tags=with_any_tags_l
             )
-            if not mute:
-                await self.container(ctx, *[i for _, i in res_l.objs()])
 
         new_person.set_count(count)
         res_p = cs.containers().dist_obj(obj=new_person, cont=cont, unbreakable=False, with_any_tags=with_any_tags_p)
         if not mute:
-            await self.container(ctx, *[i for _, i in res_p.objs()])
+            await self._send_add_res(ctx, res_p, res_p.count())
+            await self._send_add_res(ctx, res_l, res_l.count())
         return res_p
 
     @commands.command(name="add_item", aliases=[])
@@ -595,7 +598,7 @@ class Game(commands.Cog):
         ctx,
         name,
         count=1,
-        capacity=0,
+        capacity=0.0,
         TL=0,
         value=0,
         cont="cargo",
@@ -606,7 +609,7 @@ class Game(commands.Cog):
         cs = self.session_data.get_ship_curr()
         new_item = BbwItem.factory(name=name, count=count, TL=TL, value=value, capacity=capacity, n_sectors=n_sectors)
 
-        res = cs.containers().dist_obj(obj=new_item, cont=cont, unbreakable=unbreakable, with_any_tags={"cargo"})
+        res = cs.containers().dist_obj(obj=new_item, cont=cont, unbreakable=unbreakable)
         if not mute:
             await self._send_add_res(ctx, res, count)
 

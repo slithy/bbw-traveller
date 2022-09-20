@@ -53,7 +53,7 @@ class BbwItem(BbwObj):
     _freight_lot_ton_multi_dict = {"freight, major": 10, "freight, minor": 5, "freight, incidental": 1, "mail": 5}
 
     @staticmethod
-    def factory(name, count, capacity=0, TL=0, value=0, n_sectors=1, only_std=False):
+    def factory(name, count, capacity=0.0, TL=0, value=0, n_sectors=1, only_std=False):
         if count == 0:
             return None
 
@@ -77,3 +77,8 @@ class BbwItem(BbwObj):
             return item
 
         return BbwItem(name=name, capacity=capacity, count=count, TL=TL, value=value) if not only_std else None
+
+
+#
+# print(BbwItem.factory("bau", "4", capacity="0.1"))
+# exit()

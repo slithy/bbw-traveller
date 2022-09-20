@@ -6,6 +6,9 @@ import lorem
 import random
 import d20
 
+import json
+import jsonpickle
+
 
 class BbwUtils:
     @staticmethod
@@ -44,16 +47,6 @@ class BbwUtils:
     def test_leq(k, v, tr):
         if v > tr:
             raise InvalidArgument(f"{k}: {v} must be <= {tr}!")
-
-    @staticmethod
-    def print_table(t, headers=(), tablefmt="simple", is_compact=False, limit=20):
-        if len(t) and not isinstance(t[0], list):
-            t = [t]
-
-        b = "```" if not is_compact else ""
-        st = BbwUtils.greedy_splitter(t, lambda x: 1 + sum([str(j).count("\n") for j in x]), limit)
-
-        return "\n".join([b + tabulate(i, headers=headers, tablefmt=tablefmt) + b for i in st])
 
     @staticmethod
     def int_or_float(v):
@@ -212,19 +205,30 @@ class BbwUtils:
         return "\n".join(s)
 
     @staticmethod
-    def split_md_compatible(msg, limit=2000):
+    def split_md_compatible(msg):
+        limit = 2000
+
+        # q = [t, headers]
+        # with open('/save/debug.json', 'w') as file:
+        #     enc_data = jsonpickle.encode(q)
+        #     json.dump(json.loads(enc_data), file, indent=2)
+
         if len(msg) <= limit:
             return [msg]
 
         s = [i.split("\n") if not idx % 2 else ["```" + i + "```"] for idx, i in enumerate(msg.split("```"))]
         s = [val for sublist in s for val in sublist if len(val)]
 
-        return ["\n".join(i) for i in BbwUtils.greedy_splitter(s, lambda x: len(x), limit)]
+        ans = ["\n".join(i) for i in BbwUtils.greedy_splitter(s, lambda x: len(x) + 1, limit=limit)]
+
+        # return ", ".join(str(len(i)) for i in s)
+        return ans
 
     @staticmethod
-    def greedy_splitter(l, fn_counter, limit=2000):
+    def greedy_splitter(l, fn_counter, limit=10):
         ans = []
         cc, j = 0, 0
+
         for i in range(len(l)):
             nc = fn_counter(l[i])
             if nc + cc > limit:
@@ -234,7 +238,20 @@ class BbwUtils:
             else:
                 cc += nc
         ans.append(l[j:])
+
         return ans
+
+    @staticmethod
+    def print_table(t, headers=(), tablefmt="simple", is_compact=False):
+        limit = 15
+
+        if len(t) and not isinstance(t[0], list):
+            t = [t]
+
+        b = "```" if not is_compact else ""
+        st = BbwUtils.greedy_splitter(t, lambda x: 1 + sum([str(j).count("\n") for j in x]), limit=limit)
+
+        return "\n".join([b + tabulate(i, headers=headers, tablefmt=tablefmt) + b + "\n" for i in st])
 
     @staticmethod
     def local_2_global(x, y, xs, ys):
@@ -253,9 +270,22 @@ class BbwUtils:
         return max(d)
 
 
+# q = []
+# with open(f"../save/debug.json", "r") as f:
+#     enc_data = json.dumps(json.load(f))
+#     q = jsonpickle.decode(enc_data)
+#
+#
+#     pt = BbwUtils.print_table(q[0], q[1])
+#     print(len(BbwUtils.split_md_compatible(pt)[0]), len(BbwUtils.split_md_compatible(pt)[1]))
+# exit()
+
+
 # h = ['a', 'b', 'c']
-# t = [[1, tabulate([["a", 1]]*10, tablefmt="plain"), 1]]*4
-# print(print_table(t, headers=h, limit=15))
+# t = [[1, tabulate([["a", 1]]*20, tablefmt="plain"), 1]]*4
+# print(BbwUtils.print_table(t, headers=h, limit=30))
+#
+# exit()
 
 # l = [1, 3, 4, 6, 5, 3, 2, 1, 4, 11, 3, 2, 5, 4, 20, 1, 3]
 #

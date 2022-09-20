@@ -10,7 +10,25 @@ class BbwPerson(BbwObj):
         [400, 800, 1000, 1200, 1500, 2000, 2500, 5000, 12000, 20000],
     ]
     _stat_2_mod = [["0", "2", "5", "8", "B", "E", "Z"], [-3, -2, -1, 0, 1, 2, 3]]
-    _general_skills = ["electronics", "art", "science", "engineer", "pilot"]
+    _general_skills = [
+        "animals",
+        "athletics",
+        "art",
+        "drive",
+        "electronics",
+        "engineer",
+        "flyer",
+        "gunner",
+        "gun combat",
+        "heavy weapons",
+        "language",
+        "melee",
+        "pilot",
+        "profession",
+        "science",
+        "seafarer",
+        "tactics",
+    ]
 
     def __init__(self, upp=None, salary_ticket=0.0, reinvest=False, skill_rank={}, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -245,7 +263,7 @@ class BbwPerson(BbwObj):
     }
 
     @staticmethod
-    def factory(name, n_sectors, count, only_std=False):
+    def factory(name, n_sectors, count, capacity, only_std=False):
         if count == 0:
             return None
 
@@ -268,7 +286,7 @@ class BbwPerson(BbwObj):
         try:
             p = BbwUtils.get_objs(raw_list=_std_passengers, name=name, only_one=True)
         except SelectionException:
-            return BbwPerson(name=name, count=count, capacity=0.5) if not only_std else None
+            return BbwPerson(name=name, count=count, capacity=capacity) if not only_std else None
 
         p = copy.deepcopy(p[0])
         p.set_count(count)
