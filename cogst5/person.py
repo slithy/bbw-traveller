@@ -10,32 +10,64 @@ class BbwPerson(BbwObj):
         [400, 800, 1000, 1200, 1500, 2000, 2500, 5000, 12000, 20000],
     ]
     _stat_2_mod = [["0", "2", "5", "8", "B", "E", "Z"], [-3, -2, -1, 0, 1, 2, 3]]
+    _general_skills = ["electronics", "art", "science", "engineer", "pilot"]
 
-    def __init__(self, upp=None, salary_ticket=0.0, reinvest=False, ranks={}, *args, **kwargs):
+    def __init__(self, upp=None, salary_ticket=0.0, reinvest=False, skill_rank={}, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.set_salary_ticket(salary_ticket)
         self.set_upp(upp)
         self.set_reinvest(reinvest)
-        self.set_ranks(ranks)
+        self.set_skill_rank(skill_rank)
 
-    def set_ranks(self, ranks):
-        if type(ranks) is str:
-            ranks = eval(ranks)
-        if type(ranks) is not dict:
-            raise InvalidArgument(f"{ranks}: must be a dict!")
+    def set_skill(self, name, value=None):
+        if value is None:
+            name, value = eval(name)
+        if value is None:
+            del self._skill_rank[name]
+            return
+        if type(value) is str:
+            value = int(value, 36)
 
-        self._ranks = {}
-        for k, v in ranks.items():
-            self.add_rank(k, v)
+        BbwUtils.test_geq("skill", value, 0)
+        BbwUtils.test_leq("skill", value, 4)
+        self._skill_rank[name] = value
 
-    def add_rank(self, k, v):
-        k = str(k)
-        v = int(v)
-        BbwUtils.test_geq("rank value", v, 0)
-        self._ranks[k] = v
+        for i in BbwPerson._general_skills:
+            if i in name:
+                self._skill_rank[i] = 0
 
-    def ranks(self):
-        return self._ranks
+    def set_rank(self, name, value=None):
+        if value is None:
+            name, value = eval(name)
+        if value is None:
+            del self._skill_rank[name]
+            return
+        if type(value) is str:
+            value = int(value, 36)
+
+        BbwUtils.test_geq("skill", value, 0)
+        BbwUtils.test_leq("skill", value, 6)
+        self._skill_rank[name] = value
+
+    def set_skill_rank(self, skill_rank):
+        if type(skill_rank) is str:
+            skill_rank = eval(skill_rank)
+        if type(skill_rank) is not dict:
+            raise InvalidArgument(f"{skill_rank}: must be a dict!")
+
+        self._skill_rank = {}
+        for k, v in skill_rank.items():
+            self.set_rank(k, v)
+
+    def skill_rank(self):
+        return self._skill_rank
+
+    def skill(self, name):
+        return self.rank(name=name, default_value=-3)
+
+    def rank(self, name, default_value=0):
+        res = BbwUtils.get_objs(raw_list=self.skill_rank().items(), name=name)
+        return sorted(res, key=lambda x: len(x))[0][1] if len(res) else default_value
 
     def salary_ticket(self):
         return self._salary_ticket * self.count()
@@ -126,23 +158,45 @@ class BbwPerson(BbwObj):
     @staticmethod
     def max_stat(people, stat):
         ans = "0"
+        pans = []
         for i in people:
-            v = getattr(i, stat)()
-            if v is not None:
-                v = v[0]
-                ans = max(ans, v)
+            val = getattr(i, stat)()
+            if val is None:
+                continue
+            val = val[0]
+            if ans < val:
+                ans = val
+                pans = [i]
+            elif ans == val:
+                pans.append(i)
 
-        return ans, BbwUtils.get_modifier(ans, BbwPerson._stat_2_mod)
+        return ans, pans
 
     @staticmethod
-    def max_rank(people, profession):
-        ans = 0
+    def max_skill(people, skill):
+        ans = -3
+        pans = []
         for i in people:
-            if profession in i.ranks():
-                v = i.ranks()[profession]
-                ans = max(ans, v)
+            if ans < i.skill(skill):
+                ans = i.skill(skill)
+                pans = [i]
+            elif ans == i.skill(skill):
+                pans.append(i)
 
-        return ans
+        return ans, pans
+
+    @staticmethod
+    def max_rank(people, rank):
+        ans = 0
+        pans = []
+        for i in people:
+            if ans < i.rank(rank):
+                ans = i.rank(rank)
+                pans = [i]
+            elif ans == i.rank(rank):
+                pans.append(i)
+
+        return ans, pans
 
     def _str_table(self, is_compact=True):
         if is_compact:
@@ -152,7 +206,7 @@ class BbwPerson(BbwObj):
                 self.count(),
                 self.name(),
                 self.upp(),
-                tabulate([[f"{k}:", str(v)] for k, v in sorted(self.ranks().items())], tablefmt="plain"),
+                tabulate([[f"{k}:", str(v)] for k, v in sorted(self.skill_rank().items())], tablefmt="plain"),
                 self.salary_ticket(),
                 self.capacity(),
                 self.reinvest(),
@@ -170,7 +224,7 @@ class BbwPerson(BbwObj):
                 "count",
                 "name",
                 "upp",
-                "ranks",
+                "skills/ranks",
                 "salary (<0)/ticket (>=0)",
                 "capacity",
                 "reinvest",
@@ -200,14 +254,14 @@ class BbwPerson(BbwObj):
             BbwPerson(name="passenger, middle", capacity=1),
             BbwPerson(name="passenger, basic", capacity=0.5),
             BbwPerson(name="passenger, low", capacity=1),
-            BbwPerson(name="crew, pilot", capacity=0.5),
-            BbwPerson(name="crew, astrogator", capacity=0.5),
-            BbwPerson(name="crew, engineer", capacity=0.5),
-            BbwPerson(name="crew, steward", capacity=0.5),
-            BbwPerson(name="crew, medic", capacity=0.5),
-            BbwPerson(name="crew, gunner", capacity=0.5),
-            BbwPerson(name="crew, marine", capacity=0.5),
-            BbwPerson(name="crew, other", capacity=0.5),
+            BbwPerson(name="crew, pilot", capacity=0.5, salary_ticket=-6000),
+            BbwPerson(name="crew, astrogator", capacity=0.5, salary_ticket=-5000),
+            BbwPerson(name="crew, engineer", capacity=0.5, salary_ticket=-4000),
+            BbwPerson(name="crew, steward", capacity=0.5, salary_ticket=-2000),
+            BbwPerson(name="crew, medic", capacity=0.5, salary_ticket=-3000),
+            BbwPerson(name="crew, gunner", capacity=0.5, salary_ticket=-1000),
+            BbwPerson(name="crew, marine", capacity=0.5, salary_ticket=-1000),
+            BbwPerson(name="crew, other", capacity=0.5, salary_ticket=-1000),
         ]
 
         n_sectors = int(n_sectors)
@@ -223,3 +277,22 @@ class BbwPerson(BbwObj):
             p.set_name(f"{p.name()} (ns: {n_sectors})")
 
         return p
+
+
+# new_person = BbwPerson(
+#     name="aaa, crew, other",
+#     count=1,
+#     salary_ticket=-1,
+#     capacity=1,
+#     reinvest=False,
+#     upp="337CCF",
+#     skill_rank={'steward':1},
+# )
+# new_person.set_skill("pilot, spacecraft", 4)
+#
+# new_person.set_rank("noble, admin", 6)
+#
+# print(new_person.__str__(False))
+# print(new_person.skill("bau"))
+# print(new_person.rank("noble"))
+# exit()

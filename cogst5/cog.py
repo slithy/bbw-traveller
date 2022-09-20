@@ -310,7 +310,7 @@ class Game(commands.Cog):
                 d_km = 100 * self.session_data.charted_space().get_objs(name=d_km, only_one=True).objs()[0][0].d_km()
 
         t = await self.travel_time_m_drive(ctx, d_km)
-        await self.newday(ctx, ndays=t)
+        await self.newday(ctx, ndays=t, travel_accounting=True)
 
     @commands.command(name="t_j_drive", aliases=["j_drive_t"])
     async def travel_time_j_drive(self, ctx, n_jumps=1):
@@ -343,7 +343,7 @@ class Game(commands.Cog):
             payback = i.trip_payback(t)
 
             if payback is None:
-                msg += f"I do not know {i.name()} upp. I cannot calculate his/her/their payback!\n"
+                msg += f"upp not known for `{i.name()}`. I cannot calculate the payback!\n"
             else:
                 if i.reinvest():
                     self.session_data.company().add_log_entry(
@@ -361,9 +361,7 @@ class Game(commands.Cog):
         if await self.consume_fuel(ctx, n_sectors * 20):
             return
         t = await self.travel_time_j_drive(ctx, n_sectors)
-        await self.trip_accounting_life_support(ctx, t)
-        await self.trip_accounting_payback(ctx, t)
-        await self.newday(ctx, ndays=t)
+        await self.newday(ctx, ndays=t, travel_accounting=True)
         await self.set_world_curr(ctx, w_to_name)
 
     @commands.command(name="fuel", aliases=[])
@@ -413,15 +411,17 @@ class Game(commands.Cog):
     ### containers
     ##################################################
     @commands.command(name="set_world", aliases=["add_world", "set_planet", "add_planet"])
-    async def set_world(self, ctx, name, uwp, zone, hex):
+    async def set_world(self, ctx, name, uwp, zone, hex, sector=None):
         """Add a world"""
+        if sector is None:
+            sector = self.session_data.get_world_curr().sector()
 
         if name in self.session_data.charted_space():
             raise InvalidArgument(
-                f"A ship with that name: `{name}` already exists! If you really want to replace it, delete it first"
+                f"the world: `{name}` exists already! If you really want to replace it, delete it first"
             )
 
-        w = BbwWorld(name=name, uwp=uwp, zone=zone, hex=hex)
+        w = BbwWorld(name=name, uwp=uwp, zone=zone, hex=hex, sector=sector)
         self.session_data.charted_space().add_obj(w)
 
         await self.send(ctx, f"The world `{name}` was successfully added to the charted space")
@@ -494,6 +494,41 @@ class Game(commands.Cog):
 
         s = "\n".join([i.__str__(False) for i in res])
         await self.send(ctx, s)
+
+    @commands.command(name="get_objs", aliases=["objs", "obj"])
+    async def get_objs(self, ctx, name):
+        cs = self.session_data.get_ship_curr()
+        c = BbwContainer(name="results:")
+        for i, _ in cs.containers().get_objs(name=name).objs():
+            c.add_obj(i)
+        await self.container(ctx, c)
+
+    async def _max_skill_rank_stat(self, ctx, v, l):
+        if not len(l):
+            await self.send(ctx, f"the skill/rank/stat is not present in the crew! max: {v}")
+        else:
+            await self.send(ctx, f"max: `{v}`. Crew members: `{', '.join(i.name() for i in l)}`")
+
+    @commands.command(name="max_stat", aliases=[])
+    async def max_stat(self, ctx, stat):
+        cs = self.session_data.get_ship_curr()
+        l = [i for i, _ in cs.containers().get_objs(name="crew").objs()]
+        v, l = BbwPerson.max_stat(l, stat=stat)
+        await self._max_skill_rank_stat(ctx, v, l)
+
+    @commands.command(name="max_skill", aliases=[])
+    async def max_skill(self, ctx, skill):
+        cs = self.session_data.get_ship_curr()
+        l = [i for i, _ in cs.containers().get_objs(name="crew").objs()]
+        v, l = BbwPerson.max_skill(l, skill=skill)
+        await self._max_skill_rank_stat(ctx, v, l)
+
+    @commands.command(name="max_rank", aliases=[])
+    async def max_rank(self, ctx, rank):
+        cs = self.session_data.get_ship_curr()
+        l = [i for i, _ in cs.containers().get_objs(name="crew").objs()]
+        v, l = BbwPerson.max_rank(l, rank=rank)
+        await self._max_skill_rank_stat(ctx, v, l)
 
     @commands.command(name="add_container", aliases=["add_cont"])
     async def add_container(self, ctx, name, capacity=float("inf"), size=0.0, cont=None):
@@ -612,9 +647,9 @@ class Game(commands.Cog):
         await self._send_add_res(ctx, res, 1)
 
     @commands.command(name="set_person_attr", aliases=["set_item_attr", "set_obj_attr"])
-    async def set_obj_attr(self, ctx, item_name, attr_name, value, cont=None):
+    async def set_obj_attr(self, ctx, name, attr_name, value, cont=None):
         cs = self.session_data.get_ship_curr()
-        res = cs.containers().get_objs(name=item_name, cont=cont, only_one=True)
+        res = cs.containers().get_objs(name=name, cont=cont, only_one=True)
 
         res.objs()[0][0].set_attr(attr_name, value)
 
@@ -649,10 +684,13 @@ class Game(commands.Cog):
         await self.date(ctx)
 
     @commands.command(name="newday", aliases=["advance"])
-    async def newday(self, ctx, ndays=1):
+    async def newday(self, ctx, ndays=1, travel_accounting=False):
         ndays = int(ndays)
         if abs(ndays) < 1:
             return
+
+        await self.trip_accounting_life_support(ctx, ndays)
+        await self.trip_accounting_payback(ctx, ndays)
 
         n_months = self.session_data.calendar().add_t(ndays)
         for i in range(n_months):

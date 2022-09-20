@@ -131,7 +131,9 @@ class BbwSpaceShip(BbwVehicle):
 
         return: flight time to cover that distance with the m drive in days
         """
-        d_km = float(d_km)
+        if type(d_km) is str:
+            d_km = float(d_km)
+
         BbwUtils.test_geq("d_km", d_km, 0)
 
         return 2 * math.sqrt(1000 * d_km / (self.m_drive() * 10)) / (60 * 60 * 24)
@@ -140,8 +142,8 @@ class BbwSpaceShip(BbwVehicle):
         """
         jump drive does not depend on the distance but on the number of jumps. Returns flight time in days
         """
-
-        n_jumps = int(n_jumps)
+        if type(n_jumps) is str:
+            n_jumps = float(n_jumps)
         BbwUtils.test_geq("n_jumps", n_jumps, 0)
 
         return (148 * n_jumps + d20.roll(f"{6*n_jumps}d6").total) / 24

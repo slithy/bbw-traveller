@@ -33,7 +33,7 @@ class BbwTrade:
         carouse_or_broker_or_streetwise_mod, SOC_mod = int(carouse_or_broker_or_streetwise_mod), int(SOC_mod)
 
         crew = [i for i, _ in cs.containers().get_objs(name="crew", type0=BbwPerson).objs()]
-        max_steward = BbwPerson.max_rank(crew, "steward")
+        max_steward, _ = BbwPerson.max_skill(crew, "steward")
 
         n_sectors = BbwWorld.distance(w0, w1)
 
@@ -110,8 +110,9 @@ class BbwTrade:
         - w1: arrival world data (pop, starport, TL, zone)
         """
         crew = [i for i, _ in cs.containers().get_objs(name="crew", type0=BbwPerson).objs()]
-        max_naval_or_scout_rank = max(BbwPerson.max_rank(crew, "navy"), BbwPerson.max_rank(crew, "scout"))
-        _, max_SOC_mod = BbwPerson.max_stat(crew, "SOC")
+        max_naval_or_scout_rank = max(BbwPerson.max_rank(crew, "navy")[0], BbwPerson.max_rank(crew, "scout")[0])
+
+        max_SOC_mod = BbwUtils.get_modifier(BbwPerson.max_stat(crew, "SOC")[0], BbwPerson._stat_2_mod)
 
         nd, _, n_sectors = BbwTrade._freight_traffic_table_roll(brocker_or_streetwise_mod, SOC_mod, "mail", w0, w1)
         r = (
@@ -158,5 +159,6 @@ class BbwTrade:
 
 # w0 = BbwWorld(name="feri", uwp="B384879-B", zone="normal", hex="2005")
 # w1 = BbwWorld(name="boughene", uwp="A788899-C", zone="normal", hex="1904")
-# freight = BbwTrade.find_freight(2, 3, "major", w0, w1)
+# freight = BbwTrade.find_mail(2, 3, "major", w0, w1)
 # print(freight[0])
+# exit()

@@ -5,15 +5,25 @@ from cogst5.utils import *
 class BbwWorld(BbwObj):
     _zones = ["normal", "amber", "red"]
 
-    def __init__(self, uwp, zone, hex, *args, **kwargs):
+    def __init__(self, uwp, zone, hex, sector, *args, **kwargs):
         self.set_uwp(uwp)
         self.set_zone(zone)
         self.set_hex(hex)
+        self.set_sector(sector)
 
         super().__init__(*args, **kwargs)
 
     def uwp(self):
         return self._uwp
+
+    def sector(self):
+        return self._sector
+
+    def set_sector(self, v):
+        if type(v) is str:
+            v = eval(v)
+
+        self._sector = v
 
     def set_uwp(self, v):
         v = str(v)
@@ -44,11 +54,17 @@ class BbwWorld(BbwObj):
     def hex(self):
         return self._hex
 
-    def col(self):
+    def hex_x(self):
         return int(self._hex[0:2])
 
-    def row(self):
+    def hex_y(self):
         return int(self._hex[2:4])
+
+    def sec_x(self):
+        return self.sector()[0]
+
+    def sec_y(self):
+        return self.sector()[1]
 
     def SP(self):
         return self.uwp()[0], int(self.uwp()[0], 36)
@@ -76,30 +92,26 @@ class BbwWorld(BbwObj):
 
     @staticmethod
     def distance(w0, w1):
-        x0, x1, y0, y1 = w0.col(), w1.col(), w0.row(), w1.row()
-
-        if (x1 < x0 and y1 > y0) or (x1 > x0 and y1 > y0):
-            x0, x1, y0, y1 = x1, x0, y1, y0
-
-        n_steps = 0
-        while x0 != x1 and y0 != y1:
-            n_steps += 1
-            y0 -= x0 % 2
-            x0 += 2 * (x1 > x0) - 1
-
-        return n_steps + abs(y0 - y1) + abs(x0 - x1)
+        x0, y0, xs0, ys0, x1, y1, xs1, ys1 = (
+            w0.hex_x(),
+            w0.hex_y(),
+            w0.sec_x(),
+            w0.sec_y(),
+            w1.hex_x(),
+            w1.hex_y(),
+            w1.sec_x(),
+            w1.sec_y(),
+        )
+        return BbwUtils.distance(
+            *BbwUtils.hex_2_cube(*BbwUtils.local_2_global(x0, y0, xs0, ys0)),
+            *BbwUtils.hex_2_cube(*BbwUtils.local_2_global(x1, y1, xs1, ys1)),
+        )
 
     def _str_table(self, is_compact=True):
         if is_compact:
             return [self.name(), self.uwp()]
         else:
-            return [
-                self.name(),
-                self.uwp(),
-                self.d_km(),
-                self.zone(),
-                self.hex(),
-            ]
+            return [self.name(), self.uwp(), self.d_km(), self.zone(), self.hex(), str(self.sector())]
 
     def __str__(self, is_compact=True):
         return BbwUtils.print_table(self._str_table(is_compact), headers=self._header(is_compact))
@@ -109,22 +121,16 @@ class BbwWorld(BbwObj):
         if is_compact:
             return ["name", "uwp"]
         else:
-            return [
-                "name",
-                "uwp",
-                "d_km",
-                "zone",
-                "hex",
-            ]
+            return ["name", "uwp", "d_km", "zone", "hex", "sector"]
 
 
-# a = BbwWorld(name="feri", uwp="B384879-B", zone="normal", hex="2005")
+# a = BbwWorld(name="feri", uwp="B384879-B", zone="normal", hex="1904", sector=(-4, 1))
 # print(a.__str__(False))
-# b = BbwWorld(name="regina", uwp="A788899-C", zone="normal", hex="1923")
+# b = BbwWorld(name="regina", uwp="A788899-C", zone="normal", hex="2005", sector=(-4, 1))
 #
 # print(a.SIZE())
 # print(a.d_km())
 # #
-# # print(BbwWorld.distance(a, b))
+# print(BbwWorld.distance(a, b))
 # #
 # exit()

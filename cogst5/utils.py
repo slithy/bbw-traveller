@@ -236,6 +236,22 @@ class BbwUtils:
         ans.append(l[j:])
         return ans
 
+    @staticmethod
+    def local_2_global(x, y, xs, ys):
+        return xs * 32 + x, -ys * 40 + y
+
+    @staticmethod
+    def hex_2_cube(x1, y1):
+        x = x1
+        y = y1 - (x1 + x1 % 2) / 2
+        z = y1 + (x1 - (x1) % 2) / 2
+        return x, y, z
+
+    @staticmethod
+    def distance(x0, y0, z0, x1, y1, z1):
+        d = [abs(x0 - x1), abs(y0 - y1), abs(z0 - z1)]
+        return max(d)
+
 
 # h = ['a', 'b', 'c']
 # t = [[1, tabulate([["a", 1]]*10, tablefmt="plain"), 1]]*4
