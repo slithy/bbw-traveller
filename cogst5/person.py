@@ -263,7 +263,7 @@ class BbwPerson(BbwObj):
     }
 
     @staticmethod
-    def factory(name, n_sectors, count, capacity, only_std=False):
+    def factory(name, n_sectors, count, capacity=0.5, only_std=False):
         if count == 0:
             return None
 

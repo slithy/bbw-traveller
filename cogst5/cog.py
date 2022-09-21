@@ -288,8 +288,8 @@ class Game(commands.Cog):
 
         await self.ship_curr(ctx)
 
-    @commands.command(name="t_m_drive", aliases=["m_drive_t"])
-    async def travel_time_m_drive(self, ctx, d_km):
+    @commands.command(name="m_drive", aliases=[])
+    async def m_drive(self, ctx, d_km):
         cs = self.session_data.get_ship_curr()
 
         t = cs.flight_time_m_drive(d_km)
@@ -300,8 +300,8 @@ class Game(commands.Cog):
 
         return t
 
-    @commands.command(name="m_drive", aliases=[])
-    async def travel_m_drive(self, ctx, d_km=None, is_diam_for_jump=False):
+    @commands.command(name="travel_m", aliases=["jump_m"])
+    async def travel_m(self, ctx, d_km=None, is_diam_for_jump=False):
         if d_km is None:
             d_km = 100 * self.session_data.get_world_curr().d_km()
         else:
@@ -316,16 +316,26 @@ class Game(commands.Cog):
         t = await self.travel_time_m_drive(ctx, d_km)
         await self.newday(ctx, ndays=t, travel_accounting=True)
 
-    @commands.command(name="t_j_drive", aliases=["j_drive_t"])
-    async def travel_time_j_drive(self, ctx, n_jumps=1):
+    @commands.command(name="j_drive", aliases=[])
+    async def j_drive(self, ctx, w_to_name, w_from_name=None):
+        if w_from_name is None:
+            w0 = self.session_data.get_world_curr()
+        else:
+            w0 = self.session_data.charted_space().get_objs(name=w_from_name, only_one=True).objs()[0][0]
+        w1 = self.session_data.charted_space().get_objs(name=w_to_name, only_one=True).objs()[0][0]
+
         cs = self.session_data.get_ship_curr()
+        n_sectors = BbwWorld.distance(w0, w1)
+        n_jumps = math.ceil(n_sectors / cs.j_drive())
+        j_drive_required_fuel = BbwSpaceShip.j_drive_required_fuel(n_sectors)
+        t = BbwSpaceShip.j_drive_required_time(n_jumps)
 
-        t = cs.flight_time_j_drive(n_jumps)
+        h = ["n sectors", "travel time (~)", "required fuel (tons)", "n jumps"]
+        tab = [n_sectors, BbwUtils.conv_days_2_time(t), j_drive_required_fuel, n_jumps]
+        await self.send(ctx, BbwUtils.print_table(tab, headers=h))
 
-        await self.send(
-            ctx, f"the j drive {cs.j_drive()} travel time to do {n_jumps} jumps is: {BbwUtils.conv_days_2_time(t)}"
-        )
-        return t
+        err = cs.ck_j_drive(w0, w1)
+        await self.send(ctx, err)
 
     @commands.command(name="trip_accounting_life_support", aliases=[])
     async def trip_accounting_life_support(self, ctx, t):
@@ -357,14 +367,21 @@ class Game(commands.Cog):
 
         await self.send(ctx, msg)
 
-    @commands.command(name="j_drive", aliases=[])
-    async def travel_j_drive(self, ctx, w_to_name):
+    @commands.command(name="travel_j", aliases=["jump_j"])
+    async def travel_j(self, ctx, w_to_name):
         w0 = self.session_data.get_world_curr()
         w1 = self.session_data.charted_space().get_objs(name=w_to_name, only_one=True).objs()[0][0]
-        n_sectors = BbwWorld.distance(w0, w1)
-        if await self.consume_fuel(ctx, n_sectors * 20):
+        cs = self.session_data.get_ship_curr()
+        err = cs.ck_j_drive(w0, w1)
+        if len(err):
+            await self.send(ctx, err)
             return
-        t = await self.travel_time_j_drive(ctx, n_sectors)
+
+        n_sectors = BbwWorld.distance(w0, w1)
+        rf = BbwSpaceShip.j_drive_required_fuel(n_sectors)
+        await self.consume_fuel(ctx, rf)
+        t = cs.j_drive_required_time()
+        await self.send(ctx, f"jump time: `{BbwUtils.conv_days_2_time(t)}`")
         await self.newday(ctx, ndays=t, travel_accounting=True)
         await self.set_world_curr(ctx, w_to_name)
 
@@ -395,12 +412,7 @@ class Game(commands.Cog):
         cs = self.session_data.get_ship_curr()
         res = cs.consume_fuel(count)
 
-        if res.count() != int(count):
-            await self.send(ctx, f"not enough `fuel, refined` (`{res.count()}` tons)! `{count}` tons required")
-            return 1
-        else:
-            await self._send_add_res(ctx, res, count)
-            return 0
+        await self._send_add_res(ctx, res, count)
 
     @commands.command(name="refine_fuel", aliases=["refine"])
     async def refine_fuel(self, ctx):

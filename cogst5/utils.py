@@ -267,7 +267,7 @@ class BbwUtils:
     @staticmethod
     def distance(x0, y0, z0, x1, y1, z1):
         d = [abs(x0 - x1), abs(y0 - y1), abs(z0 - z1)]
-        return max(d)
+        return int(max(d))
 
 
 # q = []

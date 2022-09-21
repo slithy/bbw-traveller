@@ -138,7 +138,8 @@ class BbwSpaceShip(BbwVehicle):
 
         return 2 * math.sqrt(1000 * d_km / (self.m_drive() * 10)) / (60 * 60 * 24)
 
-    def flight_time_j_drive(self, n_jumps):
+    @staticmethod
+    def j_drive_required_time(n_jumps=1):
         """
         jump drive does not depend on the distance but on the number of jumps. Returns flight time in days
         """
@@ -148,31 +149,25 @@ class BbwSpaceShip(BbwVehicle):
 
         return (148 * n_jumps + d20.roll(f"{6*n_jumps}d6").total) / 24
 
-    def jump_time_world_2_world(self, w0, w1):
-        d1_km = float(w0.d_km())
-        BbwUtils.test_geq("d1_km", d1_km, 0)
-        d2_km = float(w1.d_km())
-        BbwUtils.test_geq("d2_km", d2_km, 0)
+    @staticmethod
+    def j_drive_required_fuel(n_sectors):
+        return 20 * n_sectors
 
+    def ck_j_drive(self, w0, w1):
         n_sectors = BbwWorld.distance(w0, w1)
-        n_jumps = math.ceil(n_sectors / self.j_drive())
-
-        return (
-            self.flight_time_m_drive(d1_km * 100),
-            self.flight_time_j_drive(n_jumps),
-            self.flight_time_m_drive(d2_km * 100),
-            n_sectors,
-            n_jumps,
-        )
-
-        if len(res):
-            return BbwItem(
-                name=res.objs()[0][0],
-                capacity=1,
-                count=count,
-                TL=0,
-                value=value if value is not None else res.objs()[0][1],
+        ans = []
+        if n_sectors > self.j_drive():
+            ans.append(
+                f"ship's j drive (`{self.j_drive()}`) < distance (`{n_sectors}`) between `{w1.name()}` and"
+                f" `{w0.name()}`. Too far!"
             )
+        res = self.containers().get_objs(name="fuel, refined", cont="fuel")
+
+        rs = BbwSpaceShip.j_drive_required_fuel(n_sectors)
+        if res.count() < rs:
+            ans.append(f"currently the ship holds `{res.count()}` tons of refined fuel. {rs} required for this jump!")
+
+        return "\n".join(ans)
 
     def add_fuel(self, source, count=float("inf")):
         count = float(count)
