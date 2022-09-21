@@ -602,12 +602,13 @@ class Game(commands.Cog):
             res_l = cs.containers().dist_obj(
                 obj=new_luggage, unbreakable=False, cont=cont_luggage, with_any_tags=with_any_tags_l
             )
+            if not mute:
+                await self._send_add_res(ctx, res_l, res_l.count())
 
         new_person.set_count(count)
         res_p = cs.containers().dist_obj(obj=new_person, cont=cont, unbreakable=False, with_any_tags=with_any_tags_p)
         if not mute:
             await self._send_add_res(ctx, res_p, res_p.count())
-            await self._send_add_res(ctx, res_l, res_l.count())
         return res_p
 
     @commands.command(name="add_item", aliases=[])

@@ -284,8 +284,6 @@ class BbwContainer(dict):
         n = obj.count()
         obj.set_count(1)
 
-        print(self._free_slots(cap=obj.capacity(), recursive=True, cont=cont, *args, **kwargs))
-
         if unbreakable and n > self._free_slots(cap=obj.capacity(), recursive=True, cont=cont, *args, **kwargs):
             return ans
         obj.set_count(n)
