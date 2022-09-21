@@ -709,9 +709,9 @@ class Game(commands.Cog):
         ndays = int(ndays)
         if abs(ndays) < 1:
             return
-
-        await self.trip_accounting_life_support(ctx, ndays)
-        await self.trip_accounting_payback(ctx, ndays)
+        if travel_accounting:
+            await self.trip_accounting_life_support(ctx, ndays)
+            await self.trip_accounting_payback(ctx, ndays)
 
         n_months = self.session_data.calendar().add_t(ndays)
         for i in range(n_months):
