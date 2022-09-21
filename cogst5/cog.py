@@ -289,7 +289,18 @@ class Game(commands.Cog):
         await self.ship_curr(ctx)
 
     @commands.command(name="m_drive", aliases=[])
-    async def m_drive(self, ctx, d_km):
+    async def m_drive(self, ctx, d_km=None, is_diam_for_jump=False):
+        if d_km is None:
+            d_km = 100 * self.session_data.get_world_curr().d_km()
+        else:
+            try:
+                d_km = int(d_km)
+                is_diam_for_jump = bool(int(is_diam_for_jump))
+                if is_diam_for_jump:
+                    d_km *= 100
+            except ValueError:
+                d_km = 100 * self.session_data.charted_space().get_objs(name=d_km, only_one=True).objs()[0][0].d_km()
+
         cs = self.session_data.get_ship_curr()
 
         t = cs.flight_time_m_drive(d_km)
@@ -302,18 +313,7 @@ class Game(commands.Cog):
 
     @commands.command(name="travel_m", aliases=["jump_m"])
     async def travel_m(self, ctx, d_km=None, is_diam_for_jump=False):
-        if d_km is None:
-            d_km = 100 * self.session_data.get_world_curr().d_km()
-        else:
-            try:
-                d_km = int(d_km)
-                is_diam_for_jump = bool(int(is_diam_for_jump))
-                if is_diam_for_jump:
-                    d_km *= 100
-            except ValueError:
-                d_km = 100 * self.session_data.charted_space().get_objs(name=d_km, only_one=True).objs()[0][0].d_km()
-
-        t = await self.travel_time_m_drive(ctx, d_km)
+        t = await self.m_drive(ctx, d_km, is_diam_for_jump)
         await self.newday(ctx, ndays=t, travel_accounting=True)
 
     @commands.command(name="j_drive", aliases=[])
