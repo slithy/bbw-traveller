@@ -206,7 +206,7 @@ class BbwUtils:
 
     @staticmethod
     def split_md_compatible(msg):
-        limit = 2000
+        limit = 1900
 
         # q = [t, headers]
         # with open('/save/debug.json', 'w') as file:

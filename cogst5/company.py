@@ -117,10 +117,12 @@ class BbwCompany:
         for i in no_reinvest_crew:
             tot_not_reinvested += i.salary_ticket()
 
-        self.add_log_entry(tot, f"salaries for: {', '.join([i.name() for i in crew])}", time)
+        crew_line = '\n'.join([i.name() for i in crew])
+        self.add_log_entry(tot, f"salaries for:\n{crew_line}", time)
         if tot_not_reinvested:
+            crew_line = '\n'.join([i.name() for i in no_reinvest_crew])
             self.add_log_entry(
-                -tot_not_reinvested, f"safeguard salaries for: {', '.join([i.name() for i in no_reinvest_crew])}", time
+                -tot_not_reinvested, f"safeguard salaries for: {crew_line}", time
             )
 
     def money(self):
