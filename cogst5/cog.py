@@ -140,7 +140,7 @@ class Game(commands.Cog):
 
         await self.send(ctx, f"mail and freight (loaded/available):\n{BbwUtils.print_table(counter, headers=header)}")
         if mail_value:
-            await self.send(ctx, f"mail (`{n_canisters}` canisters): {mail_value} Cr")
+            await self.send(ctx, f"mail (`{n_canisters}` canisters): `{mail_value}` Cr")
 
     @commands.command(name="load_ship", aliases=[])
     async def load_ship(self, ctx, carouse_or_broker_or_streetwise_mod, brocker_or_streetwise_mod, SOC_mod, w_to_name):
@@ -169,23 +169,29 @@ class Game(commands.Cog):
 
         await self.send(ctx, f"passenger tickets: {int(tot)} Cr")
 
-    @commands.command(name="unload_mail_and_freight", aliases=[])
-    async def unload_mail_and_freight(self, ctx):
+    @commands.command(name="unload_mail", aliases=[])
+    async def unload_mail(self, ctx):
+        await self.send(ctx, f"unload mail")
+        await self.del_obj(ctx, name="mail", mute=True)
+
+    @commands.command(name="unload_freight", aliases=[])
+    async def unload_freight(self, ctx):
         cs = self.session_data.get_ship_curr()
         tot = 0
         for i in BbwItem._freight_lot_ton_multi_dict.keys():
             if i != "mail":
                 tot += sum([i.value() for i, _ in cs.containers().get_objs(name=i).objs()])
-            await self.del_obj(ctx, name=i, mute=True)
+                await self.del_obj(ctx, name=i, mute=True)
 
         self.session_data.company().add_log_entry(int(tot), f"freight", self.session_data.calendar().t())
 
-        await self.send(ctx, f"freight: {int(tot)} Cr")
+        await self.send(ctx, f"unload freight: `{int(tot)}` Cr")
 
     @commands.command(name="unload_ship", aliases=[])
-    async def unload(self, ctx, except_set="{}"):
+    async def unload(self, ctx):
+        await self.unload_mail(ctx)
         await self.unload_passengers(ctx)
-        await self.unload_mail_and_freight(ctx)
+        await self.unload_freight(ctx)
 
     ##################################################
     ### spaceship
