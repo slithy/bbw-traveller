@@ -183,9 +183,7 @@ class BbwContainer(dict):
         if len(BbwUtils.get_objs([self], name=cont, *args, **kwargs)):
             if type(obj) is not BbwContainer:
                 old_count = self[obj.name()].count() if obj.name() in self else 0.0
-                obj.set_count(obj.count() + old_count)
                 ans = self._add_obj(obj)
-                obj.set_count(obj.count() - old_count)
                 return ans
             else:
                 return self._add_obj(obj)
@@ -399,19 +397,22 @@ class BbwContainer(dict):
 # d = BbwObj(name="ddd", count=2, capacity=15)
 # # # # # # #
 # cont = BbwContainer(name="fleet")
-# # # # #
-# cont2 = BbwContainer(name="cargo, main", capacity=23)
-# cont3 = BbwContainer(name="cargo2", capacity=6)
 # # # # # #
-# # # # # # # # cont3 = BbwContainer(name="cargo3", capacity=20)
-# # # # # # # # cont4 = BbwContainer(name="cargo4", capacity=10)
-# # #
-# cont.add_obj(cont3)
-# cont.add_obj(cont2)
-#
+# # cont2 = BbwContainer(name="cargo, main", capacity=23)
+# # cont3 = BbwContainer(name="cargo2", capacity=6)
+# # # # # # #
+# # # # # # # # # cont3 = BbwContainer(name="cargo3", capacity=20)
+# # # # # # # # # cont4 = BbwContainer(name="cargo4", capacity=10)
+# # # #
+# # cont.add_obj(cont3)
+# # cont.add_obj(cont2)
+# #
 # b = BbwObj(name="bbb", capacity=5, count=5)
-# c = cont.dist_obj(obj=b, unbreakable=True, cont="cargo")
-# print([i for _, i in c.objs()], c.count())
+# cont.add_obj(b)
+# cont.add_obj(b)
+# # c = cont.dist_obj(obj=b, unbreakable=True, cont="cargo")
+# print([i.count() for i, _ in cont.get_objs().objs()])
+# exit()
 # # print([(i.name(), i.count()) for i, _ in cont.get_objs().objs()])
 # # print("AAA")
 # # print([(i.name(), i.count()) for i, _ in cont.get_objs(cont="stateroom").objs()])
