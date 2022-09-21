@@ -216,9 +216,18 @@ class BbwPerson(BbwObj):
 
         return ans, pans
 
-    def _str_table(self, is_compact=True):
-        if is_compact:
+    def _str_table(self, detail_lvl=0):
+        if detail_lvl == 0:
             return [self.count(), self.name()]
+        elif detail_lvl == 1:
+            return [
+                self.count(),
+                self.name(),
+                self.upp(),
+                self.salary_ticket(),
+                self.capacity(),
+                self.reinvest(),
+            ]
         else:
             return [
                 self.count(),
@@ -230,13 +239,22 @@ class BbwPerson(BbwObj):
                 self.reinvest(),
             ]
 
-    def __str__(self, is_compact=True):
-        return BbwUtils.print_table(self._str_table(is_compact), headers=self._header(is_compact))
+    def __str__(self, detail_lvl=0):
+        return BbwUtils.print_table(self._str_table(detail_lvl), headers=self._header(detail_lvl))
 
     @staticmethod
-    def _header(is_compact=True):
-        if is_compact:
+    def _header(detail_lvl=0):
+        if detail_lvl == 0:
             return ["count", "name"]
+        elif detail_lvl == 1:
+            return [
+                "count",
+                "name",
+                "upp",
+                "salary (<0)/ticket (>=0)",
+                "capacity",
+                "reinvest",
+            ]
         else:
             return [
                 "count",

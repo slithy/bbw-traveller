@@ -25,8 +25,8 @@ class BbwItem(BbwObj):
         BbwUtils.test_geq("value", v, 0)
         self._value = v
 
-    def _str_table(self, is_compact=True):
-        if is_compact:
+    def _str_table(self, detail_lvl=0):
+        if detail_lvl == 0:
             return [self.count(), self.name(), self.capacity() if self.capacity() else None]
         else:
             return [
@@ -37,12 +37,12 @@ class BbwItem(BbwObj):
                 self.value() if self.value() else None,
             ]
 
-    def __str__(self, is_compact=True):
-        return BbwUtils.print_table(self._str_table(is_compact), headers=self._header(is_compact))
+    def __str__(self, detail_lvl=0):
+        return BbwUtils.print_table(self._str_table(detail_lvl), headers=self._header(detail_lvl))
 
     @staticmethod
-    def _header(is_compact=True):
-        if is_compact:
+    def _header(detail_lvl=0):
+        if detail_lvl == 0:
             return ["count", "name", "capacity"]
         else:
             return ["count", "name", "capacity", "TL", "value"]

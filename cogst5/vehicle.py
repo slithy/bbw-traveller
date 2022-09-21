@@ -205,8 +205,12 @@ class BbwSpaceShip(BbwVehicle):
         return self.containers().del_obj(name="fuel, refined", count=count, cont="fuel")
 
     def refine_fuel(self):
-        res = self.containers().get_objs(name="fuel, unrefined", cont="fuel")
+        res = self.containers().del_obj(name="fuel, unrefined", cont="fuel")
         total_time = res.count() / self.fuel_refiner_speed()
+        for i, _ in res.objs():
+            i.set_name("refined fuel")
+            i.set_value(BbwSpaceShip._fuel_prices["refined"])
+            self.containers().dist_obj(obj=i, cont="fuel")
 
         self.containers().rename_obj("fuel, unrefined", "fuel, refined", cont="fuel")
 
@@ -285,30 +289,28 @@ class BbwSpaceShip(BbwVehicle):
         return self.containers().get_objs(with_all_tags={"weapon"}, type0=BbwItem).count() > 0
 
     @staticmethod
-    def _header(is_compact=True):
-        s = BbwVehicle._header(is_compact)
+    def _header(detail_lvl=0):
+        s = BbwVehicle._header(detail_lvl)
 
         return s
 
-    def _str_table(self, is_compact=0):
-        is_compact = int(is_compact)
-
+    def _str_table(self, detail_lvl=0):
         s = [
             str(i)
             for i in [
-                *super()._str_table(is_compact != 2),
+                *super()._str_table(detail_lvl != 2),
             ]
         ]
 
         return s
 
-    def __str__(self, is_compact=1):
+    def __str__(self, detail_lvl=1):
         s = ""
         s += BbwUtils.print_table(
-            self._str_table(is_compact), headers=self._header(is_compact), is_compact=is_compact == 0
+            self._str_table(detail_lvl), headers=self._header(detail_lvl), detail_lvl=detail_lvl == 0
         )
 
-        if is_compact == 2:
+        if detail_lvl == 2:
             h = [
                 "drive m",
                 "drive j",
@@ -334,11 +336,11 @@ class BbwSpaceShip(BbwVehicle):
             ]
             s += BbwUtils.print_table(tab, headers=h)
 
-        if is_compact == 0:
+        if detail_lvl == 0:
             return s
 
         for i, _ in self.containers().get_objs(type0=BbwContainer).objs():
-            s += i.__str__(is_compact=False)
+            s += i.__str__(detail_lvl=1)
             s += "\n"
 
         return s

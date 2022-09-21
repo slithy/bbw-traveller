@@ -242,13 +242,13 @@ class BbwUtils:
         return ans
 
     @staticmethod
-    def print_table(t, headers=(), tablefmt="simple", is_compact=False):
+    def print_table(t, headers=(), tablefmt="simple", detail_lvl=0):
         limit = 15
 
         if len(t) and not isinstance(t[0], list):
             t = [t]
 
-        b = "```" if not is_compact else ""
+        b = "```" if detail_lvl else ""
         st = BbwUtils.greedy_splitter(t, lambda x: 1 + sum([str(j).count("\n") for j in x]), limit=limit)
 
         return "\n".join([b + tabulate(i, headers=headers, tablefmt=tablefmt) + b + "\n" for i in st])

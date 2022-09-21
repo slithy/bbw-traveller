@@ -133,7 +133,7 @@ class Game(commands.Cog):
                 if i == "mail" and res.count():
                     mail_value, n_canisters = sum([i.value() for i, _ in res.objs()]), res.count()
                     self.session_data.company().add_log_entry(
-                        mail_value, f"mail (`{n_canisters}` canisters)", self.session_data.calendar().t()
+                        mail_value, f"mail ({n_canisters} canisters)", self.session_data.calendar().t()
                     )
 
                 counter[idx] = f"{res.count()}/{item.count()}"
@@ -167,7 +167,7 @@ class Game(commands.Cog):
 
         self.session_data.company().add_log_entry(int(tot), f"passenger tickets", self.session_data.calendar().t())
 
-        await self.send(ctx, f"passenger tickets: {int(tot)} Cr")
+        await self.send(ctx, f"passenger tickets: `{int(tot)}` Cr")
 
     @commands.command(name="unload_mail", aliases=[])
     async def unload_mail(self, ctx):
@@ -271,7 +271,7 @@ class Game(commands.Cog):
 
         cs = self.session_data.get_ship_curr()
 
-        await self.send(ctx, cs.__str__(is_compact=compactness))
+        await self.send(ctx, cs.__str__(detail_lvl=compactness))
 
     @commands.command(name="set_ship_curr", aliases=[])
     async def set_ship_curr(self, ctx, name):
@@ -294,7 +294,7 @@ class Game(commands.Cog):
 
         await self.ship_curr(ctx)
 
-    @commands.command(name="m_drive", aliases=[])
+    @commands.command(name="m_drive", aliases=["drive_m"])
     async def m_drive(self, ctx, d_km=None, is_diam_for_jump=False):
         if d_km is None:
             d_km = 100 * self.session_data.get_world_curr().d_km()
@@ -322,7 +322,7 @@ class Game(commands.Cog):
         t = await self.m_drive(ctx, d_km, is_diam_for_jump)
         await self.newday(ctx, ndays=t, travel_accounting=True)
 
-    @commands.command(name="j_drive", aliases=[])
+    @commands.command(name="j_drive", aliases=["drive_j"])
     async def j_drive(self, ctx, w_to_name, w_from_name=None):
         if w_from_name is None:
             w0 = self.session_data.get_world_curr()
@@ -373,7 +373,7 @@ class Game(commands.Cog):
 
         await self.send(ctx, msg)
 
-    @commands.command(name="travel_j", aliases=["jump_j"])
+    @commands.command(name="travel_j", aliases=["jump_j", "j_jump", "j_travel"])
     async def travel_j(self, ctx, w_to_name):
         w0 = self.session_data.get_world_curr()
         w1 = self.session_data.charted_space().get_objs(name=w_to_name, only_one=True).objs()[0][0]
@@ -412,6 +412,7 @@ class Game(commands.Cog):
                 await self.add_money(ctx, value=-value, description=res)
         else:
             await self.send(ctx, f"the tank was full. Nothing to do")
+        await self.fuel(ctx)
 
     @commands.command(name="consume_fuel", aliases=[])
     async def consume_fuel(self, ctx, count):
@@ -419,6 +420,7 @@ class Game(commands.Cog):
         res = cs.consume_fuel(count)
 
         await self._send_add_res(ctx, res, count)
+        await self.fuel(ctx)
 
     @commands.command(name="refine_fuel", aliases=["refine"])
     async def refine_fuel(self, ctx):
@@ -426,6 +428,7 @@ class Game(commands.Cog):
         res, t = cs.refine_fuel()
 
         await self.send(ctx, f"`{res.count()}` tons of fuel refined in: `{BbwUtils.conv_days_2_time(t)}`")
+        await self.fuel(ctx)
 
         await self.newday(ctx, ndays=t)
 
@@ -500,10 +503,15 @@ class Game(commands.Cog):
     ### containers
     ##################################################
 
+    async def _container(self, ctx, detail_lvl, res):
+        s = "\n".join([i.__str__(detail_lvl) for i in res])
+        await self.send(ctx, s)
+
     @commands.command(name="container", aliases=["cont", "inv"])
     async def container(self, ctx, *args):
         cs = self.session_data.get_ship_curr()
 
+        detail_lvl = 1
         res = []
         if len(args) == 0:
             res = [i for i, _ in cs.containers().get_objs(type0=BbwContainer).objs()]
@@ -512,10 +520,22 @@ class Game(commands.Cog):
                 for i in args:
                     res = [i for i, _ in cs.containers().get_objs(name=i, type0=BbwContainer).objs()]
             else:
+                detail_lvl = 2
                 res = args
 
-        s = "\n".join([i.__str__(False) for i in res])
-        await self.send(ctx, s)
+        await self._container(ctx, detail_lvl, res)
+
+    @commands.command(name="fuel", aliases=[])
+    async def container(self, ctx):
+        await self.container(ctx, "fuel")
+
+    @commands.command(name="crew", aliases=[])
+    async def crew(self, ctx):
+        await self.get_objs(ctx, "crew")
+
+    @commands.command(name="passenger", aliases=["pass"])
+    async def crew(self, ctx):
+        await self.get_objs(ctx, "passenger")
 
     @commands.command(name="get_objs", aliases=["objs", "obj"])
     async def get_objs(self, ctx, name):
@@ -523,7 +543,7 @@ class Game(commands.Cog):
         c = BbwContainer(name="results:")
         for i, _ in cs.containers().get_objs(name=name).objs():
             c.add_obj(i)
-        await self.container(ctx, c)
+        await self._container(ctx, 2, c)
 
     async def _max_skill_rank_stat(self, ctx, v, l):
         if not len(l):
@@ -697,7 +717,7 @@ class Game(commands.Cog):
     ##################################################
     @commands.command(name="date", aliases=[])
     async def date(self, ctx):
-        await self.send(ctx, self.session_data.calendar().__str__(is_compact=False))
+        await self.send(ctx, self.session_data.calendar().__str__(detail_lvl=1))
 
     @commands.command(name="set_date", aliases=[])
     async def set_date(self, ctx, day, year):
@@ -832,7 +852,7 @@ class Game(commands.Cog):
 
     @commands.command(name="wish", aliases=["wishes", "wishlist"])
     async def wishlist(self, ctx):
-        await self.send(ctx, self.session_data.wishlist().__str__(is_compact=False))
+        await self.send(ctx, self.session_data.wishlist().__str__(detail_lvl=1))
 
     @commands.command(name="buy_wish", aliases=[])
     async def buy_wish(self, ctx, name):
