@@ -45,6 +45,9 @@ class BbwVehicle(BbwObj):
         """container root"""
         return self._containers
 
+    def crew(self):
+        return [i for i, _ in self.containers().get_objs(name="crew").objs()]
+
     def set_type(self, v):
         v = str(v)
         self._type = v
@@ -208,7 +211,7 @@ class BbwSpaceShip(BbwVehicle):
         res = self.containers().del_obj(name="fuel, unrefined", cont="fuel")
         total_time = res.count() / self.fuel_refiner_speed()
         for i, _ in res.objs():
-            i.set_name("refined fuel")
+            i.set_name("fuel, refined")
             i.set_value(BbwSpaceShip._fuel_prices["refined"])
             self.containers().dist_obj(obj=i, cont="fuel")
 

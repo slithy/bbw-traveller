@@ -55,6 +55,9 @@ class BbwObj:
     def capacity(self):
         return self._capacity * self._count
 
+    def capacity_per_obj(self):
+        return self._capacity
+
     def status(self):
         return f"({self.size()}/{self.capacity()})"
 
@@ -105,6 +108,12 @@ class BbwRes:
 
     def objs(self):
         return self._objs
+
+    def print_objs(self):
+        return "\n".join([i.__str__(2) for i, _ in self.objs()])
+
+    def print_containers(self):
+        return ", ".join([i.__str__(0) for _, i in self.objs()])
 
     def __str__(self):
         return f"count:`{self.count()}` count, len objs: `{len(self.objs())}`"
@@ -178,21 +187,6 @@ class BbwContainer(dict):
             [i for i in self.values() if not issubclass(BbwContainer, type(i))],
             key=lambda x: not BbwUtils.has_any_tags(x, {"main"}),
         )
-
-    def add_obj(self, obj, cont=None, *args, **kwargs):
-        if len(BbwUtils.get_objs([self], name=cont, *args, **kwargs)):
-            if type(obj) is not BbwContainer:
-                old_count = self[obj.name()].count() if obj.name() in self else 0.0
-                ans = self._add_obj(obj)
-                return ans
-            else:
-                return self._add_obj(obj)
-
-        for i in self._get_children_containers():
-            ans = i.add_obj(obj, cont=cont, *args, **kwargs)
-            if ans.count():
-                return ans
-        return BbwRes()
 
     def rename_obj(self, name, new_name, cont=None, only_one=True, *args, **kwargs):
         if type(name) is not str:
@@ -276,11 +270,30 @@ class BbwContainer(dict):
                 ans += i._free_slots(cap, recursive, cont=cont, *args, **kwargs)
         return ans
 
+    # def add_obj(self, obj, cont=None, *args, **kwargs):
+    #     if len(BbwUtils.get_objs([self], name=cont, *args, **kwargs)):
+    #         if type(obj) is not BbwContainer:
+    #             old_count = self[obj.name()].count() if obj.name() in self else 0.0
+    #             ans = self._add_obj(obj)
+    #             return ans
+    #         else:
+    #             return self._add_obj(obj)
+    #
+    #     for i in self._get_children_containers():
+    #         ans = i.add_obj(obj, cont=cont, *args, **kwargs)
+    #         if ans.count():
+    #             return ans
+    #     return BbwRes()
+
     def dist_obj(self, obj, unbreakable=False, cont=None, *args, **kwargs):
+        if type(obj) is BbwContainer:
+            if len(BbwUtils.get_objs([self], name=cont, *args, **kwargs)):
+                return self._add_obj(obj)
+            else:
+                return BbwRes()
+
         unbreakable = bool(int(unbreakable))
-
         ans = BbwRes()
-
         n = obj.count()
         obj.set_count(1)
 

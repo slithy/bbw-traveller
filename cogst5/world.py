@@ -107,18 +107,18 @@ class BbwWorld(BbwObj):
             *BbwUtils.hex_2_cube(*BbwUtils.local_2_global(x1, y1, xs1, ys1)),
         )
 
-    def _str_table(self, is_compact=True):
-        if is_compact:
+    def _str_table(self, detail_lvl=0):
+        if detail_lvl == 0:
             return [self.name(), self.uwp()]
         else:
             return [self.name(), self.uwp(), self.d_km(), self.zone(), self.hex(), str(self.sector())]
 
-    def __str__(self, is_compact=True):
-        return BbwUtils.print_table(self._str_table(is_compact), headers=self._header(is_compact))
+    def __str__(self, detail_lvl=0):
+        return BbwUtils.print_table(self._str_table(detail_lvl), headers=self._header(detail_lvl), detail_lvl=1)
 
     @staticmethod
-    def _header(is_compact=True):
-        if is_compact:
+    def _header(detail_lvl=0):
+        if detail_lvl == 0:
             return ["name", "uwp"]
         else:
             return ["name", "uwp", "d_km", "zone", "hex", "sector"]

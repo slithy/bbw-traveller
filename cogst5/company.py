@@ -49,10 +49,10 @@ class BbwDebt(BbwObj):
         return self._end_t
 
     @staticmethod
-    def _header(is_compact=True):
+    def _header(detail_lvl=0):
         return ["name", "amount", "due date", "period", "end date"]
 
-    def _str_table(self, is_compact=True):
+    def _str_table(self, detail_lvl=0):
         return [
             self.name(),
             self.capacity(),
@@ -136,7 +136,7 @@ class BbwCompany:
         self.set_money(self.money() + v)
 
     @staticmethod
-    def _header(is_compact=True):
+    def _header(detail_lvl=0):
         return ["in", "out", "description", "time"]
 
     def _str_table(self, log_lines=10):
@@ -156,6 +156,6 @@ class BbwCompany:
         if log_lines != 0:
             s += BbwUtils.print_table(self._str_table(log_lines), headers=self._header())
             s += "\n"
-        s += self.debts().__str__(is_compact=False)
+        s += self.debts().__str__(detail_lvl=1)
         s += "\n"
         return s

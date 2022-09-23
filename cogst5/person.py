@@ -85,7 +85,7 @@ class BbwPerson(BbwObj):
 
     def rank(self, name, default_value=0):
         res = BbwUtils.get_objs(raw_list=self.skill_rank().items(), name=name)
-        return sorted(res, key=lambda x: len(x))[0][1] if len(res) else default_value
+        return sorted(res, key=lambda x: len(x))[0] if len(res) else (name, default_value)
 
     def salary_ticket(self):
         return self._salary_ticket * self.count()
@@ -191,27 +191,22 @@ class BbwPerson(BbwObj):
         return ans, pans
 
     @staticmethod
-    def max_skill(people, skill):
-        ans = -3
-        pans = []
-        for i in people:
-            if ans < i.skill(skill):
-                ans = i.skill(skill)
-                pans = [i]
-            elif ans == i.skill(skill):
-                pans.append(i)
-
-        return ans, pans
+    def max_rank(people, rank):
+        return BbwPerson.max_skill_rank(people, rank, 0)
 
     @staticmethod
-    def max_rank(people, rank):
-        ans = 0
+    def max_skill(people, skill):
+        return BbwPerson.max_skill_rank(people, skill, -3)
+
+    @staticmethod
+    def max_skill_rank(people, rank, default_value):
+        ans = (rank, default_value)
         pans = []
         for i in people:
-            if ans < i.rank(rank):
-                ans = i.rank(rank)
+            if ans[1] < i.rank(rank, default_value)[1]:
+                ans = i.rank(rank, default_value)
                 pans = [i]
-            elif ans == i.rank(rank):
+            elif ans[1] == i.rank(rank, default_value)[1]:
                 pans.append(i)
 
         return ans, pans

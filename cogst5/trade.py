@@ -3,6 +3,46 @@ from cogst5.item import *
 from cogst5.world import *
 
 
+class BbwExpr:
+    def __init__(self, l=[]):
+        self._l = []
+        if type(l) is list:
+            self._l = l
+        else:
+            self._l = (BbwExpr() + l)._l
+
+    def __add__(self, o):
+        if type(o) is BbwExpr:
+            return BbwExpr([*self._l, *o._l])
+        if type(o) is tuple:
+            return BbwExpr([*self._l, o])
+        if type(o) is d20.dice.RollResult:
+            return BbwExpr([*self._l, (o, o.total)])
+        raise ValueError(f"{o} must be of type tuple, BbwExpr or d20.dice.RollResult")
+
+    def __int__(self):
+        print(self._l)
+        return sum(i for _, i in self._l)
+
+    def __str__(self):
+        def affix(idx, v, i):
+            print(type(i))
+            s = " " if idx else ""
+            if idx and v >= 0:
+                s += "+ "
+            if type(i) is d20.dice.RollResult:
+                s += i.__str__()
+            else:
+                s += f"`{v}` [" + i + "]"
+            return s
+
+        s = "".join([f"{affix(idx, v, i)}" for idx, (i, v) in enumerate(self._l)])
+        if len(self._l) == 1 and type(self._l[0][0]) is d20.dice.RollResult:
+            return s
+
+        return s + f" = `{int(self)}`"
+
+
 class BbwTrade:
     _passenger_wp_table = [[1, 5, 7, 16], [-4, 0, 1, 3]]
     _passenger_starport_table = [
@@ -33,33 +73,37 @@ class BbwTrade:
         carouse_or_broker_or_streetwise_mod, SOC_mod = int(carouse_or_broker_or_streetwise_mod), int(SOC_mod)
 
         crew = [i for i, _ in cs.containers().get_objs(name="crew", type0=BbwPerson).objs()]
-        max_steward, _ = BbwPerson.max_skill(crew, "steward")
+        max_steward = BbwPerson.max_skill(crew, "steward")[0][1]
 
         n_sectors = BbwWorld.distance(w0, w1)
+        BbwUtils.test_geq("sectors", n_sectors, 1)
 
         kind = BbwUtils.get_objs(raw_list=BbwPerson._std_tickets.keys(), name=kind, only_one=True)[0]
 
-        r = d20.roll("2d6").total + carouse_or_broker_or_streetwise_mod + SOC_mod + max_steward - 8
+        r = BbwExpr()
+        r += d20.roll("2d6-8 [avg. ck]")
 
         if "high" in kind:
-            r -= 4
+            r += ("base", -4)
 
         if "low" in kind:
-            r += 1
+            r += ("base", 1)
+
+        r += ("streetwise/carouse/broker", carouse_or_broker_or_streetwise_mod)
+        r += ("SOC", SOC_mod)
+        r += ("max steward", max_steward)
 
         for w in [w0, w1]:
-            r += BbwUtils.get_modifier(w.POP()[1], BbwTrade._passenger_wp_table)
-            r += BbwUtils.get_modifier(w.SP()[1], BbwTrade._passenger_starport_table)
-            r += BbwTrade._passenger_zone_dict[w.zone()]
+            r += (f"pop ({w.name()})", BbwUtils.get_modifier(w.POP()[1], BbwTrade._passenger_wp_table))
+            r += (f"starpt ({w.name()})", BbwUtils.get_modifier(w.SP()[1], BbwTrade._passenger_starport_table))
+            r += (f"zone ({w.name()})", BbwTrade._passenger_zone_dict[w.zone()])
 
-        r -= n_sectors - 1
+        r += ("dist.", (1 - n_sectors))
 
-        nd = BbwUtils.get_modifier(r, BbwTrade._passenger_traffic_table)
+        nd = BbwUtils.get_modifier(int(r), BbwTrade._passenger_traffic_table)
+        nd = BbwExpr(d20.roll(f"{nd}d6"))
 
-        return (
-            BbwPerson.factory(name=kind, n_sectors=n_sectors, count=d20.roll(f"{nd}d6").total, only_std=True),
-            n_sectors,
-        )
+        return (BbwPerson.factory(name=kind, n_sectors=n_sectors, count=int(nd), only_std=True), n_sectors, r, nd)
 
     @staticmethod
     def _freight_traffic_table_roll(brocker_or_streetwise_mod, SOC_mod, kind, w0, w1):
@@ -73,26 +117,31 @@ class BbwTrade:
         brocker_or_streetwise_mod, SOC_mod = int(brocker_or_streetwise_mod), int(SOC_mod)
 
         n_sectors = BbwWorld.distance(w0, w1)
+        BbwUtils.test_geq("sectors", n_sectors, 1)
 
         kind = BbwUtils.get_objs(raw_list=BbwItem._freight_lot_ton_multi_dict.keys(), name=kind, only_one=True)[0]
 
-        r = d20.roll("2d6").total + brocker_or_streetwise_mod + SOC_mod - 8
+        r = BbwExpr()
+        r += d20.roll("2d6-8 [avg. ck]")
 
         if kind == "freight, major":
-            r -= 4
+            r += ("base", -4)
 
         if kind == "freight, incidental":
-            r += 2
+            r += ("base", 2)
+
+        r += ("streetwise/broker", brocker_or_streetwise_mod)
+        r += ("SOC", SOC_mod)
 
         for w in [w0, w1]:
-            r += BbwUtils.get_modifier(w.POP()[1], BbwTrade._freight_wp_table)
-            r += BbwUtils.get_modifier(w.SP()[1], BbwTrade._freight_starport_table)
-            r += BbwUtils.get_modifier(w.TL()[1], BbwTrade._freight_TL_table)
-            r += BbwTrade._freight_zone_dict[w.zone()]
+            r += (f"pop ({w.name()})", BbwUtils.get_modifier(w.POP()[1], BbwTrade._freight_wp_table))
+            r += (f"starpt ({w.name()})", BbwUtils.get_modifier(w.SP()[1], BbwTrade._freight_starport_table))
+            r += (f"zone ({w.name()})", BbwTrade._freight_zone_dict[w.zone()])
+            r += (f"TL ({w.name()})", BbwUtils.get_modifier(w.TL()[1], BbwTrade._freight_TL_table))
 
-        r -= n_sectors - 1
+        r += ("dist.", 1 - n_sectors)
 
-        return r, BbwUtils.get_modifier(r, BbwTrade._freight_traffic_table), n_sectors
+        return n_sectors, r
 
     @staticmethod
     def find_mail(
@@ -110,28 +159,28 @@ class BbwTrade:
         - w1: arrival world data (pop, starport, TL, zone)
         """
         crew = [i for i, _ in cs.containers().get_objs(name="crew", type0=BbwPerson).objs()]
-        max_naval_or_scout_rank = max(BbwPerson.max_rank(crew, "navy")[0], BbwPerson.max_rank(crew, "scout")[0])
+        max_naval_or_scout_rank = max(BbwPerson.max_rank(crew, "navy")[0][1], BbwPerson.max_rank(crew, "scout")[0][1])
 
         max_SOC_mod = BbwUtils.get_modifier(BbwPerson.max_stat(crew, "SOC")[0], BbwPerson._stat_2_mod)
 
-        nd, _, n_sectors = BbwTrade._freight_traffic_table_roll(brocker_or_streetwise_mod, SOC_mod, "mail", w0, w1)
-        r = (
-            BbwUtils.get_modifier(nd, BbwTrade._freight_traffic_table_2_mail_table)
-            + max_naval_or_scout_rank
-            + max_SOC_mod
-            + d20.roll(f"2d6").total
-        )
+        n_sectors, rft = BbwTrade._freight_traffic_table_roll(brocker_or_streetwise_mod, SOC_mod, "mail", w0, w1)
+        r = BbwExpr()
+        r += d20.roll("2d6-12 [mail. ck]")
+        r += ("freight table", BbwUtils.get_modifier(int(rft), BbwTrade._freight_traffic_table_2_mail_table))
+        r += ("max SOC", max_SOC_mod)
+        r += ("max navy/scout", max_naval_or_scout_rank)
+
         for w in [w0, w1]:
-            r += BbwUtils.get_modifier(w.TL()[1], BbwTrade._mail_TL_table)
+            r += (f"TL ({w.name()})", BbwUtils.get_modifier(w.TL()[1], BbwTrade._mail_TL_table))
 
         if cs.is_armed():
-            r += 2
+            r += ("armed", 2)
 
-        if r < 12:
-            return None, n_sectors
+        if int(r) < 0:
+            return None, n_sectors, r, 0, rft
 
-        n_canisters = d20.roll("1d6").total
-        return BbwItem.factory(name="mail", count=n_canisters, only_std=True), n_sectors
+        nd = BbwExpr(d20.roll(f"1d6"))
+        return BbwItem.factory(name="mail", count=int(nd), only_std=True), n_sectors, r, nd, rft
 
     @staticmethod
     def find_freight(
@@ -148,13 +197,11 @@ class BbwTrade:
         - w0: departure world data (pop, starport, TL, zone)
         - w1: arrival world data (pop, starport, TL, zone)
         """
-        n_sectors = BbwWorld.distance(w0, w1)
+        n_sectors, r = BbwTrade._freight_traffic_table_roll(brocker_or_streetwise_mod, SOC_mod, kind, w0, w1)
+        nd = BbwUtils.get_modifier(int(r), BbwTrade._passenger_traffic_table)
+        nd = BbwExpr(d20.roll(f"{nd}d6"))
 
-        _, nd, n_sectors = BbwTrade._freight_traffic_table_roll(brocker_or_streetwise_mod, SOC_mod, kind, w0, w1)
-
-        print(nd)
-
-        return BbwItem.factory(name=kind, count=d20.roll(f"{nd}d6").total, only_std=True), n_sectors
+        return BbwItem.factory(name=kind, count=int(nd), only_std=True), n_sectors, r, nd
 
 
 # w0 = BbwWorld(name="feri", uwp="B384879-B", zone="normal", hex="2005")

@@ -81,9 +81,9 @@ class BbwCalendar:
         year = int(year)
         return year * BbwCalendar._days_in_year + day - 1
 
-    def __str__(self, is_compact=True):
+    def __str__(self, detail_lvl=0):
         s = f"date: {self.date()}\n"
-        if is_compact:
+        if detail_lvl == 0:
             return s
         s += f"week: {self.week()}, {self.weekday()}\n"
         return s
