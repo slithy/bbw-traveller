@@ -21,12 +21,10 @@ class BbwExpr:
         raise ValueError(f"{o} must be of type tuple, BbwExpr or d20.dice.RollResult")
 
     def __int__(self):
-        print(self._l)
         return sum(i for _, i in self._l)
 
     def __str__(self):
         def affix(idx, v, i):
-            print(type(i))
             s = " " if idx else ""
             if idx and v >= 0:
                 s += "+ "
