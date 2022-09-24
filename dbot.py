@@ -33,7 +33,7 @@ from utils.redisIO import RedisIO
 # -----COGS-----
 COGS = (
     "cogst5.dice",
-    "cogst5"
+    "cogst5.cog"
     #"cogst5.charGen",
     #"cogst5.homebrew",
     #"cogst5.lookup",

@@ -1,14 +1,10 @@
-import copy
-
-import discord
 from discord.ext import commands
 from cogst5.library import Library
 import json
 import jsonpickle
 from os.path import basename
 import time
-
-from cogst5.models.errors import *
+import os
 
 from cogst5.session_data import BbwSessionData
 from cogst5.base import *
@@ -19,11 +15,13 @@ from cogst5.item import *
 from cogst5.world import *
 from cogst5.trade import *
 
-
 jsonpickle.set_encoder_options("json", sort_keys=True)
 
 
 class Game(commands.Cog):
+    def __init__(self, bot):
+        self.bot = bot
+
     _msg_divisor = "__                                                                          __\n"
     """Traveller 5 commands."""
 
@@ -32,6 +30,17 @@ class Game(commands.Cog):
         self.library = Library()
         self.session_data = BbwSessionData()
 
+    def save_path(self, filename, with_timestamp=False):
+        save_path = "../../" if os.getcwd() == "/home/bambleweeny" else ""
+        if not filename.endswith(".json"):
+            filename += ".json"
+        if not with_timestamp:
+            return f"{save_path}save/{filename}"
+        ts = time.gmtime()
+        timestamp = time.strftime("%Y%m%d%H%M%S", ts)
+        return f"{save_path}save/{filename}_{timestamp}"
+
+    @commands.command(name="send", aliases=[])
     async def send(self, ctx, msg):
         """Split long messages to workaround the discord limit"""
 
@@ -69,27 +78,26 @@ class Game(commands.Cog):
         """Save session data to a file in JSON format."""
 
         enc_data = jsonpickle.encode(self.session_data)
-        p = f"/save/{filename}.json"
+        p = self.save_path(filename)
         with open(p, "w") as f:
             json.dump(json.loads(enc_data), f, indent=2)
 
-        ts = time.gmtime()
-        timestamp = time.strftime("%Y%m%d%H%M%S", ts)
-        p_backup = f"/save/{filename}_{timestamp}.json"
+        p_backup = self.save_path(filename, True)
         with open(p_backup, "w") as f:
             json.dump(json.loads(enc_data), f, indent=2)
 
-        await self.send(ctx, f"Session data saved as: {basename(p)}. Backup in: {basename(p_backup)}")
+        await self.send(ctx, f"Session data saved as: {p}. Backup in: {p_backup}")
 
     @commands.command(name="load")
     async def load_session_data(self, ctx, filename: str = "session_data.json"):
         """Load session data from a JSON-formatted file."""
 
-        with open(f"../../save/{basename(filename)}", "r") as f:
+        p = self.save_path(filename)
+        with open(p, "r") as f:
             enc_data = json.dumps(json.load(f))
             self.session_data = jsonpickle.decode(enc_data)
 
-        await self.send(ctx, f"Session data loaded from {filename}.")
+        await self.send(ctx, f"Session data loaded from {p}.")
 
     ##################################################
     ### trade
@@ -889,3 +897,10 @@ class Game(commands.Cog):
             price_payed=None,
         )
         await self.del_wish(ctx, name, mute=True)
+
+
+def setup(bot):
+    bot.add_cog(Game(bot))
+
+
+
