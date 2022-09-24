@@ -901,6 +901,3 @@ class Game(commands.Cog):
 
 def setup(bot):
     bot.add_cog(Game(bot))
-
-
-
