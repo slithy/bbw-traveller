@@ -10,8 +10,18 @@ class BbwWorld(BbwObj):
         self.set_zone(zone)
         self.set_hex(hex)
         self.set_sector(sector)
+        self.BbwCOntainer()
+        self.set_people()
 
         super().__init__(*args, **kwargs)
+
+    def set_people(self):
+        self._people = BbwContainer(name="people")
+
+    def people(self):
+        if not hasattr(self, '_people'):
+            self.set_people()
+        return self._people
 
     def uwp(self):
         return self._uwp
@@ -114,7 +124,12 @@ class BbwWorld(BbwObj):
             return [self.name(), self.uwp(), self.d_km(), self.zone(), self.hex(), str(self.sector())]
 
     def __str__(self, detail_lvl=0):
-        return BbwUtils.print_table(self._str_table(detail_lvl), headers=self._header(detail_lvl), detail_lvl=1)
+        s = BbwUtils.print_table(self._str_table(detail_lvl), headers=self._header(detail_lvl), detail_lvl=1)
+        if detail_lvl == 0:
+            return s
+
+        s += self.people().__str__(1)
+        return s
 
     @staticmethod
     def _header(detail_lvl=0):

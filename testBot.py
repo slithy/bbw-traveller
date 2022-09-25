@@ -14,10 +14,10 @@ if __name__ == "__main__":
     load_dotenv()
     token = os.getenv("DISCORD_TOKEN")
 
-    @bot.event
-    async def on_command_error(ctx, error):
-        """ We catch the errors and print them in the chat """
-        print(error)
-        return await ctx.send(str(error))
+    # @bot.event
+    # async def on_command_error(ctx, error):
+    #     """ We catch the errors and print them in the chat """
+    #     print(error)
+    #     return await ctx.send(str(error))
 
     bot.run(token)

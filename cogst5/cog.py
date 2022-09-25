@@ -612,7 +612,7 @@ class Game(commands.Cog):
         dev = "\n".join(
             [f"`{i if type(i) is str else i.name()}` in: `{j if type(j) is str else j.name()}` " for i, j in res.objs()]
         )
-        msg = f"affected objects: `{int(res.count())}/{int(count)}` \n{dev}"
+        msg = f"affected objects: `{res.count()}/{count}` \n{dev}"
 
         await self.send(ctx, msg)
 
@@ -727,16 +727,40 @@ class Game(commands.Cog):
     async def move(self, ctx, name, cont_to, count=float("inf"), cont_from=None):
         """add item to container"""
         cs = self.session_data.get_ship_curr()
-        res_from = cs.containers().get_objs(name=name, cont=cont_from, only_one=True)
 
-        old_obj, new_obj, cont_from = res_from.objs()[0][0], copy.deepcopy(res_from.objs()[0][0]), res_from.objs()[0][1]
+        res = cs.containers().del_obj(name=name, count=count, cont=cont_from)
+        for i, _ in res.objs():
+            res_to = cs.containers().dist_obj(i, cont=cont_to)
+            await self._send_add_res(ctx, res_to, count)
 
-        new_obj.set_count(min(count, old_obj.count()))
-        res_to = cs.containers().dist_obj(new_obj, cont=cont_to)
-        old_obj_name = old_obj.name()
-        cs.containers().del_obj(name=old_obj.name(), count=new_obj.count(), cont=cont_from.name())
 
-        await self.send(ctx, f"`{old_obj_name}` moved from `{cont_from.name()}` to `{res_to.objs()[0][1].name()}`")
+    @commands.command(name="move_vip", aliases=["move_to_world", "move_from_world", "move_to_planet", "move_from_planet"])
+    async def move_vip(self, ctx, name, world_to=None, world_from=None):
+        """add person to world"""
+        cs = self.session_data.get_ship_curr()
+
+        if world_from is None:
+            from_c = cs.containers()
+        else:
+            from_c = self.session_data.charted_space().get_objs(name=world_from, only_one=True).objs()[0][0].people()
+
+        if world_to is None:
+            to_c = self.session_data.get_world_curr().people()
+        else:
+            to_c = self.session_data.charted_space().get_objs(name=world_to, only_one=True).objs()[0][0].people()
+
+        res = from_c.del_obj(name=name, type0=BbwPerson)
+        if res.count() == 0:
+            from_c, to_c = to_c, from_c
+            res = from_c.del_obj(name=name, type0=BbwPerson)
+
+        for i, _ in res.objs():
+            with_any_tags_p = {"lowberth","people"} if BbwUtils.has_any_tags(i, "low") else {"stateroom","people"}
+            res_to = to_c.dist_obj(i, with_any_tags=with_any_tags_p)
+            await self._send_add_res(ctx, res_to, res_to.count())
+
+        if res.count() == 0:
+            await self.send(ctx, f"person {name} not found neither in {from_c.name()} nor in {to_c.name()}")
 
     ##################################################
     ### date
