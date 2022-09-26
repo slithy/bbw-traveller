@@ -75,7 +75,10 @@ class BbwPerson(BbwObj):
 
         self._skill_rank = {}
         for k, v in skill_rank.items():
-            self.set_rank(k, v)
+            if v > 4:
+                self.set_rank(k, v)
+            else:
+                self.set_skill(k, v)
 
     def skill_rank(self):
         return self._skill_rank
