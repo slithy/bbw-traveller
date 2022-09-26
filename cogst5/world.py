@@ -10,7 +10,6 @@ class BbwWorld(BbwObj):
         self.set_zone(zone)
         self.set_hex(hex)
         self.set_sector(sector)
-        self.BbwCOntainer()
         self.set_people()
 
         super().__init__(*args, **kwargs)
