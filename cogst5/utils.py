@@ -36,7 +36,7 @@ class BbwUtils:
 
         for i in v:
             BbwUtils.test_geq(k, int(i, 36), 0)
-            BbwUtils.test_leq(k, int(i, 36), 15)
+            BbwUtils.test_leq(k, int(i, 36), 36)
 
     @staticmethod
     def test_geq(k, v, tr):
