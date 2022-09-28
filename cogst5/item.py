@@ -47,7 +47,7 @@ class BbwItem(BbwObj):
         else:
             return ["count", "name", "capacity", "TL", "value"]
 
-    _luggage_capacities = {"luggage, high": 0.1, "luggage, middle": 0.001}
+    _luggage_capacities = {"luggage, high": 1, "luggage, middle": 0.1}
     _freight_ticket = [1000, 1600, 2600, 4400, 8500, 32000]
 
     _freight_lot_ton_multi_dict = {"freight, major": 10, "freight, minor": 5, "freight, incidental": 1, "mail": 5}
