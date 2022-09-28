@@ -600,6 +600,15 @@ class Game(commands.Cog):
         v, l = BbwPerson.max_rank(l, rank=rank)
         await self._max_skill_rank_stat(ctx, v, l)
 
+    @commands.command(name="skill", aliases=[])
+    async def skill(self, ctx, skill):
+        cs = self.session_data.get_ship_curr()
+        l = cs.crew()
+        s = f"People with `{skill}`:\n"
+        s += "\n".join([f"`{i.name()}`: " + ', '.join([f'`{k}`: `{v}`' for k, v in i.skill(skill)]) for i in l if i.skill(skill)[0][1] >= 0])
+
+        await self.send(ctx, s)
+
     @commands.command(name="add_container", aliases=["add_cont"])
     async def add_container(self, ctx, name, capacity=float("inf"), size=0.0, cont=None):
         cs = self.session_data.get_ship_curr()

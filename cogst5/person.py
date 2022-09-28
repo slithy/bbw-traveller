@@ -87,8 +87,8 @@ class BbwPerson(BbwObj):
         return self.rank(name=name, default_value=-3)
 
     def rank(self, name, default_value=0):
-        res = BbwUtils.get_objs(raw_list=self.skill_rank().items(), name=name)
-        return sorted(res, key=lambda x: len(x))[0] if len(res) else (name, default_value)
+        res = [(k, v) for k, v in self.skill_rank().items() if name in k]
+        return sorted(res, key=lambda x: x[1]) if len(res) else [(name, default_value)]
 
     def salary_ticket(self):
         return self._salary_ticket * self.count()
@@ -206,13 +206,15 @@ class BbwPerson(BbwObj):
         ans = (rank, default_value)
         pans = []
         for i in people:
-            if ans[1] < i.rank(rank, default_value)[1]:
-                ans = i.rank(rank, default_value)
+            if ans[1] < i.rank(rank, default_value)[0][1]:
+                ans = i.rank(rank, default_value)[0]
                 pans = [i]
-            elif ans[1] == i.rank(rank, default_value)[1]:
+            elif ans[1] == i.rank(rank, default_value)[0][1]:
                 pans.append(i)
 
         return ans, pans
+
+
 
     def _str_table(self, detail_lvl=0):
         if detail_lvl == 0:

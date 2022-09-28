@@ -123,9 +123,13 @@ class BbwWorld(BbwObj):
             return [self.name(), self.uwp(), self.d_km(), self.zone(), self.hex(), str(self.sector())]
 
     def __str__(self, detail_lvl=0):
-        s = BbwUtils.print_table(self._str_table(detail_lvl), headers=self._header(detail_lvl), detail_lvl=1)
+        s = BbwUtils.print_table(self._str_table(detail_lvl), headers=self._header(detail_lvl), detail_lvl=detail_lvl)
         if detail_lvl == 0:
             return s
+
+        h = ["starport", "atm", "hydro", "pop", "gov", "law", "TL"]
+        t = [self.SP()[0], self.ATM()[1], self.HYDRO()[1], self.POP()[1], self.GOV()[1], self.LAW()[1], self.TL()[1]]
+        s += BbwUtils.print_table(t, headers=h, detail_lvl=1)
 
         s += self.people().__str__(1)
         return s
