@@ -18,7 +18,7 @@ class BbwWorld(BbwObj):
         self._people = BbwContainer(name="people")
 
     def people(self):
-        if not hasattr(self, '_people'):
+        if not hasattr(self, "_people"):
             self.set_people()
         return self._people
 

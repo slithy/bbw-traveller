@@ -133,6 +133,8 @@ class Game(commands.Cog):
         w1 = self.session_data.charted_space().get_objs(name=w_to_name, only_one=True).objs()[0][0]
 
         header = ["mail", "major", "minor", "incidental"]
+        if BbwWorld.distance(w0, w1) >= 5:
+            header = ["major", "minor", "incidental", "mail"]
         counter = ["0/0"] * len(header)
         s = ""
         mail_value, n_canisters = 0, 0
@@ -733,8 +735,9 @@ class Game(commands.Cog):
             res_to = cs.containers().dist_obj(i, cont=cont_to)
             await self._send_add_res(ctx, res_to, count)
 
-
-    @commands.command(name="move_vip", aliases=["move_to_world", "move_from_world", "move_to_planet", "move_from_planet"])
+    @commands.command(
+        name="move_vip", aliases=["move_to_world", "move_from_world", "move_to_planet", "move_from_planet"]
+    )
     async def move_vip(self, ctx, name, world_to=None, world_from=None):
         """add person to world"""
         cs = self.session_data.get_ship_curr()
@@ -755,7 +758,7 @@ class Game(commands.Cog):
             res = from_c.del_obj(name=name, type0=BbwPerson)
 
         for i, _ in res.objs():
-            with_any_tags_p = {"lowberth","people"} if BbwUtils.has_any_tags(i, "low") else {"stateroom","people"}
+            with_any_tags_p = {"lowberth", "people"} if BbwUtils.has_any_tags(i, "low") else {"stateroom", "people"}
             res_to = to_c.dist_obj(i, with_any_tags=with_any_tags_p)
             await self._send_add_res(ctx, res_to, res_to.count())
 
