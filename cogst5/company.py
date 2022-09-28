@@ -154,7 +154,7 @@ class BbwCompany:
         log_lines = int(log_lines)
         s = f"money: `{self.money()}`\n"
         if log_lines != 0:
-            s += BbwUtils.print_table(self._str_table(log_lines), headers=self._header())
+            s += BbwUtils.print_table(self._str_table(log_lines), headers=self._header(), detail_lvl=1)
             s += "\n"
         s += self.debts().__str__(detail_lvl=1)
         s += "\n"
