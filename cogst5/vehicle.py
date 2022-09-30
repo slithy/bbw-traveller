@@ -69,7 +69,7 @@ class BbwVehicle(BbwObj):
 
     @staticmethod
     def _header(is_compact=True):
-        s = ["name", "hull", "containers", "type", "TL", "armour", "info"]
+        s = ["name", "HP", "containers", "type", "TL", "armour", "info"]
         return s
 
     def _str_table(self, is_compact=True):
@@ -125,6 +125,13 @@ class BbwSpaceShip(BbwVehicle):
         self.set_has_fuel_scoop(has_fuel_scoop)
         self.set_has_cargo_crane(has_cargo_crane)
         super().__init__(*args, **kwargs)
+
+    def set_attr(self, v, k):
+        if v == "name":
+            raise NotAllowed(f"Setting the name in this way is not allowed! Use rename instead")
+
+        f = getattr(self, f"set_{v}")
+        f(k)
 
     def flight_time_m_drive(self, d_km):
         """
@@ -310,7 +317,7 @@ class BbwSpaceShip(BbwVehicle):
     def __str__(self, detail_lvl=1):
         s = ""
         s += BbwUtils.print_table(
-            self._str_table(detail_lvl), headers=self._header(detail_lvl), detail_lvl=detail_lvl == 0
+            self._str_table(detail_lvl), headers=self._header(detail_lvl), detail_lvl=detail_lvl
         )
 
         if detail_lvl == 2:
