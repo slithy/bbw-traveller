@@ -64,12 +64,21 @@ class BbwVehicle(BbwObj):
     def TL(self):
         return self._TL
 
+    def set_hull(self, v):
+        self.set_capacity(v)
+
+    def dmg(self, v):
+        v = -int(v)
+        v = min(self.size()+v, self.capacity())
+        v = max(0, v)
+        self.set_size(v)
+
     def hull(self):
         return self.status()
 
     @staticmethod
     def _header(is_compact=True):
-        s = ["name", "HP", "containers", "type", "TL", "armour", "info"]
+        s = ["name", "HP", "type", "TL", "armour", "info"]
         return s
 
     def _str_table(self, is_compact=True):
@@ -78,7 +87,6 @@ class BbwVehicle(BbwObj):
             for i in [
                 self.name(),
                 self.hull(),
-                "\n".join([i.__str__() for i, _ in self.containers().get_objs(type0=BbwContainer).objs()]),
                 self.type(),
                 self.TL(),
                 self.armour(),
@@ -125,13 +133,6 @@ class BbwSpaceShip(BbwVehicle):
         self.set_has_fuel_scoop(has_fuel_scoop)
         self.set_has_cargo_crane(has_cargo_crane)
         super().__init__(*args, **kwargs)
-
-    def set_attr(self, v, k):
-        if v == "name":
-            raise NotAllowed(f"Setting the name in this way is not allowed! Use rename instead")
-
-        f = getattr(self, f"set_{v}")
-        f(k)
 
     def flight_time_m_drive(self, d_km):
         """
@@ -320,33 +321,34 @@ class BbwSpaceShip(BbwVehicle):
             self._str_table(detail_lvl), headers=self._header(detail_lvl), detail_lvl=detail_lvl
         )
 
-        if detail_lvl == 2:
-            h = [
-                "drive m",
-                "drive j",
-                "power",
-                "refiner (tons/day)",
-                "streamlined",
-                "scoop",
-                "c. crane",
-                "armed",
-            ]
-            tab = [
-                str(i)
-                for i in [
-                    self.m_drive(),
-                    self.j_drive(),
-                    self.power_plant(),
-                    self.fuel_refiner_speed(),
-                    self.is_streamlined(),
-                    self.has_fuel_scoop(),
-                    self.has_cargo_crane(),
-                    self.is_armed(),
-                ]
-            ]
-            s += BbwUtils.print_table(tab, headers=h)
-
         if detail_lvl == 0:
+            return s
+        h = [
+            "drive m",
+            "drive j",
+            "power",
+            "refiner (tons/day)",
+            "streamlined",
+            "scoop",
+            "c. crane",
+            "armed",
+        ]
+        tab = [
+            str(i)
+            for i in [
+                self.m_drive(),
+                self.j_drive(),
+                self.power_plant(),
+                self.fuel_refiner_speed(),
+                self.is_streamlined(),
+                self.has_fuel_scoop(),
+                self.has_cargo_crane(),
+                self.is_armed(),
+            ]
+        ]
+        s += BbwUtils.print_table(tab, headers=h, detail_lvl=detail_lvl)
+
+        if detail_lvl == 1:
             return s
 
         for i, _ in self.containers().get_objs(type0=BbwContainer).objs():

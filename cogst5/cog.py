@@ -609,6 +609,12 @@ class Game(commands.Cog):
 
         await self.send(ctx, s)
 
+    @commands.command(name="dmg", aliases=[])
+    async def dmg(self, ctx, v):
+        cs = self.session_data.get_ship_curr()
+        cs.dmg(v)
+        await self.send(ctx, f"Hull status: `{cs.hull()}`")
+
     @commands.command(name="add_container", aliases=["add_cont"])
     async def add_container(self, ctx, name, capacity=float("inf"), size=0.0, cont=None):
         cs = self.session_data.get_ship_curr()
