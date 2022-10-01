@@ -605,7 +605,13 @@ class Game(commands.Cog):
         cs = self.session_data.get_ship_curr()
         l = cs.crew()
         s = f"People with `{skill}`:\n"
-        s += "\n".join([f"`{i.name()}`: " + ', '.join([f'`{k}`: `{v}`' for k, v in i.skill(skill)]) for i in l if i.skill(skill)[0][1] >= 0])
+        s += "\n".join(
+            [
+                f"`{i.name()}`: " + ", ".join([f"`{k}`: `{v}`" for k, v in i.skill(skill)])
+                for i in l
+                if i.skill(skill)[0][1] >= 0
+            ]
+        )
 
         await self.send(ctx, s)
 

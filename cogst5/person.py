@@ -214,8 +214,6 @@ class BbwPerson(BbwObj):
 
         return ans, pans
 
-
-
     def _str_table(self, detail_lvl=0):
         if detail_lvl == 0:
             return [self.count(), self.name()]

@@ -69,7 +69,7 @@ class BbwVehicle(BbwObj):
 
     def dmg(self, v):
         v = -int(v)
-        v = min(self.size()+v, self.capacity())
+        v = min(self.size() + v, self.capacity())
         v = max(0, v)
         self.set_size(v)
 
@@ -317,9 +317,7 @@ class BbwSpaceShip(BbwVehicle):
 
     def __str__(self, detail_lvl=1):
         s = ""
-        s += BbwUtils.print_table(
-            self._str_table(detail_lvl), headers=self._header(detail_lvl), detail_lvl=detail_lvl
-        )
+        s += BbwUtils.print_table(self._str_table(detail_lvl), headers=self._header(detail_lvl), detail_lvl=detail_lvl)
 
         if detail_lvl == 0:
             return s
