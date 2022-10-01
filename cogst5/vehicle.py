@@ -67,8 +67,8 @@ class BbwVehicle(BbwObj):
     def set_hull(self, v):
         self.set_capacity(v)
 
-    def dmg(self, v):
-        v = -int(v)
+    def HP(self, v):
+        v = int(v)
         v = min(self.size() + v, self.capacity())
         v = max(0, v)
         self.set_size(v)
