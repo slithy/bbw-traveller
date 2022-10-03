@@ -110,8 +110,7 @@ class BbwVehicle(BbwObj):
 
 
 class BbwSpaceShip(BbwVehicle):
-    _fuel_prices = {"gas giant": 0, "world": 0, "planet": 0, "unrefined": 100, "refined": 500}
-    _require_fuel_scoop = ["gas giant", "planet", "world"]
+    _require_fuel_scoop = {"gas giant": 1, "planet": 1, "world": 1, "refined": 0, "unrefined": 0}
 
     def __init__(
         self,
@@ -186,23 +185,23 @@ class BbwSpaceShip(BbwVehicle):
         if count == 0:
             return BbwRes()
 
-        source, price_per_ton = BbwUtils.get_objs(
-            raw_list=BbwSpaceShip._fuel_prices.items(), name=source, only_one=True
+        source, require_scoop = BbwUtils.get_objs(
+            raw_list=BbwSpaceShip._require_fuel_scoop.items(), name=source, only_one=True
         )[0]
-        if source in BbwSpaceShip._require_fuel_scoop and not self.has_fuel_scoop():
+
+        if require_scoop and not self.has_fuel_scoop():
             raise InvalidArgument(f"the spaceship cannot scoop fuel from a {source} without a fuel scoop!")
 
-        if "refined" in source and "unrefined" not in source:
-            std_price = BbwSpaceShip._fuel_prices["refined"]
-            fuel_name = "fuel, refined"
-        else:
-            std_price = BbwSpaceShip._fuel_prices["unrefined"]
-            fuel_name = "fuel, unrefined"
-        fuel_obj = BbwItem.factory(name=fuel_name, count=count, capacity=1, value=std_price)
+        fuel_name = "fuel, refined" if source == "refined" else "fuel, unrefined"
+        fuel_obj = BbwItemFactory.make(name=fuel_name, count=1)
+        base_price = fuel_obj.value()
+        fuel_obj.set_count(count)
 
         res = self.containers().dist_obj(obj=fuel_obj, cont="fuel", type0=BbwContainer)
 
-        return res, price_per_ton * res.count()
+        price = 0 if require_scoop == 1 else res.count() * base_price
+
+        return res, price
 
     def consume_fuel(self, count):
         count = int(count)
@@ -218,13 +217,11 @@ class BbwSpaceShip(BbwVehicle):
     def refine_fuel(self):
         res = self.containers().del_obj(name="fuel, unrefined", cont="fuel")
         total_time = res.count() / self.fuel_refiner_speed()
-        for i, _ in res.objs():
-            i.set_name("fuel, refined")
-            i.set_value(BbwSpaceShip._fuel_prices["refined"])
-            self.containers().dist_obj(obj=i, cont="fuel")
+        new_fuel = BbwItemFactory.make(name="fuel, refined", count=res.count())
+        if new_fuel is None:
+            return BbwRes(), 0
 
-        self.containers().rename_obj("fuel, unrefined", "fuel, refined", cont="fuel")
-
+        self.containers().dist_obj(obj=new_fuel, cont="fuel")
         return res, total_time
 
     def set_has_cargo_crane(self, v):

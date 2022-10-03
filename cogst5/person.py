@@ -90,8 +90,8 @@ class BbwPerson(BbwObj):
         res = [(k, v) for k, v in self.skill_rank().items() if name in k]
         return sorted(res, key=lambda x: x[1]) if len(res) else [(name, default_value)]
 
-    def salary_ticket(self):
-        return self._salary_ticket * self.count()
+    def salary_ticket(self, is_per_obj=False):
+        return self._per_obj(self._salary_ticket, is_per_obj)
 
     def reinvest(self):
         return self._reinvest
@@ -264,7 +264,9 @@ class BbwPerson(BbwObj):
                 "reinvest",
             ]
 
-    _std_tickets = {
+
+class BbwPersonFactory:
+    _tickets = {
         "passenger, high": [
             9000,
             14000,
@@ -278,39 +280,41 @@ class BbwPerson(BbwObj):
         "passenger, low": [700, 1300, 2200, 3900, 7200, 27000],
     }
 
+    _lib = [
+        BbwPerson(name="passenger, high", capacity=1),
+        BbwPerson(name="passenger, middle", capacity=1),
+        BbwPerson(name="passenger, basic", capacity=0.5),
+        BbwPerson(name="passenger, low", capacity=1),
+        BbwPerson(name="crew, pilot", capacity=0.5, salary_ticket=-6000),
+        BbwPerson(name="crew, astrogator", capacity=0.5, salary_ticket=-5000),
+        BbwPerson(name="crew, engineer", capacity=0.5, salary_ticket=-4000),
+        BbwPerson(name="crew, steward", capacity=0.5, salary_ticket=-2000),
+        BbwPerson(name="crew, medic", capacity=0.5, salary_ticket=-3000),
+        BbwPerson(name="crew, gunner", capacity=0.5, salary_ticket=-1000),
+        BbwPerson(name="crew, marine", capacity=0.5, salary_ticket=-1000),
+        BbwPerson(name="crew, other", capacity=0.5, salary_ticket=-1000),
+    ]
+
     @staticmethod
-    def factory(name, n_sectors, count, capacity=0.5, only_std=False):
+    def make(name, n_sectors=1, count=None, salary_ticket=None, capacity=None):
         if count == 0:
             return None
 
-        _std_passengers = [
-            BbwPerson(name="passenger, high", capacity=1),
-            BbwPerson(name="passenger, middle", capacity=1),
-            BbwPerson(name="passenger, basic", capacity=0.5),
-            BbwPerson(name="passenger, low", capacity=1),
-            BbwPerson(name="crew, pilot", capacity=0.5, salary_ticket=-6000),
-            BbwPerson(name="crew, astrogator", capacity=0.5, salary_ticket=-5000),
-            BbwPerson(name="crew, engineer", capacity=0.5, salary_ticket=-4000),
-            BbwPerson(name="crew, steward", capacity=0.5, salary_ticket=-2000),
-            BbwPerson(name="crew, medic", capacity=0.5, salary_ticket=-3000),
-            BbwPerson(name="crew, gunner", capacity=0.5, salary_ticket=-1000),
-            BbwPerson(name="crew, marine", capacity=0.5, salary_ticket=-1000),
-            BbwPerson(name="crew, other", capacity=0.5, salary_ticket=-1000),
-        ]
+        item = copy.deepcopy(BbwUtils.get_objs(raw_list=BbwPersonFactory._lib, name=name, only_one=True)[0])
 
-        n_sectors = int(n_sectors)
-        try:
-            p = BbwUtils.get_objs(raw_list=_std_passengers, name=name, only_one=True)
-        except SelectionException:
-            return BbwPerson(name=name, count=count, capacity=capacity) if not only_std else None
+        if "passenger" in item.name():
+            item.set_salary_ticket(BbwPersonFactory._tickets[item.name()][int(n_sectors) - 1])
+            item.set_name(f"{item.name()} (ns: {n_sectors})")
 
-        p = copy.deepcopy(p[0])
-        p.set_count(count)
-        if p.name() in BbwPerson._std_tickets:
-            p.set_salary_ticket(BbwPerson._std_tickets[p.name()][n_sectors - 1])
-            p.set_name(f"{p.name()} (ns: {n_sectors})")
+        if salary_ticket is not None:
+            item.set_salary_ticket(salary_ticket)
+        if capacity is not None:
+            item.set_capacity(capacity)
+            item.set_size(item.capacity())
+        if count is not None:
+            item.set_count(count)
 
-        return p
+        return item
 
 
 # new_person = BbwPerson(

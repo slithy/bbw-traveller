@@ -110,7 +110,7 @@ class BbwCompany:
         tot = 0
 
         for i in crew:
-            tot += i.salary_ticket()
+            tot += i.value()
 
         no_reinvest_crew = [i for i in crew if not i.reinvest()]
         tot_not_reinvested = 0
@@ -150,12 +150,19 @@ class BbwCompany:
             for i in reversed(self._log[max(len(self._log) - log_lines, 0) :])
         ]
 
-    def __str__(self, log_lines=10):
+    def __str__(self, detail_lvl=0, log_lines=10):
         log_lines = int(log_lines)
         s = f"money: `{self.money()}`\n"
+
+        if detail_lvl == 0:
+            return s
+
         if log_lines != 0:
             s += BbwUtils.print_table(self._str_table(log_lines), headers=self._header(), detail_lvl=1)
             s += "\n"
+
+        if detail_lvl == 1:
+            return s
         s += self.debts().__str__(detail_lvl=1)
         s += "\n"
         return s

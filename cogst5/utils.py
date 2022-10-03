@@ -5,6 +5,7 @@ import bisect
 import lorem
 import random
 import d20
+import re
 
 import json
 import jsonpickle
@@ -14,17 +15,27 @@ class BbwUtils:
     @staticmethod
     def test_g(k, v, tr):
         if v <= tr:
-            raise InvalidArgument(f"{k}: {v} must be > {tr}!")
+            raise InvalidArgument(f"`{k}`: `{v}` must be > `{tr}`!")
 
     @staticmethod
     def test_l(k, v, tr):
         if v >= tr:
-            raise InvalidArgument(f"{k}: {v} must be < {tr}!")
+            raise InvalidArgument(f"`{k}`: `{v}` must be < `{tr}`!")
 
     @staticmethod
     def test_leq(k, v, tr):
         if v >= tr:
-            raise InvalidArgument(f"{k}: {v} must be < {tr}!")
+            raise InvalidArgument(f"`{k}`: `{v}` must be <= `{tr}`!")
+
+    @staticmethod
+    def test_in_range(k, v, range):
+        BbwUtils.test_geq(k, v, range[0])
+        BbwUtils.test_leq(k, v, range[1])
+
+    @staticmethod
+    def test_in_list(k, v, l):
+        if v not in l:
+            raise InvalidArgument(f"{k}: {v} must be in `{', '.join(l)}`!")
 
     @staticmethod
     def test_hexstr(k, v, n):
@@ -243,12 +254,15 @@ class BbwUtils:
 
     @staticmethod
     def print_table(t, headers=(), tablefmt="simple", detail_lvl=0):
-        limit = 15
+        limit = 10
 
         if len(t) and not isinstance(t[0], list):
             t = [t]
 
-        b = "```" if detail_lvl else ""
+        b = ""
+        if detail_lvl:
+            b = "```"
+
         st = BbwUtils.greedy_splitter(t, lambda x: 1 + sum([str(j).count("\n") for j in x]), limit=limit)
 
         return "\n".join([b + tabulate(i, headers=headers, tablefmt=tablefmt) + b + "\n" for i in st])
@@ -268,6 +282,20 @@ class BbwUtils:
     def distance(x0, y0, z0, x1, y1, z1):
         d = [abs(x0 - x1), abs(y0 - y1), abs(z0 - z1)]
         return int(max(d))
+
+    @staticmethod
+    def avg_min_max(s):
+        l = re.findall(r"\d+", s)
+        l = [int(i) for i in l]
+        multi = 1 if len(l) == 2 else l[2]
+        min0 = l[0] * multi
+        max0 = l[0] * l[1] * multi
+        avg0 = (min0 + max0) / 2
+        return avg0, min0, max0
+
+    @staticmethod
+    def gen_dict(l):
+        return {i.name(): i for i in l}
 
 
 # q = []

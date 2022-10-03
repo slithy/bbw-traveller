@@ -57,6 +57,14 @@ class BbwSessionData(BbwObj):
 
         return self.charted_space().get_objs(name=self.world_curr(), only_one=True).objs()[0][0]
 
+    def get_worlds(self, w_to_name, w_from_name=None):
+        if w_from_name is None:
+            w0 = self.get_world_curr()
+        else:
+            w0 = self.charted_space().get_objs(name=w_from_name, only_one=True).objs()[0][0]
+        w1 = self.charted_space().get_objs(name=w_to_name, only_one=True).objs()[0][0]
+        return w0, w1
+
     def charted_space(self):
         return self._charted_space
 

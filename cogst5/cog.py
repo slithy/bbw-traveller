@@ -106,8 +106,7 @@ class Game(commands.Cog):
     @commands.command(name="find_passengers", aliases=[])
     async def find_passengers(self, ctx, carouse_or_broker_or_streetwise_mod, SOC_mod, w_to_name):
         cs = self.session_data.get_ship_curr()
-        w0 = self.session_data.get_world_curr()
-        w1 = self.session_data.charted_space().get_objs(name=w_to_name, only_one=True).objs()[0][0]
+        w0, w1 = self.session_data.get_worlds(w_to_name=w_to_name)
 
         header = ["high", "middle", "basic", "low"]
         counter = ["0/0"] * len(header)
@@ -129,8 +128,7 @@ class Game(commands.Cog):
     @commands.command(name="find_mail_and_freight", aliases=[])
     async def find_mail_and_freight(self, ctx, broker_or_streetwise_mod, SOC_mod, w_to_name):
         cs = self.session_data.get_ship_curr()
-        w0 = self.session_data.get_world_curr()
-        w1 = self.session_data.charted_space().get_objs(name=w_to_name, only_one=True).objs()[0][0]
+        w0, w1 = self.session_data.get_worlds(w_to_name=w_to_name)
 
         header = ["mail", "major", "minor", "incidental"]
         if BbwWorld.distance(w0, w1) >= 5:
@@ -196,12 +194,11 @@ class Game(commands.Cog):
         for i in BbwPerson._std_tickets.keys():
             tot += sum([i.salary_ticket() for i, _ in cs.containers().get_objs(name=i).objs()])
             await self.del_obj(ctx, name=i, mute=True)
-        for i in BbwItem._luggage_capacities.keys():
-            await self.del_obj(ctx, name=i, mute=True)
 
-        self.session_data.company().add_log_entry(int(tot), f"passenger tickets", self.session_data.calendar().t())
+        await self.del_obj(ctx, name="luggage, high", mute=True)
+        await self.del_obj(ctx, name="luggage, middle", mute=True)
 
-        await self.send(ctx, f"passenger tickets: `{int(tot)}` Cr")
+        await self.add_money(ctx, value=int(tot), description="passenger tickets")
 
     @commands.command(name="unload_mail", aliases=[])
     async def unload_mail(self, ctx):
@@ -212,14 +209,13 @@ class Game(commands.Cog):
     async def unload_freight(self, ctx):
         cs = self.session_data.get_ship_curr()
         tot = 0
-        for i in BbwItem._freight_lot_ton_multi_dict.keys():
+
+        for i in ["freight, major", "freight, minor", "freight, incidental", "mail"]:
             if i != "mail":
                 tot += sum([i.value() for i, _ in cs.containers().get_objs(name=i).objs()])
                 await self.del_obj(ctx, name=i, mute=True)
 
-        self.session_data.company().add_log_entry(int(tot), f"freight", self.session_data.calendar().t())
-
-        await self.send(ctx, f"unload freight: `{int(tot)}` Cr")
+        await self.add_money(ctx, value=int(tot), description="unload freight")
 
     @commands.command(name="unload_ship", aliases=[])
     async def unload(self, ctx):
@@ -358,11 +354,7 @@ class Game(commands.Cog):
 
     @commands.command(name="j_drive", aliases=["drive_j"])
     async def j_drive(self, ctx, w_to_name, w_from_name=None):
-        if w_from_name is None:
-            w0 = self.session_data.get_world_curr()
-        else:
-            w0 = self.session_data.charted_space().get_objs(name=w_from_name, only_one=True).objs()[0][0]
-        w1 = self.session_data.charted_space().get_objs(name=w_to_name, only_one=True).objs()[0][0]
+        w0, w1 = self.session_data.get_worlds(w_to_name=w_to_name, w_from_name=w_from_name)
 
         cs = self.session_data.get_ship_curr()
         n_sectors = BbwWorld.distance(w0, w1)
@@ -381,11 +373,7 @@ class Game(commands.Cog):
     async def trip_accounting_life_support(self, ctx, t):
         cs = self.session_data.get_ship_curr()
         res, life_support_costs = cs.var_life_support(t)
-        self.session_data.company().add_log_entry(
-            -life_support_costs, f"var life support ({res.count()} people)", self.session_data.calendar().t()
-        )
-
-        await self.send(ctx, f"variable life support costs: {life_support_costs} Cr")
+        await self.add_money(ctx, value=-life_support_costs, description="variable life support costs")
 
     @commands.command(name="trip_accounting_payback", aliases=[])
     async def trip_accounting_payback(self, ctx, t):
@@ -409,8 +397,7 @@ class Game(commands.Cog):
 
     @commands.command(name="travel_j", aliases=["jump_j", "j_jump", "j_travel"])
     async def travel_j(self, ctx, w_to_name):
-        w0 = self.session_data.get_world_curr()
-        w1 = self.session_data.charted_space().get_objs(name=w_to_name, only_one=True).objs()[0][0]
+        w0, w1 = self.session_data.get_worlds(w_to_name=w_to_name)
         cs = self.session_data.get_ship_curr()
         err = cs.ck_j_drive(w0, w1)
         if len(err):
@@ -641,11 +628,32 @@ class Game(commands.Cog):
 
     @commands.command(name="add_person", aliases=["add_passenger"])
     async def add_person(
-        self, ctx, name, count=1, capacity=0.5, n_sectors=1, cont=None, cont_luggage=None, unbreakable=False, mute=False
+        self,
+        ctx,
+        name,
+        count=1,
+        salary_ticket=None,
+        capacity=None,
+        n_sectors=1,
+        cont=None,
+        cont_luggage=None,
+        unbreakable=False,
+        mute=False,
     ):
         cs = self.session_data.get_ship_curr()
-        new_person = BbwPerson.factory(name=name, n_sectors=n_sectors, count=count, capacity=capacity)
-        new_luggage = BbwItem.factory(name=new_person.name(), count=1, only_std=True)
+        try:
+            new_person = BbwPersonFactory.make(
+                name, n_sectors=1, count=count, salary_ticket=salary_ticket, capacity=capacity
+            )
+        except SelectionException:
+            new_person = BbwPerson(name, n_sectors=1, count=count, salary_ticket=salary_ticket, capacity=capacity)
+
+        new_luggage = None
+        if "passenger, high" in new_person.name():
+            new_luggage = BbwItemFactory.make(name="luggage, high", n_sectors=n_sectors)
+        if "passenger, middle" in new_person.name():
+            new_luggage = BbwItemFactory.make(name="luggage, middle", n_sectors=n_sectors)
+
         with_any_tags_p = {"lowberth"} if BbwUtils.has_any_tags(new_person, "low") else {"stateroom"}
         with_any_tags_l = {"cargo"}
 
@@ -659,8 +667,12 @@ class Game(commands.Cog):
                     ]
                 ),
             )
+
             if unbreakable and new_count < count:
                 count = 0
+            else:
+                count = new_count
+
             if count == 0:
                 if not mute:
                     await self.send(ctx, f"no space for the passengers or their luggage!")
@@ -680,24 +692,29 @@ class Game(commands.Cog):
             await self._send_add_res(ctx, res_p, res_p.count())
         return res_p
 
-    @commands.command(name="add_item", aliases=[])
-    async def add_item(
+    async def _add_item(
         self,
         ctx,
         name,
         count=1,
-        capacity=0.0,
-        TL=0,
-        value=0,
+        capacity=None,
+        TL=None,
+        value=None,
         cont="cargo",
         unbreakable=False,
         n_sectors=1,
         mute=False,
     ):
-        cs = self.session_data.get_ship_curr()
-        new_item = BbwItem.factory(name=name, count=count, TL=TL, value=value, capacity=capacity, n_sectors=n_sectors)
+        try:
+            new_item = BbwItemFactory.make(
+                name=name, count=count, TL=TL, value=value, capacity=capacity, n_sectors=n_sectors
+            )
+        except SelectionException:
+            new_item = BbwItem(name=name, count=count, TL=TL, value=value, capacity=capacity)
 
+        cs = self.session_data.get_ship_curr()
         res = cs.containers().dist_obj(obj=new_item, cont=cont, unbreakable=unbreakable)
+
         if not mute:
             await self._send_add_res(ctx, res, count)
 
@@ -718,17 +735,6 @@ class Game(commands.Cog):
             await self.send(ctx, msg)
 
         return res
-
-    @commands.command(name="sell", aliases=[])
-    async def sell(self, ctx, name, count=float("inf"), value=None, cont=None):
-        res = await self.del_obj(ctx, name=name, count=count, cont=cont)
-        description = f"sold: `{', '.join([i.name() for i, _ in res.objs()])}` (`{res.count()}`)"
-
-        if value is None:
-            value = sum([i.value() for i, _ in res.objs()])
-
-        self.session_data.company().add_log_entry(value, description, self.session_data.calendar().t())
-        await self.send(ctx, f"{description} for: `{value}` Cr")
 
     @commands.command(name="rename_person", aliases=["rename_obj", "rename_item", "rename"])
     async def rename_obj(self, ctx, name, new_name, cont=None):
@@ -819,17 +825,22 @@ class Game(commands.Cog):
     ##################################################
 
     @commands.command(name="add_money", aliases=["cr"])
-    async def add_money(self, ctx, value=0, description=""):
+    async def add_money(self, ctx, value=0, description="", is_mute=False):
         if type(description) is BbwRes:
             description = f"{description.objs()[0][0].name()} ({description.count()})"
 
-        if value:
-            self.session_data.company().add_log_entry(value, description, self.session_data.calendar().t())
-        await self.money(ctx, 10)
+        if value == 0:
+            return ""
+
+        self.session_data.company().add_log_entry(value, description, self.session_data.calendar().t())
+        msg = f"{description}: `{value}` Cr"
+        if not is_mute:
+            await self.send(ctx, msg)
+        return msg
 
     @commands.command(name="money_status", aliases=["status", "money", "log"])
-    async def money(self, ctx, log_lines=10):
-        await self.send(ctx, self.session_data.company().__str__(log_lines))
+    async def money(self, ctx, detail_lvl=0, log_lines=10):
+        await self.send(ctx, self.session_data.company().__str__(detail_lvl=detail_lvl, log_lines=log_lines))
 
     @commands.command(name="add_debt", aliases=[])
     async def add_debt(self, ctx, name, capacity, due_day, due_year, period=None, end_day=None, end_year=None):
@@ -871,13 +882,70 @@ class Game(commands.Cog):
         await self.money(ctx)
 
     @commands.command(name="buy", aliases=[])
-    async def buy(self, ctx, name, count=1, value=0, cont=None, capacity=0, TL=0, price_payed=None):
-        res = await self.add_item(ctx, name=name, cont=cont, count=count, capacity=capacity, TL=TL, value=value)
+    async def buy(
+        self,
+        ctx,
+        name,
+        count=1,
+        price_multi=1.0,
+        value=None,
+        capacity=None,
+        TL=None,
+        n_sectors=1,
+        cont="cargo",
+        mute=False,
+    ):
+        try:
+            new_item = BbwItemFactory.make(
+                name=name, count=count, TL=TL, value=value, capacity=capacity, n_sectors=n_sectors
+            )
+        except SelectionException:
+            new_item = BbwItem(name=name, count=count, TL=TL, value=value, capacity=capacity)
 
-        if price_payed is None:
-            price_payed = value * count
+        cs = self.session_data.get_ship_curr()
+        new_item.set_count(
+            min(
+                new_item.count(),
+                cs.containers().free_slots(
+                    caps=[
+                        (new_item.capacity(), cont, {}),
+                    ]
+                ),
+            )
+        )
+        price_payed = new_item.value() * price_multi
+        if price_payed != 0:
+            description = f"buy: {new_item.name()} ({new_item.count()})"
+            await self.add_money(ctx, value=-price_payed, description=description)
 
-        await self.add_money(ctx, value=-price_payed, description=res)
+        res = cs.containers().dist_obj(obj=new_item, cont=cont)
+
+        if not mute:
+            await self._send_add_res(ctx, res, res.count())
+
+    @commands.command(name="sell", aliases=[])
+    async def sell(self, ctx, name, count=float("inf"), price_multi=1.0, cont=None):
+        res = await self.del_obj(ctx, name=name, count=count, cont=cont)
+        description = f"sell: {', '.join([i.name() for i, _ in res.objs()])} ({res.count()})"
+
+        price_payed = res.value() * price_multi
+
+        await self.add_money(ctx, value=price_payed, description=description)
+
+    @commands.command(name="st", aliases=[])
+    async def speculative_trading(self, ctx, w_to_name, w_from_name=None):
+        w0, w1 = self.session_data.get_worlds(w_to_name=w_to_name, w_from_name=w_from_name)
+        cs = self.session_data.get_ship_curr()
+
+        h, t = BbwTrade.optimize_speculative_trading(w0, w1, cs)
+
+        s = (
+            f"speculative trading options buying from `{w0.name()}` and selling in `{w1.name()}` (sorted by"
+            " profit/ton):\n"
+        )
+        s += BbwUtils.print_table(t=t, headers=h, detail_lvl=1)
+
+        await self.send(ctx, s)
 
     @commands.command(name="pay_salaries", aliases=[])
     async def pay_salaries(self, ctx, print_recap=True):
@@ -899,8 +967,11 @@ class Game(commands.Cog):
     ##################################################
 
     @commands.command(name="add_wish", aliases=[])
-    async def add_wish(self, ctx, name, count=1, TL=0, value=0, capacity=0):
-        new_item = BbwItem.factory(name=name, count=count, TL=TL, value=value, capacity=capacity, n_sectors=1)
+    async def add_wish(self, ctx, name, count=1, TL=None, value=None, capacity=None):
+        try:
+            new_item = BbwItemFactory.make(name=name, count=count, TL=TL, value=value, capacity=capacity)
+        except SelectionException:
+            new_item = BbwItem(name=name, count=count, TL=TL, value=value, capacity=capacity)
         self.session_data.wishlist().dist_obj(new_item)
 
         await self.wishlist(ctx)

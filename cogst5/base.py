@@ -5,7 +5,7 @@ from cogst5.utils import *
 
 
 class BbwObj:
-    def __init__(self, name="", capacity=0.0, count=1, size=None):
+    def __init__(self, name="", capacity=None, count=1, size=None):
         if size is None:
             size = capacity
 
@@ -15,6 +15,9 @@ class BbwObj:
         self.set_size(size)
 
     def set_size(self, v):
+        if v is None:
+            v = self._capacity
+
         v = float(v)
         if v != self._capacity:
             BbwUtils.test_geq("size", v, 0.0)
@@ -22,6 +25,8 @@ class BbwObj:
         self._size = v
 
     def set_capacity(self, v):
+        if v is None:
+            v = 0.0
         v = float(v)
 
         self._capacity = v
@@ -45,18 +50,20 @@ class BbwObj:
     def name(self):
         return self._name
 
-    def size(self):
+    def _per_obj(self, v, is_per_obj):
+        return v if is_per_obj else v * self.count()
+
+    def size(self, is_per_obj=False):
         try:
-            return self._size * self._count
+            size = self._size
         except AttributeError:
             self._size = self._capacity
-            return self._size * self._count
+            size = self._size
 
-    def capacity(self):
-        return self._capacity * self._count
+        return self._per_obj(size, is_per_obj)
 
-    def capacity_per_obj(self):
-        return self._capacity
+    def capacity(self, is_per_obj=False):
+        return self._per_obj(self._capacity, is_per_obj)
 
     def status(self):
         return f"({self.size()}/{self.capacity()})"
@@ -90,8 +97,9 @@ class BbwObj:
 
 
 class BbwRes:
-    def __init__(self, count=0, objs=[]):
+    def __init__(self, count=0, value=0.0, objs=[]):
         self._count = count
+        self._value = value
         if type(objs) is tuple:
             objs = [objs]
         self._objs = objs
@@ -106,6 +114,14 @@ class BbwRes:
     def count(self):
         return self._count
 
+    def value(self):
+        """This will fail of the first object does not have the value() member"""
+
+        if self.count() == 0:
+            return 0
+
+        return self.count() * self.objs()[0][0].value(is_per_obj=True)
+
     def objs(self):
         return self._objs
 
@@ -116,7 +132,7 @@ class BbwRes:
         return ", ".join([i.__str__(0) for _, i in self.objs()])
 
     def __str__(self):
-        return f"count:`{self.count()}` count, len objs: `{len(self.objs())}`"
+        return f"count:`{self.count()}`, len objs: `{len(self.objs())}`"
 
 
 class BbwContainer(dict):
@@ -295,11 +311,11 @@ class BbwContainer(dict):
         unbreakable = bool(int(unbreakable))
         ans = BbwRes()
         n = obj.count()
-        obj.set_count(1)
 
-        if unbreakable and n > self._free_slots(cap=obj.capacity(), recursive=True, cont=cont, *args, **kwargs):
+        if unbreakable and n > self._free_slots(
+            cap=obj.capacity(is_per_obj=True), recursive=True, cont=cont, *args, **kwargs
+        ):
             return ans
-        obj.set_count(n)
 
         if len(BbwUtils.get_objs([self], name=cont, *args, **kwargs)):
             ans += self._fit_obj(obj)
@@ -315,8 +331,7 @@ class BbwContainer(dict):
 
     def _fit_obj(self, v):
         n = v.count()
-        v.set_count(1)
-        ns = self._free_slots(cap=v.capacity(), recursive=False)
+        ns = self._free_slots(cap=v.capacity(is_per_obj=True), recursive=False)
 
         if ns:
             nfitting = min(ns, n)
