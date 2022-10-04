@@ -218,20 +218,19 @@ class BbwTrade:
                 f"{buy_mods}",
                 f"{sell_mods}",
                 base_price,
-                f"{int(avg_diff * 10000) / 100}%",
+                avg_diff,
                 profit_per_ton,
                 f"{avg_t} ({max_t})",
             ]
 
-        l = sorted([evaluate_good(v) for v in BbwTrade._speculative_trading_table], key=lambda x: -x[3])
-        l = [i for i in l if i[5] > 5000]
+        l = [evaluate_good(v) for v in BbwTrade._speculative_trading_table]
 
         h = [
             "goods",
             f"buy DMs\n({w0.name()})",
             f"sell DMs\n({w1.name()})",
             "base price/ton",
-            "profit (%)",
+            "profit/cr",
             "avg. profit/ton",
             "tons avg (max)",
         ]
@@ -255,15 +254,15 @@ class BbwTrade:
         n_sectors = BbwWorld.distance(w0, w1)
         BbwUtils.test_geq("sectors", n_sectors, 1)
 
-        kind = BbwUtils.get_objs(raw_list=BbwPerson._std_tickets.keys(), name=kind, only_one=True)[0]
+        person = BbwPersonFactory.make(name=kind, n_sectors=n_sectors)
 
         r = BbwExpr()
         r += d20.roll("2d6-8 [avg. ck]")
 
-        if "high" in kind:
+        if "high" in person.name():
             r += ("base", -4)
 
-        if "low" in kind:
+        if "low" in person.name():
             r += ("base", 1)
 
         r += ("streetwise/carouse/broker", carouse_or_broker_or_streetwise_mod)
@@ -280,7 +279,11 @@ class BbwTrade:
         nd = BbwUtils.get_modifier(int(r), BbwTrade._passenger_traffic_table)
         nd = BbwExpr(d20.roll(f"{nd}d6"))
 
-        return (BbwPerson.factory(name=kind, n_sectors=n_sectors, count=int(nd), only_std=True), n_sectors, r, nd)
+        if int(nd) <= 0:
+            return (None, n_sectors, r, nd)
+
+        person.set_count(int(nd))
+        return (person, n_sectors, r, nd)
 
     @staticmethod
     def _freight_traffic_table_roll(brocker_or_streetwise_mod, SOC_mod, kind, w0, w1):
@@ -380,7 +383,7 @@ class BbwTrade:
         nd = BbwUtils.get_modifier(int(r), BbwTrade._passenger_traffic_table)
         nd = BbwExpr(d20.roll(f"{nd}d6"))
 
-        return BbwItemFactory.make(name=kind, count=int(nd)), n_sectors, r, nd
+        return BbwItemFactory.make(name=kind, count=int(nd), n_sectors=n_sectors), n_sectors, r, nd
 
 
 # print(BbwUtils.get_modifier(24, BbwTrade._speculative_trading_modified_price_sell_table))

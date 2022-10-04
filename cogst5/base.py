@@ -366,20 +366,23 @@ class BbwContainer(dict):
     def _str_table(self, detail_lvl=0):
         return [None, self.name(), self.status()]
 
-    def __str__(self, detail_lvl=0):
+    def __str__(self, detail_lvl=0, lsort=lambda x: x.name()):
         s = ""
         s += BbwUtils.print_table(self._str_table(detail_lvl), tablefmt="plain", detail_lvl=0)
 
-        if detail_lvl > 0 and len(self.keys()):
-            entry_detail_lvl = max(1, detail_lvl)
+        if detail_lvl == 0 or not len(self.keys()):
+            return s
 
-            maxIndex, _ = max(
-                enumerate([len(i._header(detail_lvl=entry_detail_lvl)) for i in self.values()]), key=lambda v: v[1]
-            )
-            h = type(list(self.values())[maxIndex])._header(detail_lvl=entry_detail_lvl)
+        entry_detail_lvl = max(1, detail_lvl)
+        maxIndex, _ = max(
+            enumerate([len(i._header(detail_lvl=entry_detail_lvl)) for i in self.values()]), key=lambda v: v[1]
+        )
+        h = type(list(self.values())[maxIndex])._header(detail_lvl=entry_detail_lvl)
 
-            t = [i._str_table(detail_lvl=entry_detail_lvl) for i in self.values()]
-            s += BbwUtils.print_table(t, headers=h, detail_lvl=entry_detail_lvl)
+        t = sorted(self.values(), key=lsort)
+        t = [i._str_table(detail_lvl=entry_detail_lvl) for i in t]
+
+        s += BbwUtils.print_table(t, headers=h, detail_lvl=entry_detail_lvl)
         return s
 
     def get_objs(self, name=None, recursive=True, self_included=False, only_one=False, cont=None, *args, **kwargs):

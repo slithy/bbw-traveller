@@ -302,7 +302,7 @@ class BbwPersonFactory:
 
         item = copy.deepcopy(BbwUtils.get_objs(raw_list=BbwPersonFactory._lib, name=name, only_one=True)[0])
 
-        if "passenger" in item.name():
+        if item.name() in BbwPersonFactory._tickets.keys():
             item.set_salary_ticket(BbwPersonFactory._tickets[item.name()][int(n_sectors) - 1])
             item.set_name(f"{item.name()} (ns: {n_sectors})")
 
