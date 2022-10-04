@@ -938,17 +938,42 @@ class Game(commands.Cog):
         w0, w1 = self.session_data.get_worlds(w_to_name=w_to_name, w_from_name=w_from_name)
         cs = self.session_data.get_ship_curr()
 
-        h, t = BbwTrade.optimize_speculative_trading(w0, w1, cs)
-        sort_idx = 4
-        t = sorted([i for i in t if i[5] > 5000], key=lambda x: -x[sort_idx])
+        h, t = BbwTrade.optimize_st(w0, w1, cs)
+        sort_idx = 3
+        t = sorted([i for i in t if i[4] > 5000], key=lambda x: -x[sort_idx])
 
         s = (
             f"speculative trading options buying from `{w0.name()}` and selling in `{w1.name()}` (sorted by"
             f" {h[sort_idx]}):\n"
         )
-        s += BbwUtils.print_table(t=t, headers=h, detail_lvl=1)
+        s += BbwUtils.print_table(t=t, headers=h, detail_lvl=1, tablefmt="fancy_grid")
 
         await self.send(ctx, s)
+
+    @commands.command(name="trade_st", aliases=["trade"])
+    async def get_deal_st(self, ctx, broker_skill, name, roll="3d6"):
+        w = self.session_data.get_world_curr()
+
+        buy_multi, buy_roll, sell_multi, sell_roll = BbwTrade.get_deal_st(
+            name=name, broker=broker_skill, w=w, roll=roll
+        )
+        s = f"buy: `{int(buy_multi*10000)/100}%` {buy_roll}\n"
+        s += f"sell: `{int(sell_multi * 10000)/100}%` {sell_roll}"
+
+        await self.send(ctx, s)
+
+    @commands.command(
+        name="reroll_supplier", aliases=["supplier", "aval_goods", "gen_goods", "gen_aval_goods", "gen_supp_goods"]
+    )
+    async def get_deal_st(self, ctx, is_illegal):
+        is_illegal = bool(int(is_illegal))
+
+        w = self.session_data.get_world_curr()
+
+        t = BbwTrade.gen_aval_goods(w=w, is_illegal=is_illegal)
+        h = ["goods", "available tons", "computation"]
+
+        await self.send(ctx, BbwUtils.print_table(t, h, detail_lvl=1))
 
     @commands.command(name="pay_salaries", aliases=[])
     async def pay_salaries(self, ctx, print_recap=True):
