@@ -632,7 +632,7 @@ class Game(commands.Cog):
         ctx,
         name,
         count=1,
-        salary_ticket=None,
+        salary_ticket=0,
         capacity=None,
         n_sectors=1,
         cont=None,
@@ -647,7 +647,7 @@ class Game(commands.Cog):
             )
         except SelectionException:
             new_person = BbwPerson(
-                name=name, n_sectors=n_sectors, count=count, salary_ticket=salary_ticket, capacity=capacity
+                name=name, count=count, salary_ticket=salary_ticket, capacity=capacity
             )
 
         new_luggage = None
