@@ -110,7 +110,7 @@ class BbwCompany:
         tot = 0
 
         for i in crew:
-            tot += i.value()
+            tot += i.salary_ticket()
 
         no_reinvest_crew = [i for i in crew if not i.reinvest()]
         tot_not_reinvested = 0

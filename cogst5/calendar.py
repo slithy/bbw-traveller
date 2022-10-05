@@ -44,13 +44,13 @@ class BbwCalendar:
 
     def month(self):
         if self.day() == 1:
-            return 0
+            return 1
 
         return int(max(self.day() - 2, 0) / self._days_in_month) + 1
 
     def monthday(self):
         if self.day() == 1:
-            return 0
+            return "-"
 
         return int(max(self.day() - 2, 0) % self._days_in_month) + 1
 
@@ -85,6 +85,7 @@ class BbwCalendar:
         s = f"date: {self.date()}\n"
         if detail_lvl == 0:
             return s
+        s += f"month: {self.month()}, {self.monthday()}\n"
         s += f"week: {self.week()}, {self.weekday()}\n"
         return s
 

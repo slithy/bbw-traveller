@@ -646,9 +646,7 @@ class Game(commands.Cog):
                 name=name, n_sectors=n_sectors, count=count, salary_ticket=salary_ticket, capacity=capacity
             )
         except SelectionException:
-            new_person = BbwPerson(
-                name=name, count=count, salary_ticket=salary_ticket, capacity=capacity
-            )
+            new_person = BbwPerson(name=name, count=count, salary_ticket=salary_ticket, capacity=capacity)
 
         new_luggage = None
         if "passenger, high" in new_person.name():
@@ -882,6 +880,19 @@ class Game(commands.Cog):
 
         await self.money(ctx)
 
+    @commands.command(name="add_obj", aliases=["add_item"])
+    async def add_item(
+        self,
+        ctx,
+        name,
+        count=1,
+        capacity=None,
+        TL=None,
+        value=None,
+        cont="cargo",
+    ):
+        await self.buy(ctx, name=name, count=count, price_multi=0, capacity=capacity, TL=TL, value=value, cont=cont)
+
     @commands.command(name="buy", aliases=[])
     async def buy(
         self,
@@ -889,9 +900,9 @@ class Game(commands.Cog):
         name,
         count=1,
         price_multi=1.0,
-        value=None,
         capacity=None,
         TL=None,
+        value=None,
         n_sectors=1,
         cont="cargo",
         mute=False,

@@ -30,6 +30,8 @@ class BbwObj:
         v = float(v)
 
         self._capacity = v
+        if self.size(is_per_obj=True) > self.capacity(is_per_obj=True):
+            self.set_size(self.capacity(is_per_obj=True))
 
     def set_name(self, v):
         v = str(v)
@@ -71,9 +73,6 @@ class BbwObj:
     def set_attr(self, v, k):
         if v == "name":
             raise NotAllowed(f"Setting the name in this way is not allowed! Use rename instead")
-        if v == "capacity":
-            raise NotAllowed(f"Resetting the capacity is not allowed! You need to delete the obj and create it again")
-
         f = getattr(self, f"set_{v}")
         f(k)
 
@@ -144,8 +143,6 @@ class BbwContainer(dict):
     def set_attr(self, v, k):
         if v == "name":
             raise NotAllowed(f"Setting the name in this way is not allowed! Use rename instead")
-        if v == "capacity":
-            raise NotAllowed(f"Resetting the capacity is not allowed! You need to delete the obj and create it again")
 
         f = getattr(self, f"set_{v}")
         f(k)
