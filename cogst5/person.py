@@ -265,6 +265,55 @@ class BbwPerson(BbwObj):
             ]
 
 
+class BbwSupplier(BbwPerson):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.set_supply()
+
+    def is_illegal(self):
+        return "illegal" in self.name()
+
+    def set_supply(self, bbwtrade, w=None, t=None):
+        self.set_t(t)
+        self._supply = []
+        if w is None or self.t() is None:
+            return
+
+        self._supply = bbwtrade.gen_aval_goods(w, is_illegal=self.is_illegal())
+
+    def t(self):
+        if not hasattr(self, "_t"):
+            self.set_t()
+
+        return self._t
+
+    def set_t(self, t=None):
+        if t is None:
+            self._t = None
+            return
+        self._t = BbwCalendar(t)
+
+    def supply(self):
+        if not hasattr(self, "_supply"):
+            self.set_supply()
+
+        return self._supply
+
+    def _str_table(self, detail_lvl=0):
+        l = sorted(self.supply(), key=lambda x: x[0])
+        s = ["\n".join([str(i[q]) for i in l]) for q in range(3)]
+        return [self.name(), self.t(), *s]
+
+    def __str__(self, detail_lvl=0):
+        return BbwUtils.print_table(
+            self._str_table(detail_lvl), headers=self._header(detail_lvl), detail_lvl=detail_lvl
+        )
+
+    @staticmethod
+    def _header(detail_lvl=0):
+        return ["name", "supply date", "goods", "tons", "calc"]
+
+
 class BbwPersonFactory:
     _tickets = {
         "passenger, high": [
@@ -316,6 +365,16 @@ class BbwPersonFactory:
 
         return item
 
+
+# a = BbwWorld(name="feri", uwp="B384879-B", zone="normal", hex="1904", sector=(-4, 1))
+# b = BbwSupplier(name="John, illegal")
+# c = BbwSupplier(name="John, illegal")
+# a.suppliers().dist_obj(b)
+# a.suppliers().dist_obj(c)
+#
+# a.set_supply(123124)
+# print(a.__str__(1))
+# exit()
 
 # new_person = BbwPerson(
 #     name="aaa, crew, other",

@@ -94,8 +94,22 @@ class BbwWorld(BbwObj):
         self.set_sector(sector)
         self.set_people()
         self.set_trade_codes()
+        self.set_suppliers()
 
         super().__init__(*args, **kwargs)
+
+    def set_suppliers(self):
+        self._suppliers = BbwContainer(name="suppliers")
+
+    def set_supply(self, bbwtrade, t, names=""):
+        obj = [i for i, _ in self.suppliers().get_objs(name=names).objs()]
+        for i in obj:
+            i.set_supply(bbwtrade, self, t)
+
+    def suppliers(self):
+        if not hasattr(self, "_suppliers"):
+            self.set_suppliers()
+        return self._suppliers
 
     def set_people(self):
         self._people = BbwContainer(name="people")
@@ -253,6 +267,7 @@ class BbwWorld(BbwObj):
 
         s += f"trade codes: " + ", ".join([BbwWorld._trade_code_table[i].__str__(1) for i in self.trade_codes()])
         s += "\n"
+        s += self.suppliers().__str__(detail_lvl=1)
 
         return s
 

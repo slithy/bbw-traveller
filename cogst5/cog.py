@@ -962,18 +962,37 @@ class Game(commands.Cog):
 
         await self.send(ctx, s)
 
-    @commands.command(
-        name="reroll_supplier", aliases=["supplier", "aval_goods", "gen_goods", "gen_aval_goods", "gen_supp_goods"]
-    )
-    async def get_deal_st(self, ctx, is_illegal):
-        is_illegal = bool(int(is_illegal))
+    # @commands.command(
+    #     name="reroll_supplier", aliases=["supplier", "aval_goods", "gen_goods", "gen_aval_goods", "gen_supp_goods"]
+    # )
+    # async def get_deal_st(self, ctx, is_illegal):
+    #     is_illegal = bool(int(is_illegal))
+    #
+    #     w = self.session_data.get_world_curr()
+    #
+    #     t = BbwTrade.gen_aval_goods(w=w, is_illegal=is_illegal)
+    #     h = ["goods", "available tons", "computation"]
+    #
+    #     await self.send(ctx, BbwUtils.print_table(t, h, detail_lvl=1))
 
+    @commands.command(name="add_supplier", aliases=[])
+    async def add_supplier(self, ctx, name):
         w = self.session_data.get_world_curr()
+        supp = BbwSupplier(name=name)
+        res = w.suppliers().dist_obj(supp)
+        await self._send_add_res(ctx, res, res.count())
 
-        t = BbwTrade.gen_aval_goods(w=w, is_illegal=is_illegal)
-        h = ["goods", "available tons", "computation"]
+    @commands.command(name="del_supplier", aliases=[])
+    async def del_supplier(self, ctx, name):
+        w = self.session_data.get_world_curr()
+        res = w.suppliers().del_obj(name)
+        await self._send_add_res(ctx, res, res.count())
 
-        await self.send(ctx, BbwUtils.print_table(t, h, detail_lvl=1))
+    @commands.command(name="refresh_supplier_inventory", aliases=["gen_supply"])
+    async def refresh_supplier_inventory(self, ctx, name=""):
+        w = self.session_data.get_world_curr()
+        w.set_supply(BbwTrade, self.session_data.calendar().t(), name)
+        await self.world_curr(ctx)
 
     @commands.command(name="pay_salaries", aliases=[])
     async def pay_salaries(self, ctx, print_recap=True):

@@ -53,7 +53,7 @@ class BbwExpr:
     def __int__(self):
         return sum(i for _, i in self._l)
 
-    def __str__(self):
+    def __str__(self, is_compact=False):
         if len(self._l) == 0:
             return ""
 
@@ -65,13 +65,14 @@ class BbwExpr:
                 s += i.__str__()
             else:
                 s += f"{v} [" + i + "]"
-            return s
+            return s if not is_compact else s.replace(" ", "").replace("`", "")
 
         s = "".join([f"{affix(idx, v, i)}" for idx, (i, v) in enumerate(self._l)])
         if len(self._l) == 1:
-            return s
+            return s if not is_compact else s.replace(" ", "").replace("`", "")
 
-        return s + f" = {int(self)}"
+        s += f" = {int(self)}"
+        return s if not is_compact else s.replace(" ", "").replace("`", "")
 
 
 class Good:
