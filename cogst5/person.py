@@ -273,10 +273,10 @@ class BbwSupplier(BbwPerson):
     def is_illegal(self):
         return "illegal" in self.name()
 
-    def set_supply(self, bbwtrade, w=None, t=None):
+    def set_supply(self, bbwtrade=None, w=None, t=None):
         self.set_t(t)
         self._supply = []
-        if w is None or self.t() is None:
+        if bbwtrade is None or w is None or self.t() is None:
             return
 
         self._supply = bbwtrade.gen_aval_goods(w, is_illegal=self.is_illegal())
