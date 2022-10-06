@@ -14,6 +14,7 @@ from cogst5.company import *
 from cogst5.item import *
 from cogst5.world import *
 from cogst5.trade import *
+from cogst5.wishlist import *
 
 jsonpickle.set_encoder_options("json", sort_keys=True)
 
@@ -553,7 +554,7 @@ class Game(commands.Cog):
         await self.get_objs(ctx, "passenger")
 
     @commands.command(name="get_objs", aliases=["objs", "obj"])
-    async def get_objs(self, ctx, name):
+    async def get_objs(self, ctx, name=""):
         cs = self.session_data.get_ship_curr()
         c = BbwContainer(name="results:")
         for i, _ in cs.containers().get_objs(name=name).objs():
@@ -1054,11 +1055,14 @@ class Game(commands.Cog):
         await self.wishlist(ctx)
 
     @commands.command(name="wish", aliases=["wishes", "wishlist"])
-    async def wishlist(self, ctx):
-        await self.send(ctx, self.session_data.wishlist().__str__(detail_lvl=1))
+    async def wishlist(self, ctx, name=""):
+        c = BbwWishlist(name="wishes:")
+        for i, _ in self.session_data.wishlist().get_objs(name=name).objs():
+            c.dist_obj(i)
+        await self._container(ctx, 2, [c])
 
     @commands.command(name="buy_wish", aliases=[])
-    async def buy_wish(self, ctx, name, count=1, erase_wish=1, price_multi=1.0):
+    async def buy_wish(self, ctx, name, count=1, price_multi=1.0, erase_wish=0):
         obj = copy.deepcopy(self.session_data.wishlist().get_objs(name=name, only_one=True).objs()[0][0])
 
         await self.buy(

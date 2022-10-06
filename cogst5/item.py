@@ -35,7 +35,7 @@ class BbwItem(BbwObj):
         else:
             return [
                 self.count(),
-                self.name(),
+                self.name().replace("/", "\n"),
                 self.capacity() if self.capacity() else None,
                 self.TL() if self.TL() else None,
                 self.value() if self.value() else None,
