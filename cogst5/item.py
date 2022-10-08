@@ -99,6 +99,7 @@ class BbwItemFactory:
         BbwItem(name="drugs, illegal", value=100000, capacity=1, count=1, TL=0),
         BbwItem(name="luxuries, illegal", value=50000, capacity=1, count=1, TL=0),
         BbwItem(name="weapons, illegal", value=150000, capacity=1, count=1, TL=0),
+        BbwItem(name="exotics, illegal", value=1, capacity=1, count=1, TL=0),
     ]
 
     @staticmethod

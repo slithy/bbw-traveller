@@ -300,9 +300,9 @@ class BbwSupplier(BbwPerson):
         return self._supply
 
     def _str_table(self, detail_lvl=0):
-        l = sorted(self.supply(), key=lambda x: x[0])
-        s = ["\n".join([str(i[q]) for i in l]) for q in range(3)]
-        return [self.name(), self.t(), *s]
+        # l = sorted(self.supply(), key=lambda x: x[0])
+        # s = ["\n".join([str(i[q]) for i in l]) for q in range(3)]
+        return [self.name(), self.t()]
 
     def __str__(self, detail_lvl=0):
         return BbwUtils.print_table(
@@ -311,7 +311,12 @@ class BbwSupplier(BbwPerson):
 
     @staticmethod
     def _header(detail_lvl=0):
-        return ["name", "supply date", "goods", "tons", "calc"]
+        return ["name", "supply date"]
+
+    def print_supply(self):
+        h = ["goods", "tons", "calc"]
+        t = self.supply()
+        return BbwUtils.print_table(t, h, detail_lvl=1)
 
 
 class BbwPersonFactory:

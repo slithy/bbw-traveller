@@ -267,7 +267,9 @@ class BbwWorld(BbwObj):
 
         s += f"trade codes: " + ", ".join([BbwWorld._trade_code_table[i].__str__(1) for i in self.trade_codes()])
         s += "\n"
-        s += self.suppliers().__str__(detail_lvl=1)
+        for v in self.suppliers().values():
+            s += f"summplier: `{v.name()}`\n"
+            s += v.print_supply()
 
         return s
 

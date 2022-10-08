@@ -365,7 +365,7 @@ class Game(commands.Cog):
 
         h = ["n sectors", "travel time (~)", "required fuel (tons)", "n jumps"]
         tab = [n_sectors, BbwUtils.conv_days_2_time(t), j_drive_required_fuel, n_jumps]
-        await self.send(ctx, BbwUtils.print_table(tab, headers=h))
+        await self.send(ctx, BbwUtils.print_table(tab, headers=h, detail_lvl=1))
 
         err = cs.ck_j_drive(w0, w1)
         await self.send(ctx, err)

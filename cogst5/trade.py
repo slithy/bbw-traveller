@@ -96,18 +96,21 @@ class Good:
     def tons(self):
         return self._tons
 
-    def roll_tons(self, w):
+    def roll_tons(self, w=None, reason=""):
         s = self.tons()
         avg0, min0, max0 = BbwUtils.avg_min_max(s)
-        if w.POP()[1] <= 3:
-            s += "-3"
-            avg0, min0, max0 = max(avg0 - 3, 0), max(min0 - 3, 0), max(max0 - 3, 0)
-        if w.POP()[1] >= 9:
-            s += "+3"
-            avg0, min0, max0 = avg0 + 3, min0 + 3, max0 + 3
+        if w is not None:
+            if w.POP()[1] <= 3:
+                s += "-3"
+                avg0, min0, max0 = max(avg0 - 3, 0), max(min0 - 3, 0), max(max0 - 3, 0)
+            if w.POP()[1] >= 9:
+                s += "+3"
+                avg0, min0, max0 = avg0 + 3, min0 + 3, max0 + 3
 
         if self.ton_multi() != 1:
             s = f"({s})*{self.ton_multi()}"
+        if len(reason):
+            s += f"[{reason}]"
 
         r = BbwExpr()
         r += d20.roll(s)
@@ -194,6 +197,7 @@ class BbwTrade:
         ),
         Good("luxuries, illegal", "1d6", 1, {"Ag": 2, "Wa": 1}, {"Ri": 6, "Hi": 4}, {"Ag", "Ga", "Wa"}),
         Good("weapons, illegal", "1d6", 5, {"Ht": 2}, {"Po": 6, "amber": 8, "red": 10}, {"In", "Ht"}),
+        Good("exotics, illegal", "1d1", 1, {}, {}, {"None"}),
     ]
 
     _speculative_trading_modified_price_buy_table = [
@@ -218,25 +222,38 @@ class BbwTrade:
 
     @staticmethod
     def gen_aval_goods(w, is_illegal=False):
+        def conv(rl):
+            return [
+                [tt[idx].name(), int(i), str(i).replace(" ", "").replace("`", "")]
+                for idx, i in enumerate(rl)
+                if int(i) > 0
+            ]
+
         nrolls = w.POP()[1]
         tt = BbwTrade._speculative_trading_table
         rl = [BbwExpr()] * len(tt)
 
-        rmax = len([i for i in tt if ("illegal" in i.name()) is is_illegal])
-        offset = len(tt) - rmax if is_illegal else 0
+        nlegals = len([i for i in tt if ("illegal" not in i.name())])
+
+        for i in range(nlegals):
+            if len(tt[i].aval_restr()) == 0 or len(tt[i].aval_restr().intersection(w.trade_codes())):
+                rl[i] += tt[i].roll_tons(w, reason="std")[0]
+
         for i in range(nrolls):
-            s = f"1d{rmax}+{offset}"
-            idx = d20.roll(s).total - 1
-            rl[idx] += tt[idx].roll_tons(w)[0]
+            i = d20.roll(f"1d{nlegals}").total - 1
+            rl[i] += tt[i].roll_tons(w, reason="rnd")[0]
 
-        for idx in range(rmax):
-            idx += offset
-            if len(tt[idx].aval_restr()) == 0 or len(tt[idx].aval_restr().intersection(w.trade_codes())):
-                rl[idx] += tt[idx].roll_tons(w)[0]
+        if not is_illegal:
+            return conv(rl)
 
-        return [
-            [tt[idx].name(), int(i), str(i).replace(" ", "").replace("`", "")] for idx, i in enumerate(rl) if int(i) > 0
-        ]
+        for i in range(nlegals, len(tt)):
+            if len(tt[i].aval_restr()) == 0 or len(tt[i].aval_restr().intersection(w.trade_codes())):
+                rl[i] += tt[i].roll_tons(w, reason="std")[0]
+
+        i = d20.roll(f"1d{len(tt)-nlegals}").total - 1 + nlegals
+        rl[i] += tt[i].roll_tons(None if "exotics, illegal" in tt[i].name() else w, reason="rnd")[0]
+
+        return conv(rl)
 
     @staticmethod
     def _get_mod_st(m, w):
@@ -461,9 +478,9 @@ class BbwTrade:
 
 
 # w1 = BbwWorld(name="enope", uwp="C411988-7", zone="normal", hex="2205", sector=(-4, 1))
-# w0 = BbwWorld(name="boughene", uwp="A8B3531D", zone="normal", hex="1904", sector=(-4, 1))
-# print(BbwTrade.gen_aval_goods(w1, is_illegal=False))
-# print(w1.__str__(detail_lvl=2))
+# # # w0 = BbwWorld(name="boughene", uwp="A8B3531D", zone="normal", hex="1904", sector=(-4, 1))
+# print(BbwUtils.print_table(BbwTrade.gen_aval_goods(w1, is_illegal=True)))
+# # # print(w1.__str__(detail_lvl=2))
 # exit()
 
 
