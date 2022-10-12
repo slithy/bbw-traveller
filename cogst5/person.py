@@ -30,7 +30,7 @@ class BbwPerson(BbwObj):
         "tactics",
     ]
 
-    def __init__(self, upp=None, salary_ticket=0.0, reinvest=False, skill_rank={}, *args, **kwargs):
+    def __init__(self, upp=None, salary_ticket=None, reinvest=False, skill_rank={}, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.set_salary_ticket(salary_ticket)
         self.set_upp(upp)
@@ -101,6 +101,8 @@ class BbwPerson(BbwObj):
 
     def set_salary_ticket(self, v):
         """v < 0 means salary. Otherwise, ticket"""
+        if v is None:
+            v = 0
 
         v = float(v)
 
@@ -356,17 +358,23 @@ class BbwPersonFactory:
 
         item = copy.deepcopy(BbwUtils.get_objs(raw_list=BbwPersonFactory._lib, name=name, only_one=True)[0])
 
+        print(item.name())
+
         if item.name() in BbwPersonFactory._tickets.keys():
+            print("AAAA")
             item.set_salary_ticket(BbwPersonFactory._tickets[item.name()][int(n_sectors) - 1])
             item.set_name(f"{item.name()} (ns: {n_sectors})")
 
         if salary_ticket is not None:
             item.set_salary_ticket(salary_ticket)
+            print("OOO")
         if capacity is not None:
             item.set_capacity(capacity)
             item.set_size(item.capacity())
         if count is not None:
             item.set_count(count)
+
+        print(item.salary_ticket())
 
         return item
 

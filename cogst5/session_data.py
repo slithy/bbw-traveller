@@ -3,6 +3,7 @@ from cogst5.base import *
 from cogst5.company import *
 from cogst5.calendar import *
 from cogst5.wishlist import *
+from cogst5.log import *
 
 from .models.errors import *
 
@@ -17,6 +18,7 @@ class BbwSessionData(BbwObj):
         self._ship_curr = ""
         self._company = BbwCompany()
         self._calendar = BbwCalendar()
+        self.set_log()
 
     def set_ship_curr(self, v):
         v = str(v)
@@ -79,3 +81,14 @@ class BbwSessionData(BbwObj):
 
     def fleet(self):
         return self._fleet
+
+    def set_log(self):
+        self._log = BbwLog()
+    def log(self):
+        if not hasattr(self, "_log"):
+            self.set_log()
+        return self._log
+    def add_log_entry(self, description, value=0):
+        self.log().add_entry(description=description, value=value, t=self.calendar().t())
+        self.company().add_money(value)
+

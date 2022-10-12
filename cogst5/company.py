@@ -63,26 +63,18 @@ class BbwDebt(BbwObj):
 
 
 class BbwCompany:
-    _log_max_size = 100
 
     def __init__(self):
         self._money = 0
-        self._log = []
         self._debts = BbwContainer(name="debts")
-
-    def add_log_entry(self, v, des="", t=None):
-        self.add_money(v)
-        self._log.append([int(v), str(des), int(t) if t is not None else None])
-        if len(self._log) > self._log_max_size:
-            self._log.pop(0)
 
     def debts(self):
         return self._debts
 
-    def _pay_debt(self, curr_t, name):
+    def _pay_debt(self, log, curr_t, name):
         debt = self.debts().get_objs(name=name, only_one=True).objs()[0][0]
 
-        self.add_log_entry(debt.capacity(), f"debt: {debt.name()}", curr_t)
+        log.add_entry(f"debt: {debt.name()}", curr_t, debt.capacity())
 
         if not debt.period():
             self.debts().del_obj(name=debt.name())
@@ -98,15 +90,15 @@ class BbwCompany:
 
         debt.set_due_t(new_due_t)
 
-    def pay_debts(self, curr_t, name=None):
+    def pay_debts(self, log, curr_t, name=None):
         if name is None:
             debts = list(self.debts().keys())
         else:
             debts = [name]
         for i in debts:
-            self._pay_debt(curr_t, i)
+            self._pay_debt(log, curr_t, i)
 
-    def pay_salaries(self, crew, time):
+    def pay_salaries(self, crew, log, time):
         tot = 0
 
         for i in crew:
@@ -118,10 +110,10 @@ class BbwCompany:
             tot_not_reinvested += i.salary_ticket()
 
         crew_line = "\n".join([i.name() for i in crew])
-        self.add_log_entry(tot, f"salaries for:\n{crew_line}", time)
+        log.add_entry(f"salaries for:\n{crew_line}", time, tot)
         if tot_not_reinvested:
             crew_line = "\n".join([i.name() for i in no_reinvest_crew])
-            self.add_log_entry(-tot_not_reinvested, f"safeguard salaries for:\n{crew_line}", time)
+            log.add_entry(f"safeguard salaries for:\n{crew_line}", time, -tot_not_reinvested)
 
     def money(self):
         return self._money
@@ -131,38 +123,16 @@ class BbwCompany:
         BbwUtils.test_geq("money", v, 0)
         self._money = v
 
-    def add_money(self, v):
-        v = int(v)
-        self.set_money(self.money() + v)
+    def add_money(self, value):
+        value = int(value)
+        self.set_money(self.money() + value)
 
-    @staticmethod
-    def _header(detail_lvl=0):
-        return ["in", "out", "description", "time"]
-
-    def _str_table(self, log_lines=10):
-        return [
-            [
-                str(i[0]) if i[0] > 0 else "",
-                str(i[0]) if i[0] < 0 else "",
-                str(i[1]),
-                str(BbwCalendar(i[2]).date()) if i[2] is not None else "",
-            ]
-            for i in reversed(self._log[max(len(self._log) - log_lines, 0) :])
-        ]
-
-    def __str__(self, detail_lvl=0, log_lines=10):
-        log_lines = int(log_lines)
+    def __str__(self, detail_lvl=0):
         s = f"money: `{self.money()}`\n"
 
         if detail_lvl == 0:
             return s
 
-        if log_lines != 0:
-            s += BbwUtils.print_table(self._str_table(log_lines), headers=self._header(), detail_lvl=1)
-            s += "\n"
-
-        if detail_lvl == 1:
-            return s
         s += self.debts().__str__(detail_lvl=1)
         s += "\n"
         return s

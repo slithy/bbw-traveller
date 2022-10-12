@@ -3,7 +3,6 @@ from cogst5.models.errors import *
 from cogst5.base import *
 from cogst5.utils import *
 
-
 class BbwCalendar:
     _days_in_week = 7
     _days_in_month = 28
@@ -14,7 +13,6 @@ class BbwCalendar:
 
     def set_t(self, v):
         v = int(v)
-        BbwUtils.test_geq("integral time", v, 0)
         self._t = v
 
     def set_date(self, day, year):
@@ -90,8 +88,8 @@ class BbwCalendar:
         return s
 
 
-#
-# a = BbwCalendar(29)
+
+
 # print(a)
 # print(a.monthday())
 # exit()
