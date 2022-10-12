@@ -3,10 +3,12 @@ from cogst5.models.errors import *
 from cogst5.base import *
 from cogst5.utils import *
 
+
 class BbwCalendar:
     _days_in_week = 7
     _days_in_month = 28
     _days_in_year = 365
+    _nmonths_per_year = int((_days_in_year - 1) / _days_in_month)
 
     def __init__(self, t=0):
         self.set_t(t)
@@ -25,6 +27,7 @@ class BbwCalendar:
 
         old_month = self.month()
         old_year = self.year()
+
         self.set_t(self.t() + v)
         if v < 0:
             return 0
@@ -32,7 +35,12 @@ class BbwCalendar:
         if self.year() == old_year:
             return self.month() - old_month
 
-        return 12 - old_month + (self.year() - old_year - 1) * 12 + self.month()
+        return (
+            BbwCalendar._nmonths_per_year
+            - old_month
+            + (self.year() - old_year - 1) * BbwCalendar._nmonths_per_year
+            + self.month()
+        )
 
     def t(self):
         return self._t
@@ -86,8 +94,6 @@ class BbwCalendar:
         s += f"month: {self.month()}, {self.monthday()}\n"
         s += f"week: {self.week()}, {self.weekday()}\n"
         return s
-
-
 
 
 # print(a)

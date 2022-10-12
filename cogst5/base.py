@@ -324,6 +324,7 @@ class BbwContainer(dict):
             obj.set_count(n - ans.count())
             ans += i.dist_obj(obj, unbreakable=False, cont=cont, *args, **kwargs)
 
+        obj.set_count(n)
         return ans
 
     def _fit_obj(self, v):

@@ -45,8 +45,6 @@ class Game(commands.Cog):
     async def send(self, ctx, msg):
         """Split long messages to workaround the discord limit"""
 
-        print(msg)
-
         if type(msg) is not str:
             msg = msg.__str__()
         msg = Game._msg_divisor + msg
@@ -176,10 +174,12 @@ class Game(commands.Cog):
         self.session_data.add_log_entry(f"load mail and freight: {', '.join(counter)}")
         if mail_value:
             s += f"{Game._msg_divisor}mail (`{n_canisters}` canisters): `{mail_value}` Cr\n"
-            await self.add_money(ctx, mail_value, f"mail ({n_canisters} canisters)", )
+            await self.add_money(
+                ctx,
+                mail_value,
+                f"mail ({n_canisters} canisters)",
+            )
         await self.send(ctx, s)
-
-
 
     @commands.command(name="load_ship", aliases=[])
     async def load_ship(self, ctx, carouse_or_broker_or_streetwise_mod, brocker_or_streetwise_mod, SOC_mod, w_to_name):
@@ -205,10 +205,7 @@ class Game(commands.Cog):
         await self.del_obj(ctx, name="luggage, high", mute=True)
         await self.del_obj(ctx, name="luggage, middle", mute=True)
 
-        print(tot)
-
         await self.add_money(ctx, value=int(tot), description="passenger tickets")
-
 
     @commands.command(name="unload_mail", aliases=[])
     async def unload_mail(self, ctx):
@@ -402,7 +399,8 @@ class Game(commands.Cog):
             else:
                 if i.reinvest():
                     self.session_data.add_log_entry(
-                        f"{i.name()} reinvested the payback",payback,
+                        f"{i.name()} reinvested the payback",
+                        payback,
                     )
                 msg += f"{i.name()} gets back {payback} Cr {'(reinvested)' if i.reinvest() else ''}\n"
 
@@ -416,8 +414,6 @@ class Game(commands.Cog):
         if len(err):
             await self.send(ctx, err)
             return
-
-
 
         n_sectors = BbwWorld.distance(w0, w1)
         rf = BbwSpaceShip.j_drive_required_fuel(n_sectors)
@@ -446,6 +442,7 @@ class Game(commands.Cog):
         else:
             await self.send(ctx, f"the tank was full. Nothing to do")
         await self.fuel(ctx)
+
     @commands.command(name="consume_fuel", aliases=["del_fuel", "remove_fuel"])
     async def consume_fuel(self, ctx, count):
         cs = self.session_data.get_ship_curr()
@@ -778,7 +775,7 @@ class Game(commands.Cog):
         await self._send_add_res(ctx, res, 1)
 
     @commands.command(name="move", aliases=[])
-    async def move(self, ctx, name, cont_to, count=float("inf"), cont_from=None):
+    async def move(self, ctx, name, cont_to, count=float("inf"), cont_from="cargo"):
         """add item to container"""
         cs = self.session_data.get_ship_curr()
 
@@ -786,6 +783,11 @@ class Game(commands.Cog):
         for i, _ in res.objs():
             res_to = cs.containers().dist_obj(i, cont=cont_to)
             await self._send_add_res(ctx, res_to, count)
+
+            if i.count() > res_to.count():
+                i.set_count(i.count() - res_to.count())
+                res_to = cs.containers().dist_obj(i, cont=cont_from)
+                await self._send_add_res(ctx, res_to, count)
 
     @commands.command(
         name="move_vip", aliases=["move_to_world", "move_from_world", "move_to_planet", "move_from_planet"]
@@ -842,9 +844,12 @@ class Game(commands.Cog):
             await self.trip_accounting_life_support(ctx, ndays)
             await self.trip_accounting_payback(ctx, ndays)
 
-        n_months = self.session_data.calendar().add_t(ndays)
+        n_months = BbwCalendar(self.session_data.calendar().t()).add_t(ndays)
+
         for i in range(n_months):
             await self.close_month(ctx)
+
+        self.session_data.calendar().add_t(ndays)
         await self.send(ctx, f"Date advanced by {ndays}d")
         await self.date(ctx)
 
@@ -881,32 +886,32 @@ class Game(commands.Cog):
         )
         self.session_data.company().debts().dist_obj(new_debt)
 
-        await self.money(ctx)
+        await self.money(ctx, 1)
 
     @commands.command(name="del_debt", aliases=[])
     async def del_debt(self, ctx, name):
         self.session_data.company().debts().del_obj(name=name)
 
-        await self.money(ctx)
+        await self.money(ctx, 1)
 
     @commands.command(name="set_debt_attr", aliases=[])
     async def set_debt_attr(self, ctx, debt_name, attr_name, value):
         res = self.session_data.company().debts().get_objs(name=debt_name, only_one=True)
         res.objs()[0][0].set_attr(attr_name, value)
 
-        await self.money(ctx)
+        await self.money(ctx, 1)
 
     @commands.command(name="rename_debt", aliases=[])
     async def rename_debt(self, ctx, name, new_name):
         self.session_data.company().debts().rename_obj(name=name, new_name=new_name)
 
-        await self.money(ctx)
+        await self.money(ctx, 1)
 
     @commands.command(name="pay_debt", aliases=["pay_debts"])
     async def pay_debts(self, ctx, name=None):
         self.session_data.company().pay_debts(self.session_data.log(), self.session_data.calendar().t(), name)
 
-        await self.money(ctx)
+        await self.send(ctx, "debts payed")
 
     @commands.command(name="add_obj", aliases=["add_item"])
     async def add_item(
@@ -935,9 +940,6 @@ class Game(commands.Cog):
         cont="cargo",
         mute=False,
     ):
-
-
-
         try:
             new_item = BbwItemFactory.make(
                 name=name, count=count, TL=TL, value=value, capacity=capacity, n_sectors=n_sectors
@@ -945,30 +947,21 @@ class Game(commands.Cog):
         except SelectionException:
             new_item = BbwItem(name=name, count=count, TL=TL, value=value, capacity=capacity)
 
-
-
         cs = self.session_data.get_ship_curr()
 
-        free_slots =  cs.containers().free_slots(
-                    caps=[
-                        (new_item.capacity(is_per_obj=True), cont, {}),
-                    ]
-                )
+        free_slots = cs.containers().free_slots(
+            caps=[
+                (new_item.capacity(is_per_obj=True), cont, {}),
+            ]
+        )
 
         if free_slots == 0:
             await self.send(ctx, f"No space!")
             return
 
-        new_item.set_count(
-            min(
-                new_item.count(),
-                free_slots
-            )
-        )
+        new_item.set_count(min(new_item.count(), free_slots))
 
         price_payed = int(new_item.value() * price_multi)
-
-        print(price_payed)
 
         description = f"buy: {new_item.name()} ({new_item.count()})"
         await self.add_money(ctx, value=-price_payed, description=description)
@@ -981,8 +974,6 @@ class Game(commands.Cog):
     @commands.command(name="sell", aliases=[])
     async def sell(self, ctx, name, count=float("inf"), price_multi=1.0, cont=None):
         res = await self.del_obj(ctx, name=name, count=count, cont=cont)
-
-
 
         description = f"sell: {', '.join(set([i.name() for i, _ in res.objs()]))} ({res.count()})"
 

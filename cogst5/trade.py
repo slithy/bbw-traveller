@@ -477,8 +477,6 @@ class BbwTrade:
         return BbwItemFactory.make(name=kind, count=int(nd), n_sectors=n_sectors), n_sectors, r, nd
 
 
-
-
 # w1 = BbwWorld(name="enope", uwp="C411988-7", zone="normal", hex="2205", sector=(-4, 1))
 # # # w0 = BbwWorld(name="boughene", uwp="A8B3531D", zone="normal", hex="1904", sector=(-4, 1))
 # print(BbwUtils.print_table(BbwTrade.gen_aval_goods(w1, is_illegal=True)))

@@ -211,7 +211,7 @@ class BbwSpaceShip(BbwVehicle):
 
         res = self.containers().get_objs(name="fuel, refined", cont="fuel")
         if res.count() < count:
-            return res
+            raise NotAllowed(f"not enough refined fuel! In tanks: `{res.count()}` < requested: `{count}`")
         return self.containers().del_obj(name="fuel, refined", count=count, cont="fuel")
 
     def refine_fuel(self):

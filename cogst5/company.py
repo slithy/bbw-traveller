@@ -63,7 +63,6 @@ class BbwDebt(BbwObj):
 
 
 class BbwCompany:
-
     def __init__(self):
         self._money = 0
         self._debts = BbwContainer(name="debts")
@@ -128,7 +127,7 @@ class BbwCompany:
         self.set_money(self.money() + value)
 
     def __str__(self, detail_lvl=0):
-        s = f"money: `{self.money()}`\n"
+        s = f"money: `{self.money():,}`\n"
 
         if detail_lvl == 0:
             return s

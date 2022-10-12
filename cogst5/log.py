@@ -2,6 +2,7 @@ from cogst5.base import *
 from cogst5.calendar import *
 from cogst5.utils import *
 
+
 class BbwLog(list):
     _max_size = 100
 
@@ -54,7 +55,8 @@ class BbwLog(list):
                 str(i[1]),
                 str(BbwCalendar(i[2]).date()) if i[2] is not None else "",
             ]
-            for i in self if filter(i[0], i[1])
+            for i in self
+            if filter(i[0], i[1])
         ]
 
         if len(t) < log_lines:
@@ -63,7 +65,11 @@ class BbwLog(list):
         return t[-log_lines:]
 
     def __str__(self, detail_lvl=1, log_lines=10, name="", transactions=None):
-        return BbwUtils.print_table(self._str_table(log_lines=log_lines, name=name, transactions=transactions), self._header(), detail_lvl=detail_lvl)
+        return BbwUtils.print_table(
+            self._str_table(log_lines=log_lines, name=name, transactions=transactions),
+            self._header(),
+            detail_lvl=detail_lvl,
+        )
 
 
 # a = BbwLog("log")

@@ -84,11 +84,12 @@ class BbwSessionData(BbwObj):
 
     def set_log(self):
         self._log = BbwLog()
+
     def log(self):
         if not hasattr(self, "_log"):
             self.set_log()
         return self._log
+
     def add_log_entry(self, description, value=0):
         self.log().add_entry(description=description, value=value, t=self.calendar().t())
         self.company().add_money(value)
-
