@@ -311,11 +311,23 @@ class BbwTrade:
         ]
 
     @staticmethod
-    def optimize_st(w0, w1, cs):
+    def optimize_st(w0, w1, cs, supplier=None):
         crew = cs.crew()
         max_broker = BbwPerson.max_skill(crew, "broker")[0][1]
 
-        l = [BbwTrade._evaluate_good_st(v, w0, w1, max_broker) for v in BbwTrade._speculative_trading_table]
+        filter = (
+            set(i.name() for i in BbwTrade._speculative_trading_table)
+            if supplier is None
+            else set(
+                [i[0] for i in BbwUtils.get_objs(w0.suppliers().values(), name=supplier, only_one=True)[0].supply()]
+            )
+        )
+
+        l = [
+            BbwTrade._evaluate_good_st(v, w0, w1, max_broker)
+            for v in BbwTrade._speculative_trading_table
+            if v.name() in filter
+        ]
 
         h = [
             f"goods ",

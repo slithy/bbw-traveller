@@ -982,11 +982,11 @@ class Game(commands.Cog):
         await self.add_money(ctx, value=price_payed, description=description)
 
     @commands.command(name="st", aliases=[])
-    async def speculative_trading(self, ctx, w_to_name, w_from_name=None):
+    async def speculative_trading(self, ctx, w_to_name, supplier=None, w_from_name=None):
         w0, w1 = self.session_data.get_worlds(w_to_name=w_to_name, w_from_name=w_from_name)
         cs = self.session_data.get_ship_curr()
 
-        h, t = BbwTrade.optimize_st(w0, w1, cs)
+        h, t = BbwTrade.optimize_st(w0, w1, cs, supplier)
         sort_idx = 3
         t = sorted([i for i in t if i[4] > 5000], key=lambda x: -x[sort_idx])
 
