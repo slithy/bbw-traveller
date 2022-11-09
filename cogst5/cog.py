@@ -336,7 +336,7 @@ class Game(commands.Cog):
     @commands.command(name="m_drive", aliases=["drive_m"])
     async def m_drive(self, ctx, d_km=None, is_diam_for_jump=False):
         if d_km is None:
-            d_km = 100 * self.session_data.get_world_curr().d_km()
+            d_km = 100 * self.session_data.get_world().d_km()
         else:
             try:
                 d_km = int(d_km)
@@ -470,7 +470,7 @@ class Game(commands.Cog):
     async def set_world(self, ctx, name, uwp, zone, hex, sector=None):
         """Add a world"""
         if sector is None:
-            sector = self.session_data.get_world_curr().sector()
+            sector = self.session_data.get_world().sector()
 
         if name in self.session_data.charted_space():
             raise InvalidArgument(
@@ -496,18 +496,18 @@ class Game(commands.Cog):
 
     @commands.command(name="rename_world_curr", aliases=["rename_world", "rename_planet"])
     async def rename_world(self, ctx, new_name):
-        cw = self.session_data.get_world_curr()
+        cw = self.session_data.get_world()
         self.session_data.fleet().rename_obj(name=cw, new_name=new_name)
 
         await self.set_world_curr(ctx, new_name)
 
     @commands.command(name="world_curr", aliases=["world", "planet"])
-    async def world_curr(self, ctx):
+    async def world_curr(self, ctx, name=None):
         """Current world summary"""
 
-        cw = self.session_data.get_world_curr()
+        cw = self.session_data.get_world(name=name)
 
-        await self.send(ctx, f"current world:\n{cw.__str__(detail_lvl=1)}")
+        await self.send(ctx, cw.__str__(detail_lvl=1))
 
     @commands.command(name="set_world_curr", aliases=["set_planet_curr"])
     async def set_world_curr(self, ctx, name):
@@ -527,7 +527,7 @@ class Game(commands.Cog):
 
     @commands.command(name="set_world_attr", aliases=["set_world_curr_attr", "set_planet_curr_attr"])
     async def set_world_attr(self, ctx, attr_name, value):
-        cw = self.session_data.get_world_curr()
+        cw = self.session_data.get_world()
         cw.set_attr(attr_name, value)
 
         await self.world_curr(ctx)
@@ -802,7 +802,7 @@ class Game(commands.Cog):
             from_c = self.session_data.charted_space().get_objs(name=world_from, only_one=True).objs()[0][0].people()
 
         if world_to is None:
-            to_c = self.session_data.get_world_curr().people()
+            to_c = self.session_data.get_world().people()
         else:
             to_c = self.session_data.charted_space().get_objs(name=world_to, only_one=True).objs()[0][0].people()
 
@@ -1000,7 +1000,7 @@ class Game(commands.Cog):
 
     @commands.command(name="trade_st", aliases=["trade"])
     async def get_deal_st(self, ctx, broker_skill, name, roll="3d6"):
-        w = self.session_data.get_world_curr()
+        w = self.session_data.get_world()
 
         buy_multi, buy_roll, sell_multi, sell_roll = BbwTrade.get_deal_st(
             name=name, broker=broker_skill, w=w, roll=roll
@@ -1012,20 +1012,20 @@ class Game(commands.Cog):
 
     @commands.command(name="add_supplier", aliases=[])
     async def add_supplier(self, ctx, name):
-        w = self.session_data.get_world_curr()
+        w = self.session_data.get_world()
         supp = BbwSupplier(name=name)
         res = w.suppliers().dist_obj(supp)
         await self._send_add_res(ctx, res, res.count())
 
     @commands.command(name="del_supplier", aliases=[])
     async def del_supplier(self, ctx, name):
-        w = self.session_data.get_world_curr()
+        w = self.session_data.get_world()
         res = w.suppliers().del_obj(name)
         await self._send_add_res(ctx, res, res.count())
 
     @commands.command(name="refresh_supplier_inventory", aliases=["gen_supply"])
     async def refresh_supplier_inventory(self, ctx, name=""):
-        w = self.session_data.get_world_curr()
+        w = self.session_data.get_world()
         w.set_supply(BbwTrade, self.session_data.calendar().t(), name)
         await self.world_curr(ctx)
 
