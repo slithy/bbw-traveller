@@ -835,7 +835,7 @@ class Game(commands.Cog):
         self.session_data.add_log_entry(f"set date")
 
     @commands.command(name="newday", aliases=["advance"])
-    async def newday(self, ctx, ndays=1, travel_accounting=False):
+    async def newday(self, ctx, ndays=1, msg="", travel_accounting=False):
         ndays = int(ndays)
         if abs(ndays) < 1:
             return
@@ -853,7 +853,7 @@ class Game(commands.Cog):
         await self.send(ctx, f"Date advanced by {ndays}d")
         await self.date(ctx)
 
-        self.session_data.add_log_entry(f"date advanced of {ndays} days")
+        self.session_data.add_log_entry(f"advance {ndays} days: {msg}")
 
     ##################################################
     ### company
