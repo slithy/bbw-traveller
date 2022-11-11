@@ -87,6 +87,71 @@ class BbwWorld(BbwObj):
         ]
     )
 
+    _SP_table = []
+    _SIZE_d_table = [1000, 1600, 3200, 4800, 6400, 8000, 9600, 11200, 12800, 14400, 16000]
+    _SIZE_G_table = [0, 0.05, 0.15, 0.25, 0.35, 0.45, 0.7, 0.9, 1, 1.25, 1.4]
+    _ATM_table = [
+        "none, 0 Atm, vacc. suit req.",
+        "trace, 0.001-0.009 Atm, vacc suit req.",
+        "very thin, tainted, 0.1-0.42 Atm,respirator and filter req.",
+        "very thin, 0.1-0.42 Atm,respirator req.",
+        "thin, tainted , 0.43-0.7 Atm, filter req.",
+        "thin, 0.43-0.7 Atm",
+        "standard, 0.7-1.49 Atm",
+        "standard, tainted, 0.7-1.49 Atm, filter req.",
+        "dense, 1.5-2.49 Atm",
+        "dense, tainted, 1.5-2.49 Atm, filter req.",
+        "exotic, air supply req.",
+        "corrosive, vacc suit req.",
+        "insidious, vacc suit req.",
+        "very dense, > 2.5 Atm",
+        "low, <= 0.5 Atm",
+        "unusual",
+    ]
+    _HYDRO_table = [
+        "0%-5%",
+        "6%-15%",
+        "16%-25%",
+        "26%-35%",
+        "36%-45%",
+        "46%-55%",
+        "56%-65%",
+        "66%-75%",
+        "76%-85%",
+        "86%-95%",
+        "96%-100%",
+    ]
+    _GOV_table = [
+        "none",
+        "corporation",
+        "participating democracy",
+        "self-perpetuating oligarchy",
+        "representative democracy",
+        "feudal technocracy",
+        "captive government",
+        "balkanization",
+        "civil service bureaucracy",
+        "impersonal bureaucracy",
+        "charismatic dictator",
+        "non-charismatic leader",
+        "charismatic oligarchy",
+        "religious dictatorship",
+        "religious autocracy",
+        "totalitarian oligarchy",
+    ]
+    _LAW_table = [
+        "no restrictions",
+        "poison gas, explosives, undetectable weapons, WMD, battle dress",
+        "portable energy weapons, combat armour",
+        "military weapons, flak",
+        "light assault weapons , submachine guns, cloth",
+        "personal concealable weapons, mesh",
+        "all firearms except shotguns and stunners, carring weapons discouraged",
+        "shotguns",
+        "all bladed weapons, stunners, all visible armour",
+        "all weapons, all armour",
+    ]
+
     def __init__(self, uwp, zone, hex, sector, *args, **kwargs):
         self.set_uwp(uwp)
         self.set_zone(zone)
@@ -180,7 +245,7 @@ class BbwWorld(BbwObj):
         self._zone = v
 
     def d_km(self):
-        return 1600 * self.SIZE()[1]
+        return self.SIZE()[3]
 
     def set_hex(self, v):
         v = str(v)
@@ -207,25 +272,58 @@ class BbwWorld(BbwObj):
         return self.sector()[1]
 
     def SP(self):
-        return self.uwp()[0], int(self.uwp()[0], 36)
+        idx = self.uwp()[0]
+        lett = self.uwp()[0]
+        if lett == "A":
+            desc = "excellent, berthing cost (1W): 1Dx1000 Cr, fuel: refined, shipyard: (all), repair"
+        elif lett == "B":
+            desc = "good, berthing cost (1W): 1Dx500 Cr, fuel: refined, shipyard: (spacecraft), repair"
+        elif lett == "C":
+            desc = "routine, berthing cost (1W): 1Dx100 Cr, fuel: unrefined, shipyard: (small craft), repair"
+        elif lett == "D":
+            desc = "poor, berthing cost (1W): 1Dx10 Cr, fuel: unrefined, limited repair"
+        elif lett == "E":
+            desc = "frontier, berthing cost (1W): 0 Cr, fuel: none"
+        else:
+            desc = "no starport, berthing cost (1W): 0 Cr, fuel: none"
+        return lett, idx, desc
 
     def SIZE(self):
-        return self.uwp()[1], int(self.uwp()[1], 36)
+        idx = int(self.uwp()[1], 36)
+        affix = "" if idx > 0 else "< "
+        return (
+            self.uwp()[1],
+            idx,
+            f"{affix}{BbwWorld._SIZE_d_table[idx]} Km, {BbwWorld._SIZE_G_table[idx]} G",
+            BbwWorld._SIZE_d_table[idx],
+        )
 
     def ATM(self):
-        return self.uwp()[2], int(self.uwp()[2], 36)
+        idx = int(self.uwp()[2], 36)
+        return self.uwp()[2], idx, BbwWorld._ATM_table[idx]
 
     def HYDRO(self):
-        return self.uwp()[3], int(self.uwp()[3], 36)
+        idx = int(self.uwp()[3], 36)
+        return self.uwp()[3], idx, BbwWorld._HYDRO_table[min(idx, len(BbwWorld._HYDRO_table) - 1)]
 
     def POP(self):
-        return self.uwp()[4], int(self.uwp()[4], 36)
+        idx = int(self.uwp()[4], 36)
+        if idx == 0:
+            desc = "0"
+        elif idx == 1:
+            desc = "1-99"
+        else:
+            desc = f"{10**idx:,}-{(10**(idx+1))-1:,}"
+
+        return self.uwp()[4], int(self.uwp()[4], 36), desc
 
     def GOV(self):
-        return self.uwp()[5], int(self.uwp()[5], 36)
+        idx = int(self.uwp()[5], 36)
+        return self.uwp()[5], idx, BbwWorld._GOV_table[idx]
 
     def LAW(self):
-        return self.uwp()[6], int(self.uwp()[6], 36)
+        idx = int(self.uwp()[6], 36)
+        return self.uwp()[6], idx, BbwWorld._LAW_table[min(idx, len(BbwWorld._LAW_table) - 1)]
 
     def TL(self):
         return self.uwp()[7], int(self.uwp()[7], 36)
@@ -258,8 +356,20 @@ class BbwWorld(BbwObj):
         if detail_lvl == 0:
             return s
 
-        h = ["starport", "atm", "hydro", "pop", "gov", "law", "TL"]
-        t = [self.SP()[0], self.ATM()[1], self.HYDRO()[1], self.POP()[1], self.GOV()[1], self.LAW()[1], self.TL()[1]]
+        h = ["category", "code", "description"]
+        t = [
+            ["starport", BbwUtils.print_code(self.SP()[0]), self.SP()[2]],
+            ["atm", BbwUtils.print_code(self.ATM()[0]), self.ATM()[2]],
+            ["hydro", BbwUtils.print_code(self.HYDRO()[0]), self.HYDRO()[2]],
+            ["pop", BbwUtils.print_code(self.POP()[0]), self.POP()[2]],
+            ["size", BbwUtils.print_code(self.SIZE()[0]), self.SIZE()[2]],
+            ["gov", BbwUtils.print_code(self.GOV()[0]), self.GOV()[2]],
+            ["law", BbwUtils.print_code(self.LAW()[0]), self.LAW()[2]],
+            [
+                "TL",
+                BbwUtils.print_code(self.TL()[0]),
+            ],
+        ]
         s += BbwUtils.print_table(t, headers=h, detail_lvl=1)
 
         if len(self.people()):

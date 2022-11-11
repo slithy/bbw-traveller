@@ -88,6 +88,13 @@ class BbwUtils:
         return "-".join(ans)
 
     @staticmethod
+    def print_code(i):
+        if int(i, 36) >= 10:
+            return f"{i} ({int(i, 36)})"
+        else:
+            return str(i)
+
+    @staticmethod
     def smart_append(ans, res):
         for idx, i in enumerate(res):
             if i is None:

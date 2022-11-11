@@ -95,4 +95,3 @@ class SelectionCancelled(SelectionException):
 
     def __init__(self):
         super().__init__("Selection timed out or was cancelled.")
-

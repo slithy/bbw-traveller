@@ -54,9 +54,8 @@ class BbwSessionData(BbwObj):
         return self._world_curr
 
     def get_world(self, name=None):
-
         if name is None:
-           name = self.world_curr()
+            name = self.world_curr()
 
         if name == "":
             raise InvalidArgument("curr world not set!")
