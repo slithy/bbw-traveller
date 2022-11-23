@@ -252,6 +252,7 @@ class Game(commands.Cog):
         fuel_refiner_speed,
         is_streamlined,
         has_fuel_scoop,
+        has_cargo_scoop,
         has_cargo_crane,
     ):
         """Add a ship"""
@@ -274,6 +275,7 @@ class Game(commands.Cog):
             fuel_refiner_speed=fuel_refiner_speed,
             is_streamlined=is_streamlined,
             has_fuel_scoop=has_fuel_scoop,
+            has_cargo_scoop=has_cargo_scoop,
             has_cargo_crane=has_cargo_crane,
         )
         self.session_data.fleet().dist_obj(s)

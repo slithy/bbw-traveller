@@ -120,6 +120,7 @@ class BbwSpaceShip(BbwVehicle):
         fuel_refiner_speed=40,
         is_streamlined=True,
         has_fuel_scoop=True,
+        has_cargo_scoop=True,
         has_cargo_crane=True,
         *args,
         **kwargs,
@@ -130,6 +131,7 @@ class BbwSpaceShip(BbwVehicle):
         self.set_fuel_refiner_speed(fuel_refiner_speed)
         self.set_is_streamlined(is_streamlined)
         self.set_has_fuel_scoop(has_fuel_scoop)
+        self.set_has_cargo_scoop(has_cargo_scoop)
         self.set_has_cargo_crane(has_cargo_crane)
         super().__init__(*args, **kwargs)
 
@@ -231,6 +233,13 @@ class BbwSpaceShip(BbwVehicle):
     def has_cargo_crane(self):
         return self._has_cargo_crane
 
+    def set_has_cargo_scoop(self, v):
+        v = bool(int(v))
+        self._has_cargo_scoop = v
+
+    def has_cargo_scoop(self):
+        return self._has_cargo_scoop
+
     def set_has_fuel_scoop(self, v):
         v = bool(int(v))
         self._has_fuel_scoop = v
@@ -249,6 +258,8 @@ class BbwSpaceShip(BbwVehicle):
         v = int(v)
         BbwUtils.test_geq("armour", v, 0)
         self._armour = v
+    def set_armor(self, v):
+        self.set_armour(v)
 
     def armour(self):
         return self._armour
@@ -324,7 +335,8 @@ class BbwSpaceShip(BbwVehicle):
             "power",
             "refiner (tons/day)",
             "streamlined",
-            "scoop",
+            "f. scoop",
+            "c. scoop",
             "c. crane",
             "armed",
         ]
@@ -337,6 +349,7 @@ class BbwSpaceShip(BbwVehicle):
                 self.fuel_refiner_speed(),
                 self.is_streamlined(),
                 self.has_fuel_scoop(),
+                self.has_cargo_scoop(),
                 self.has_cargo_crane(),
                 self.is_armed(),
             ]
