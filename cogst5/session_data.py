@@ -64,7 +64,7 @@ class BbwSessionData(BbwObj):
 
     def get_worlds(self, w_to_name, w_from_name=None):
         if w_from_name is None:
-            w0 = self.get_world_curr()
+            w0 = self.get_world()
         else:
             w0 = self.charted_space().get_objs(name=w_from_name, only_one=True).objs()[0][0]
         w1 = self.charted_space().get_objs(name=w_to_name, only_one=True).objs()[0][0]
