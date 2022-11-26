@@ -528,7 +528,7 @@ class Game(commands.Cog):
         await self.send(ctx, self.session_data.charted_space().__str__(detail_lvl=1))
 
     @commands.command(name="set_world_attr", aliases=["set_world_curr_attr", "set_planet_curr_attr"])
-    async def set_world_attr(self, ctx, attr_name, value):
+    async def set_world_attr(self, ctx, attr_name, value=None):
         cw = self.session_data.get_world()
         cw.set_attr(attr_name, value)
 
@@ -582,7 +582,7 @@ class Game(commands.Cog):
         await self._container(ctx, 2, [c])
 
     @commands.command(name="log", aliases=["ll"])
-    async def get_log(self, ctx, name="", transactions=0, log_lines=10):
+    async def get_log(self, ctx, log_lines=10, name="", transactions=0):
         await self.send(ctx, self.session_data.log().__str__(log_lines=log_lines, name=name, transactions=transactions))
 
     async def _max_skill_rank_stat(self, ctx, v, l):
@@ -914,6 +914,17 @@ class Game(commands.Cog):
         self.session_data.company().pay_debts(self.session_data.log(), self.session_data.calendar().t(), name)
 
         await self.send(ctx, "debts payed")
+
+    @commands.command(name="pay_docking_fees", aliases=["docking", "pay_docking"])
+    async def pay_docking_fees(self, ctx, value=None):
+        cw = self.session_data.get_world()
+
+        if value is not None:
+            cw.set_docking_fee(value)
+
+        value = cw.docking_fee()
+
+        await self.add_money(ctx, value=-value, description=f"docking fee")
 
     @commands.command(name="add_obj", aliases=["add_item"])
     async def add_item(

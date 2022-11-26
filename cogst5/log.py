@@ -64,7 +64,7 @@ class BbwLog(list):
 
         return t[-log_lines:]
 
-    def __str__(self, detail_lvl=1, log_lines=10, name="", transactions=None):
+    def __str__(self, detail_lvl=1, log_lines=10, name="", transactions=0):
         return BbwUtils.print_table(
             self._str_table(log_lines=log_lines, name=name, transactions=transactions),
             self._header(),

@@ -14,6 +14,17 @@ class BbwObj:
         self.set_capacity(capacity)
         self.set_size(size)
 
+    @staticmethod
+    def set_if_not_present_decor(func):
+        """We assume that the variable is _{func_name} and the setter is set_{func_name}"""
+
+        def wrapper(self):
+            if not hasattr(self, f"_{func.__name__}"):
+                getattr(self, f"set_{func.__name__}")()
+            return func(self)
+
+        return wrapper
+
     def set_size(self, v):
         if v is None:
             v = self._capacity

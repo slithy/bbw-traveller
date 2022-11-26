@@ -258,6 +258,7 @@ class BbwSpaceShip(BbwVehicle):
         v = int(v)
         BbwUtils.test_geq("armour", v, 0)
         self._armour = v
+
     def set_armor(self, v):
         self.set_armour(v)
 

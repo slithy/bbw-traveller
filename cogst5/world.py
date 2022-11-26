@@ -87,7 +87,16 @@ class BbwWorld(BbwObj):
         ]
     )
 
-    _SP_table = []
+    _SP_table = [
+        "excellent, fuel: refined, shipyard: (all), repair",
+        "good, fuel: refined, shipyard: (spacecraft), repair",
+        "routine, fuel: unrefined, shipyard: (small craft), repair",
+        "poor, fuel: unrefined, limited repair",
+        "frontier, fuel: none",
+        "no starport, fuel: none",
+    ]
+
+    _SP_docking_fee_table = [1000, 500, 100, 10, 0]
     _SIZE_d_table = [1000, 1600, 3200, 4800, 6400, 8000, 9600, 11200, 12800, 14400, 16000]
     _SIZE_G_table = [0, 0.05, 0.15, 0.25, 0.35, 0.45, 0.7, 0.9, 1, 1.25, 1.4]
     _ATM_table = [
@@ -160,6 +169,7 @@ class BbwWorld(BbwObj):
         self.set_people()
         self.set_trade_codes()
         self.set_suppliers()
+        self.set_docking_fee()
 
         super().__init__(*args, **kwargs)
 
@@ -271,21 +281,27 @@ class BbwWorld(BbwObj):
     def sec_y(self):
         return self.sector()[1]
 
+    def _get_SP_table_entry(self, table):
+        idx = ord(self.uwp()[0]) - ord("A")
+        idx = min(idx, len(table) - 1)
+        return table[idx]
+
+    def set_docking_fee(self, v=None):
+        if v is None:
+            v = self._get_SP_table_entry(BbwWorld._SP_docking_fee_table) * d20.roll("1d6").total
+
+        v = int(v)
+        self._docking_fee = v
+
+    @BbwObj.set_if_not_present_decor
+    def docking_fee(self):
+        return self._docking_fee
+
     def SP(self):
         idx = self.uwp()[0]
         lett = self.uwp()[0]
-        if lett == "A":
-            desc = "excellent, berthing cost (1W): 1Dx1000 Cr, fuel: refined, shipyard: (all), repair"
-        elif lett == "B":
-            desc = "good, berthing cost (1W): 1Dx500 Cr, fuel: refined, shipyard: (spacecraft), repair"
-        elif lett == "C":
-            desc = "routine, berthing cost (1W): 1Dx100 Cr, fuel: unrefined, shipyard: (small craft), repair"
-        elif lett == "D":
-            desc = "poor, berthing cost (1W): 1Dx10 Cr, fuel: unrefined, limited repair"
-        elif lett == "E":
-            desc = "frontier, berthing cost (1W): 0 Cr, fuel: none"
-        else:
-            desc = "no starport, berthing cost (1W): 0 Cr, fuel: none"
+
+        desc = self._get_SP_table_entry(BbwWorld._SP_table)
         return lett, idx, desc
 
     def SIZE(self):
@@ -358,7 +374,7 @@ class BbwWorld(BbwObj):
 
         h = ["category", "code", "description"]
         t = [
-            ["starport", BbwUtils.print_code(self.SP()[0]), self.SP()[2]],
+            ["starport", BbwUtils.print_code(self.SP()[0]), f"{self.SP()[2]}, docking fee: {self.docking_fee()} Cr"],
             ["atm", BbwUtils.print_code(self.ATM()[0]), self.ATM()[2]],
             ["hydro", BbwUtils.print_code(self.HYDRO()[0]), self.HYDRO()[2]],
             ["pop", BbwUtils.print_code(self.POP()[0]), self.POP()[2]],
