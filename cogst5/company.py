@@ -13,12 +13,12 @@ class BbwDebt(BbwObj):
         self.set_period(period)
         super().__init__(*args, **kwargs)
 
-    def set_attr(self, v, k):
+    def set_attr(self, v, *args, **kwargs):
         if v == "name":
             raise NotAllowed(f"Setting the name in this way is not allowed! Use rename instead")
 
         f = getattr(self, f"set_{v}")
-        f(k)
+        f(*args, **kwargs)
 
     def set_due_t(self, v):
         v = int(v)

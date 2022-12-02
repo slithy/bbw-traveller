@@ -29,20 +29,22 @@ class BbwItem(BbwObj):
         BbwUtils.test_leq("TL", v, 30)
         self._TL = v
 
-    def _str_table(self, detail_lvl=0):
+    def _str_table(self, detail_lvl: int = 0):
         if detail_lvl == 0:
             return [self.count(), self.name(), self.capacity() if self.capacity() else None]
-        else:
-            return [
-                self.count(),
-                self.name().replace("/", "\n"),
-                self.capacity() if self.capacity() else None,
-                self.TL() if self.TL() else None,
-                self.value() if self.value() else None,
-            ]
 
-    def __str__(self, detail_lvl=0):
-        return BbwUtils.print_table(self._str_table(detail_lvl), headers=self._header(detail_lvl))
+        return [
+            self.count(),
+            self.name().replace("/", "\n"),
+            self.capacity() if self.capacity() else None,
+            self.TL() if self.TL() else None,
+            self.value() if self.value() else None,
+        ]
+
+    def __str__(self, detail_lvl: int = 0):
+        return BbwUtils.print_table(
+            self._str_table(detail_lvl), headers=self._header(detail_lvl), detail_lvl=detail_lvl
+        )
 
     @staticmethod
     def _header(detail_lvl=0):

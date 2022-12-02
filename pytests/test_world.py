@@ -13,10 +13,12 @@ def test_world_stats():
     assert w0.LAW()[:2] == ("9", 9)
     assert w0.TL()[:2] == ("B", 11)
 
-def test_setters():
+
+def test_setters_and_print(max_detail_level):
     w0 = BbwWorld(name="w0", uwp="B3848F9-B", zone="normal", hex="1904", sector=(-4, 1))
-    for i in range(3):
-        w0.__str__(i)
+    for i in range(max_detail_level):
+        w0.__str__(detail_lvl=i)
+
 
 def test_distance():
     w0 = BbwWorld(name="w0", uwp="B3848F9-B", zone="normal", hex="1910", sector=(-4, 1))
@@ -45,19 +47,22 @@ def test_distance():
     w1.set_sector((-5, 1))
     assert BbwWorld.distance(w0, w1) == 20
 
+
 def test_set_trade_code():
     w0 = BbwWorld(name="w0", uwp="A788899-C", zone="normal", hex="1910", sector=(-4, 1))
-    assert w0.trade_codes() == {'Ri', 'Ht'}
+    assert w0.trade_codes() == {"Ri", "Ht"}
     w0.set_trade_code("('Ri', None)")
-    assert w0.trade_codes() == {'Ht'}
-    w0.set_trade_code('As', 1)
-    assert w0.trade_codes() == {'Ht', 'As'}
+    assert w0.trade_codes() == {"Ht"}
+    w0.set_trade_code("As", 1)
+    assert w0.trade_codes() == {"Ht", "As"}
     w0.set_trade_codes()
-    assert w0.trade_codes() == {'Ri', 'Ht'}
+    assert w0.trade_codes() == {"Ri", "Ht"}
+
 
 def test_people():
     w0 = BbwWorld(name="w0", uwp="A788899-C", zone="normal", hex="1910", sector=(-4, 1))
     w0.people()
+
 
 def test_set_docking_fee():
     w0 = BbwWorld(name="w0", uwp="A788899-C", zone="normal", hex="1910", sector=(-4, 1))
@@ -76,4 +81,5 @@ def test_set_docking_fee():
     assert w0.docking_fee() != oldv
 
 
-
+if __name__ == "__main__":
+    test_setters()

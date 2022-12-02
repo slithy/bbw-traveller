@@ -3,13 +3,15 @@ from dotenv import load_dotenv
 
 import os
 
+
 class TestBot(commands.Bot):
     async def on_ready(self):
-        """ Report some data to show that it is really connected """
+        """Report some data to show that it is really connected"""
         print("ready!")
 
+
 if __name__ == "__main__":
-    bot = TestBot(command_prefix='!')
+    bot = TestBot(command_prefix="!")
     bot.load_extension("cogst5.cog")
     load_dotenv()
     token = os.getenv("DISCORD_TOKEN")

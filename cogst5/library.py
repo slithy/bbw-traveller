@@ -13,7 +13,7 @@ class Library:
         partial_match = [k for key, k in enumerate(LibraryData) if term.lower() in k.lower()]
 
         if len(partial_match) == 0:
-            return f"Library search for *{term}*: data is not available."
+            return f"Library search for `{term}`: data is not available."
 
         if len(partial_match) == 1:
             return (
@@ -31,12 +31,12 @@ class Library:
 
         if len(partial_match) > 10:
             return (
-                f"**Information.** Library contains {len(partial_match)} data items pertaining to *{term}*. Please be"
+                f"**Information.** Library contains {len(partial_match)} data items pertaining to `{term}`. Please be"
                 " more specific."
             )
         else:
             all_matches = "\n • ".join(partial_match)
             return (
-                f"**Information.** Library contains {len(partial_match)} data items pertaining to *{term}*. Please"
+                f"**Information.** Library contains {len(partial_match)} data items pertaining to `{term}`. Please"
                 f" specify:\n • {all_matches}"
             )

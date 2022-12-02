@@ -16,10 +16,10 @@ class BbwUtils:
     def set_if_not_present_decor(func):
         """We assume that the variable is _{func_name} and the setter is set_{func_name}"""
 
-        def wrapper(self):
+        def wrapper(self, *args, **kwargs):
             if not hasattr(self, f"_{func.__name__}"):
                 getattr(self, f"set_{func.__name__}")()
-            return func(self)
+            return func(self, *args, **kwargs)
 
         return wrapper
 
@@ -27,8 +27,7 @@ class BbwUtils:
     def type_sanitizer_decor(func):
         def wrapper(*args, **kwargs):
             def convert(t, val):
-
-                if t is None or val is None:
+                if t is None or val is None or t is type(val):
                     return val
 
                 if t is int:
@@ -48,8 +47,9 @@ class BbwUtils:
 
                 return val
 
-            args = [convert(func.__annotations__.get(var, None), arg) for arg, var in
-                    zip(args, func.__code__.co_varnames)]
+            args = [
+                convert(func.__annotations__.get(var, None), arg) for arg, var in zip(args, func.__code__.co_varnames)
+            ]
             kwargs = {k: convert(func.__annotations__.get(k, None), v) for k, v in kwargs.items()}
             return func(*args, **kwargs)
 
