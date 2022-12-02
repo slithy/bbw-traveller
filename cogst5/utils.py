@@ -13,6 +13,59 @@ import jsonpickle
 
 class BbwUtils:
     @staticmethod
+    def set_if_not_present_decor(func):
+        """We assume that the variable is _{func_name} and the setter is set_{func_name}"""
+
+        def wrapper(self):
+            if not hasattr(self, f"_{func.__name__}"):
+                getattr(self, f"set_{func.__name__}")()
+            return func(self)
+
+        return wrapper
+
+    @staticmethod
+    def type_sanitizer_decor(func):
+        def wrapper(*args, **kwargs):
+            def convert(t, val):
+
+                if t is None or val is None:
+                    return val
+
+                if t is int:
+                    return int(val)
+                if t is float:
+                    return float(val)
+                if t is bool:
+                    if val is str:
+                        if val.lower() == "true":
+                            return True
+                        if val.lower() == "false":
+                            return False
+                    return bool(int(val))
+
+                if type(val) is str:
+                    return eval(val)
+
+                return val
+
+            args = [convert(func.__annotations__.get(var, None), arg) for arg, var in
+                    zip(args, func.__code__.co_varnames)]
+            kwargs = {k: convert(func.__annotations__.get(k, None), v) for k, v in kwargs.items()}
+            return func(*args, **kwargs)
+
+        return wrapper
+
+    @staticmethod
+    def for_all_methods(decorator):
+        def decorate(cls):
+            for attr in cls.__dict__:  # there's propably a better way to do this
+                if callable(getattr(cls, attr)):
+                    setattr(cls, attr, decorator(getattr(cls, attr)))
+            return cls
+
+        return decorate
+
+    @staticmethod
     def test_g(k, v, tr):
         if v <= tr:
             raise InvalidArgument(f"`{k}`: `{v}` must be > `{tr}`!")
