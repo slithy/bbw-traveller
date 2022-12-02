@@ -29,7 +29,7 @@ class WorldCodes:
             return self.name
         return f"{self.description()} (`{self.name()}`)"
 
-
+@BbwUtils.for_all_methods(BbwUtils.type_sanitizer_decor)
 class BbwWorld(BbwObj):
     _zones = ["normal", "amber", "red"]
     _trade_code_table = BbwUtils.gen_dict(
@@ -181,17 +181,16 @@ class BbwWorld(BbwObj):
         for i in obj:
             i.set_supply(bbwtrade, self, t)
 
+
+    @BbwUtils.set_if_not_present_decor
     def suppliers(self):
-        if not hasattr(self, "_suppliers"):
-            self.set_suppliers()
         return self._suppliers
 
     def set_people(self):
         self._people = BbwContainer(name="people")
 
+    @BbwUtils.set_if_not_present_decor
     def people(self):
-        if not hasattr(self, "_people"):
-            self.set_people()
         return self._people
 
     def uwp(self):
@@ -234,13 +233,10 @@ class BbwWorld(BbwObj):
     def sector(self):
         return self._sector
 
-    def set_sector(self, v):
-        if type(v) is str:
-            v = eval(v)
-
+    def set_sector(self, v: tuple):
         self._sector = v
 
-    def set_uwp(self, v):
+    def set_uwp(self, v: str):
         v = str(v)
         v = v.replace("-", "")
         BbwUtils.test_hexstr("uwp", v, [8])
@@ -293,12 +289,12 @@ class BbwWorld(BbwObj):
         v = int(v)
         self._docking_fee = v
 
-    @BbwObj.set_if_not_present_decor
+    @BbwUtils.set_if_not_present_decor
     def docking_fee(self):
         return self._docking_fee
 
     def SP(self):
-        idx = self.uwp()[0]
+        idx = ord(self.uwp()[0])-ord("A")
         lett = self.uwp()[0]
 
         desc = self._get_SP_table_entry(BbwWorld._SP_table)
@@ -375,10 +371,10 @@ class BbwWorld(BbwObj):
         h = ["category", "code", "description"]
         t = [
             ["starport", BbwUtils.print_code(self.SP()[0]), f"{self.SP()[2]}, docking fee: {self.docking_fee()} Cr"],
+            ["size", BbwUtils.print_code(self.SIZE()[0]), self.SIZE()[2]],
             ["atm", BbwUtils.print_code(self.ATM()[0]), self.ATM()[2]],
             ["hydro", BbwUtils.print_code(self.HYDRO()[0]), self.HYDRO()[2]],
             ["pop", BbwUtils.print_code(self.POP()[0]), self.POP()[2]],
-            ["size", BbwUtils.print_code(self.SIZE()[0]), self.SIZE()[2]],
             ["gov", BbwUtils.print_code(self.GOV()[0]), self.GOV()[2]],
             ["law", BbwUtils.print_code(self.LAW()[0]), self.LAW()[2]],
             [
@@ -405,20 +401,3 @@ class BbwWorld(BbwObj):
             return ["name", "uwp"]
         else:
             return ["name", "uwp", "d_km", "zone", "hex", "sector"]
-
-
-# a = BbwWorld(name="feri", uwp="B384879-B", zone="normal", hex="1904", sector=(-4, 1))
-# a.set_trade_code("('Ri', 1)")
-#
-#
-# exit()
-# b = BbwWorld(name="regina", uwp="A788899-C", zone="normal", hex="2005", sector=(-4, 1))
-# print(b.__str__(1))
-# exit()
-#
-# print(a.SIZE())
-# print(a.d_km())
-# #
-# print(BbwWorld.distance(a, b))
-# #
-# exit()

@@ -3,7 +3,7 @@ from cogst5.calendar import *
 
 import bisect
 
-
+@BbwUtils.for_all_methods(BbwUtils.type_sanitizer_decor)
 class BbwPerson(BbwObj):
     _soc_2_life_expenses = [
         [2, 4, 5, 6, 7, 8, 10, 12, 14, 15],
@@ -36,6 +36,7 @@ class BbwPerson(BbwObj):
         self.set_upp(upp)
         self.set_reinvest(reinvest)
         self.set_skill_rank(skill_rank)
+        self.set_backpack()
 
     def set_skill(self, name, value=None):
         if value is None:
@@ -67,7 +68,13 @@ class BbwPerson(BbwObj):
         BbwUtils.test_leq("skill", value, 6)
         self._skill_rank[name] = value
 
-    def set_skill_rank(self, skill_rank):
+    def set_backpack(self):
+        self._backpack = BbwContainer(name="backpack")
+    @BbwUtils.set_if_not_present_decor
+    def backpack(self):
+        return self._backpack
+
+    def set_skill_rank(self, skill_rank={}):
         if type(skill_rank) is str:
             skill_rank = eval(skill_rank)
         if type(skill_rank) is not dict:
@@ -80,6 +87,7 @@ class BbwPerson(BbwObj):
             else:
                 self.set_skill(k, v)
 
+    @BbwUtils.set_if_not_present_decor
     def skill_rank(self):
         return self._skill_rank
 
@@ -90,24 +98,25 @@ class BbwPerson(BbwObj):
         res = [(k, v) for k, v in self.skill_rank().items() if name in k]
         return sorted(res, key=lambda x: x[1]) if len(res) else [(name, default_value)]
 
+    @BbwUtils.set_if_not_present_decor
     def salary_ticket(self, is_per_obj=False):
         return self._per_obj(self._salary_ticket, is_per_obj)
 
+    @BbwUtils.set_if_not_present_decor
     def reinvest(self):
         return self._reinvest
 
-    def set_reinvest(self, v):
-        self._reinvest = bool(int(v))
+    def set_reinvest(self, v: bool=False):
+        self._reinvest = v
 
-    def set_salary_ticket(self, v):
+    def set_salary_ticket(self, v: float=None):
         """v < 0 means salary. Otherwise, ticket"""
         if v is None:
             v = 0
 
-        v = float(v)
-
         self._salary_ticket = v
 
+    @BbwUtils.set_if_not_present_decor
     def upp(self):
         return self._upp
 
@@ -154,7 +163,7 @@ class BbwPerson(BbwObj):
 
         return self.upp()[6], BbwUtils.get_modifier(self.upp()[6], BbwPerson._stat_2_mod)
 
-    def set_upp(self, v):
+    def set_upp(self, v: str=None):
         if v is None:
             self._upp = v
             return
@@ -170,8 +179,7 @@ class BbwPerson(BbwObj):
 
         return self._soc_2_life_expenses[1][bisect.bisect_left(self._soc_2_life_expenses[0], int(self.SOC()[0], 36))]
 
-    def trip_payback(self, t):
-        t = int(t)
+    def trip_payback(self, t: int):
         BbwUtils.test_geq("trip time", t, 0)
 
         if self.life_expenses() is None:
@@ -240,7 +248,7 @@ class BbwPerson(BbwObj):
             ]
 
     def __str__(self, detail_lvl=0):
-        return BbwUtils.print_table(self._str_table(detail_lvl), headers=self._header(detail_lvl))
+        return BbwUtils.print_table(self._str_table(detail_lvl), headers=BbwPerson._header(detail_lvl))
 
     @staticmethod
     def _header(detail_lvl=0):
@@ -266,7 +274,7 @@ class BbwPerson(BbwObj):
                 "reinvest",
             ]
 
-
+@BbwUtils.for_all_methods(BbwUtils.type_sanitizer_decor)
 class BbwSupplier(BbwPerson):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -289,30 +297,26 @@ class BbwSupplier(BbwPerson):
 
         return self._t
 
-    def set_t(self, t=None):
+    def set_t(self, t: int=None):
         if t is None:
             self._t = None
             return
         self._t = BbwCalendar(t)
 
+    @BbwUtils.set_if_not_present_decor
     def supply(self):
-        if not hasattr(self, "_supply"):
-            self.set_supply()
-
         return self._supply
 
-    def _str_table(self, detail_lvl=0):
-        # l = sorted(self.supply(), key=lambda x: x[0])
-        # s = ["\n".join([str(i[q]) for i in l]) for q in range(3)]
+    def _str_table(self, detail_lvl: int=0):
         return [self.name(), self.t()]
 
-    def __str__(self, detail_lvl=0):
+    def __str__(self, detail_lvl: int=0):
         return BbwUtils.print_table(
-            self._str_table(detail_lvl), headers=self._header(detail_lvl), detail_lvl=detail_lvl
+            self._str_table(detail_lvl), headers=BbwSupplier._header(detail_lvl), detail_lvl=detail_lvl
         )
 
     @staticmethod
-    def _header(detail_lvl=0):
+    def _header(detail_lvl: int=0):
         return ["name", "supply date"]
 
     def print_supply(self):
@@ -352,14 +356,14 @@ class BbwPersonFactory:
     ]
 
     @staticmethod
-    def make(name, n_sectors=1, count=None, salary_ticket=None, capacity=None):
+    def make(name, n_sectors: int=1, count: int=None, salary_ticket: int=None, capacity: int=None):
         if count == 0:
             return None
 
         item = copy.deepcopy(BbwUtils.get_objs(raw_list=BbwPersonFactory._lib, name=name, only_one=True)[0])
 
         if item.name() in BbwPersonFactory._tickets.keys():
-            item.set_salary_ticket(BbwPersonFactory._tickets[item.name()][int(n_sectors) - 1])
+            item.set_salary_ticket(BbwPersonFactory._tickets[item.name()][n_sectors - 1])
             item.set_name(f"{item.name()} (ns: {n_sectors})")
 
         if salary_ticket is not None:

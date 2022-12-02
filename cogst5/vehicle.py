@@ -14,6 +14,7 @@ from cogst5.world import *
 import bisect
 
 
+@BbwUtils.for_all_methods(BbwUtils.type_sanitizer_decor)
 class BbwVehicle(BbwObj):
     def __init__(
         self,
@@ -26,7 +27,9 @@ class BbwVehicle(BbwObj):
     ):
         super().__init__(*args, **kwargs)
         self.set_type(type)
+
         self.set_TL(TL)
+
         self.set_armour(armour)
         self.set_containers()
         self.set_info(info)
@@ -34,8 +37,8 @@ class BbwVehicle(BbwObj):
     def info(self):
         return self._info
 
-    def set_info(self, v):
-        self._info = str(v)
+    def set_info(self, v: str):
+        self._info = v
 
     def set_containers(self):
         """set container root"""
@@ -48,12 +51,10 @@ class BbwVehicle(BbwObj):
     def crew(self):
         return [i for i, _ in self.containers().get_objs(name="crew").objs()]
 
-    def set_type(self, v):
-        v = str(v)
+    def set_type(self, v: str):
         self._type = v
 
-    def set_TL(self, v):
-        v = int(v)
+    def set_TL(self, v: int):
         BbwUtils.test_geq("TL", v, 0)
         BbwUtils.test_leq("TL", v, 30)
         self._TL = v
@@ -64,11 +65,10 @@ class BbwVehicle(BbwObj):
     def TL(self):
         return self._TL
 
-    def set_hull(self, v):
+    def set_hull(self, v: int):
         self.set_capacity(v)
 
-    def HP(self, v):
-        v = int(v)
+    def HP(self, v: int):
         v = min(self.size() + v, self.capacity())
         v = max(0, v)
         self.set_size(v)
@@ -77,11 +77,11 @@ class BbwVehicle(BbwObj):
         return self.status()
 
     @staticmethod
-    def _header(is_compact=True):
+    def _header(detail_lvl: str=0):
         s = ["name", "HP", "type", "TL", "armour", "info"]
         return s
 
-    def _str_table(self, is_compact=True):
+    def _str_table(self, detail_lvl: int=1):
         s = [
             str(i)
             for i in [
@@ -96,10 +96,10 @@ class BbwVehicle(BbwObj):
 
         return s
 
-    def __str__(self, is_compact=True):
+    def __str__(self, detail_lvl: int=1):
         s = ""
         s += BbwUtils.print_table(
-            self._str_table(is_compact), headers=self._header(is_compact), is_compact=is_compact == 0
+            self._str_table(detail_lvl), headers=BbwVehicle._header(detail_lvl), is_compact=detail_lvl == 0
         )
 
         for i, _ in self.containers().get_objs(type0=BbwContainer).objs():
@@ -108,7 +108,7 @@ class BbwVehicle(BbwObj):
 
         return s
 
-
+@BbwUtils.for_all_methods(BbwUtils.type_sanitizer_decor)
 class BbwSpaceShip(BbwVehicle):
     _require_fuel_scoop = {"gas giant": 1, "planet": 1, "world": 1, "refined": 0, "unrefined": 0}
 
@@ -135,7 +135,7 @@ class BbwSpaceShip(BbwVehicle):
         self.set_has_cargo_crane(has_cargo_crane)
         super().__init__(*args, **kwargs)
 
-    def flight_time_m_drive(self, d_km):
+    def flight_time_m_drive(self, d_km: int):
         """
         We suppose that we start from 0 speed and we reach the destination with 0 speed. d is the distance we want to cover.
         the time to cover half of the distance follows the equation: 1/2 * a * t**2 = d/2 -> t = sqrt(d/a). The time to cover
@@ -151,7 +151,7 @@ class BbwSpaceShip(BbwVehicle):
         return 2 * math.sqrt(1000 * d_km / (self.m_drive() * 10)) / (60 * 60 * 24)
 
     @staticmethod
-    def j_drive_required_time(n_jumps=1):
+    def j_drive_required_time(n_jumps: int=1):
         """
         jump drive does not depend on the distance but on the number of jumps. Returns flight time in days
         """
@@ -162,7 +162,7 @@ class BbwSpaceShip(BbwVehicle):
         return (148 * n_jumps + d20.roll(f"{6*n_jumps}d6").total) / 24
 
     @staticmethod
-    def j_drive_required_fuel(n_sectors):
+    def j_drive_required_fuel(n_sectors: int):
         return 20 * n_sectors
 
     def ck_j_drive(self, w0, w1):
@@ -181,8 +181,7 @@ class BbwSpaceShip(BbwVehicle):
 
         return "\n".join(ans)
 
-    def add_fuel(self, source, count=float("inf")):
-        count = float(count)
+    def add_fuel(self, source, count: float=float("inf")):
         BbwUtils.test_geq("fuel tons", count, 0)
         if count == 0:
             return BbwRes()
@@ -205,8 +204,7 @@ class BbwSpaceShip(BbwVehicle):
 
         return res, price
 
-    def consume_fuel(self, count):
-        count = int(count)
+    def consume_fuel(self, count: int):
         BbwUtils.test_geq("count", count, 0)
         if count == 0:
             return BbwRes()
@@ -226,79 +224,69 @@ class BbwSpaceShip(BbwVehicle):
         self.containers().dist_obj(obj=new_fuel, cont="fuel")
         return res, total_time
 
-    def set_has_cargo_crane(self, v):
-        v = bool(int(v))
+    def set_has_cargo_crane(self, v: bool):
         self._has_cargo_crane = v
 
     def has_cargo_crane(self):
         return self._has_cargo_crane
 
-    def set_has_cargo_scoop(self, v):
-        v = bool(int(v))
+    def set_has_cargo_scoop(self, v: bool):
         self._has_cargo_scoop = v
 
     def has_cargo_scoop(self):
         return self._has_cargo_scoop
 
-    def set_has_fuel_scoop(self, v):
-        v = bool(int(v))
+    def set_has_fuel_scoop(self, v: bool):
         self._has_fuel_scoop = v
 
     def has_fuel_scoop(self):
         return self._has_fuel_scoop
 
-    def set_is_streamlined(self, v):
-        v = bool(int(v))
+    def set_is_streamlined(self, v: bool):
         self._is_streamlined = v
 
     def is_streamlined(self):
         return self._is_streamlined
 
-    def set_armour(self, v):
-        v = int(v)
+    def set_armour(self, v: int):
         BbwUtils.test_geq("armour", v, 0)
         self._armour = v
 
-    def set_armor(self, v):
+    def set_armor(self, v: int):
         self.set_armour(v)
 
     def armour(self):
         return self._armour
 
-    def set_fuel_refiner_speed(self, v):
-        v = int(v)
+    def set_fuel_refiner_speed(self, v: int):
         BbwUtils.test_geq("fuel refiner speed", v, 0)
         self._fuel_refiner_speed = v
 
     def fuel_refiner_speed(self):
         return self._fuel_refiner_speed
 
-    def set_m_drive(self, v):
-        v = int(v)
+    def set_m_drive(self, v: int):
         BbwUtils.test_geq("drive m", v, 0)
         self._m_drive = v
 
     def m_drive(self):
         return self._m_drive
 
-    def set_j_drive(self, v):
-        v = int(v)
+    def set_j_drive(self, v: int):
         BbwUtils.test_geq("drive j", v, 0)
         self._j_drive = v
 
     def j_drive(self):
         return self._j_drive
 
-    def set_power_plant(self, v):
-        v = int(v)
+    def set_power_plant(self, v: int):
         BbwUtils.test_geq("power plant", v, 0)
         self._power_plant = v
 
     def power_plant(self):
         return self._power_plant
 
-    def var_life_support(self, t):
-        t = int(t)
+    def var_life_support(self, t: int):
         BbwUtils.test_geq("trip time", t, 0)
 
         res = self.containers().get_objs(type0=BbwPerson)
@@ -309,12 +297,12 @@ class BbwSpaceShip(BbwVehicle):
         return self.containers().get_objs(with_all_tags={"weapon"}, type0=BbwItem).count() > 0
 
     @staticmethod
-    def _header(detail_lvl=0):
+    def _header(detail_lvl: int=0):
         s = BbwVehicle._header(detail_lvl)
 
         return s
 
-    def _str_table(self, detail_lvl=0):
+    def _str_table(self, detail_lvl: int=0):
         s = [
             str(i)
             for i in [
@@ -324,9 +312,9 @@ class BbwSpaceShip(BbwVehicle):
 
         return s
 
-    def __str__(self, detail_lvl=1):
+    def __str__(self, detail_lvl: int=1):
         s = ""
-        s += BbwUtils.print_table(self._str_table(detail_lvl), headers=self._header(detail_lvl), detail_lvl=detail_lvl)
+        s += BbwUtils.print_table(self._str_table(detail_lvl), headers=BbwSpaceShip._header(detail_lvl), detail_lvl=detail_lvl)
 
         if detail_lvl == 0:
             return s

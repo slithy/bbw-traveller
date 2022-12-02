@@ -3,9 +3,9 @@ import copy
 from cogst5.models.errors import *
 from cogst5.utils import *
 
-
+@BbwUtils.for_all_methods(BbwUtils.type_sanitizer_decor)
 class BbwObj:
-    def __init__(self, name="", capacity=None, count=1, size=None):
+    def __init__(self, name: str="", capacity: int=None, count: int=1, size: int=None):
         if size is None:
             size = capacity
 
@@ -14,16 +14,7 @@ class BbwObj:
         self.set_capacity(capacity)
         self.set_size(size)
 
-    @staticmethod
-    def set_if_not_present_decor(func):
-        """We assume that the variable is _{func_name} and the setter is set_{func_name}"""
 
-        def wrapper(self):
-            if not hasattr(self, f"_{func.__name__}"):
-                getattr(self, f"set_{func.__name__}")()
-            return func(self)
-
-        return wrapper
 
     def set_size(self, v):
         if v is None:
@@ -44,11 +35,11 @@ class BbwObj:
         if self.size(is_per_obj=True) > self.capacity(is_per_obj=True):
             self.set_size(self.capacity(is_per_obj=True))
 
-    def set_name(self, v):
+    def set_name(self, v: str):
         v = str(v)
         self._name = v
 
-    def set_count(self, v):
+    def set_count(self, v: float):
         if v == float("inf"):
             self._count = v
             return
@@ -66,7 +57,7 @@ class BbwObj:
     def _per_obj(self, v, is_per_obj):
         return v if is_per_obj else v * self.count()
 
-    def size(self, is_per_obj=False):
+    def size(self, is_per_obj: bool=False):
         try:
             size = self._size
         except AttributeError:
@@ -75,7 +66,7 @@ class BbwObj:
 
         return self._per_obj(size, is_per_obj)
 
-    def capacity(self, is_per_obj=False):
+    def capacity(self, is_per_obj: bool=False):
         return self._per_obj(self._capacity, is_per_obj)
 
     def status(self):
@@ -87,15 +78,15 @@ class BbwObj:
         f = getattr(self, f"set_{v}")
         f(k)
 
-    def _str_table(self, detail_lvl=0):
+    def _str_table(self, detail_lvl: int=0):
         if detail_lvl == 0:
             return [self.count(), self.name()]
         else:
             return [self.count(), self.name(), self.capacity()]
 
-    def __str__(self, detail_lvl=0):
+    def __str__(self, detail_lvl: int=0):
         return BbwUtils.print_table(
-            self._str_table(detail_lvl), headers=self._header(detail_lvl), detail_lvl=detail_lvl
+            self._str_table(detail_lvl), headers=BbwObj._header(detail_lvl), detail_lvl=detail_lvl
         )
 
     @staticmethod
@@ -144,9 +135,9 @@ class BbwRes:
     def __str__(self):
         return f"count:`{self.count()}`, len objs: `{len(self.objs())}`"
 
-
+@BbwUtils.for_all_methods(BbwUtils.type_sanitizer_decor)
 class BbwContainer(dict):
-    def __init__(self, name="", capacity=float("inf"), size=0.0):
+    def __init__(self, name: str="", capacity: float=float("inf"), size: float=0.0):
         self.set_name(name)
         self.set_capacity(capacity)
         self.set_size(size)
@@ -161,20 +152,17 @@ class BbwContainer(dict):
     def count(self):
         return 1
 
-    def set_size(self, v):
-        v = float(v)
+    def set_size(self, v: float):
         BbwUtils.test_geq("size", v, 0.0)
         BbwUtils.test_leq("size", v, self._capacity)
 
         self._size = v
 
-    def set_name(self, v):
+    def set_name(self, v: str):
         v = str(v)
         self._name = v
 
-    def set_capacity(self, v):
-        if v is not None:
-            v = float(v)
+    def set_capacity(self, v: float):
 
         BbwUtils.test_geq("capacity", v, 0.0)
         self._capacity = v

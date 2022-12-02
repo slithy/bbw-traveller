@@ -349,7 +349,9 @@ class BbwTrade:
         - w0: departure world data (pop, starport, zone)
         - w1: arrival world data (pop, starport, zone)
         """
-        carouse_or_broker_or_streetwise_mod, SOC_mod = int(carouse_or_broker_or_streetwise_mod), int(SOC_mod)
+        # carouse_or_broker_or_streetwise_mod, SOC_mod = int(carouse_or_broker_or_streetwise_mod), int(SOC_mod)
+        #TODO
+        print(carouse_or_broker_or_streetwise_mod, type(carouse_or_broker_or_streetwise_mod))
 
         crew = cs.crew()
         max_steward = BbwPerson.max_skill(crew, "steward")[0][1]

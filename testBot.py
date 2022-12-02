@@ -8,7 +8,7 @@ class TestBot(commands.Bot):
         """ Report some data to show that it is really connected """
         print("ready!")
 
-if __name__ == "__main__":
+def run():
     bot = TestBot(command_prefix='!')
     bot.load_extension("cogst5.cog")
     load_dotenv()
@@ -21,3 +21,8 @@ if __name__ == "__main__":
     #     return await ctx.send(str(error))
 
     bot.run(token)
+    return bot
+
+
+if __name__ == "__main__":
+    run()
