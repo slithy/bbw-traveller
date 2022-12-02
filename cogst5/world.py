@@ -298,7 +298,7 @@ class BbwWorld(BbwObj):
         return self._docking_fee
 
     def SP(self):
-        idx = self.uwp()[0]
+        idx = ord(self.uwp()[0]) - ord("A")
         lett = self.uwp()[0]
 
         desc = self._get_SP_table_entry(BbwWorld._SP_table)
