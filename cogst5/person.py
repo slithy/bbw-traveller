@@ -216,7 +216,7 @@ class BbwPerson(BbwObj):
 
         return ans, pans
 
-    def _str_table(self, detail_lvl=0):
+    def _str_table(self, detail_lvl: int = 0):
         if detail_lvl == 0:
             return [self.count(), self.name()]
         elif detail_lvl == 1:
@@ -233,14 +233,39 @@ class BbwPerson(BbwObj):
                 self.count(),
                 self.name(),
                 self.upp(),
-                tabulate([[f"{k}:", str(v)] for k, v in sorted(self.skill_rank().items())], tablefmt="plain"),
                 self.salary_ticket(),
                 self.capacity(),
                 self.reinvest(),
             ]
 
-    def __str__(self, detail_lvl=0):
-        return BbwUtils.print_table(self._str_table(detail_lvl), headers=self._header(detail_lvl))
+    def __str__(self, detail_lvl: int = 0):
+        s = BbwUtils.print_table(self._str_table(detail_lvl), headers=self._header(detail_lvl), detail_lvl=detail_lvl)
+
+        if detail_lvl == 0:
+            return s
+
+        h = ["stat", "value", "modifier"]
+        t = [
+            ["STR", BbwUtils.print_code(self.STR()[0]), f"{self.STR()[1]}"],
+            ["DEX", BbwUtils.print_code(self.DEX()[0]), f"{self.DEX()[1]}"],
+            ["END", BbwUtils.print_code(self.END()[0]), f"{self.END()[1]}"],
+            ["INT", BbwUtils.print_code(self.INT()[0]), f"{self.INT()[1]}"],
+            ["EDU", BbwUtils.print_code(self.EDU()[0]), f"{self.EDU()[1]}"],
+            ["SOC", BbwUtils.print_code(self.SOC()[0]), f"{self.SOC()[1]}"],
+        ]
+        if self.PSI():
+            t.append(["PSI", BbwUtils.print_code(self.PSI()[0]), f"{self.PSI()[1]}"])
+
+        s += BbwUtils.print_table(t, headers=h, detail_lvl=1)
+
+        if detail_lvl == 1:
+            return s
+
+        h = ["skill/rank", "level"]
+        t = [[k, str(v)] for k, v in sorted(self.skill_rank().items())]
+
+        s += BbwUtils.print_table(t, headers=h, detail_lvl=1)
+        return s
 
     @staticmethod
     def _header(detail_lvl=0):

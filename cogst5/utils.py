@@ -270,7 +270,11 @@ class BbwUtils:
         if detail_lvl:
             b = "```"
 
-        st = BbwUtils.greedy_splitter(t, lambda x: 1 + sum([str(j).count("\n") for j in x]), limit=limit)
+        def fn_counter(x):
+            s = 1 + sum([str(j).count("\n") for j in x])
+            return s
+
+        st = BbwUtils.greedy_splitter(t, fn_counter, limit=limit)
 
         return "\n".join([b + tabulate(i, headers=headers, tablefmt=tablefmt) + b + "\n" for i in st])
 

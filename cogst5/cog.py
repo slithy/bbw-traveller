@@ -49,11 +49,11 @@ class Game(commands.Cog):
             msg = msg.__str__()
         msg = Game._msg_divisor + msg
 
-        # with open(f"/save/debug.txt", "w") as f:
+        # with open(f"save/debug.txt", "w") as f:
         #     f.write(msg)
 
         for idx, i in enumerate(BbwUtils.split_md_compatible(msg)):
-            # with open(f"/save/debug{idx}.txt", "w") as f:
+            # with open(f"save/debug{idx}.txt", "w") as f:
             #     f.write(msg)
             await ctx.send(i)
 
@@ -574,12 +574,10 @@ class Game(commands.Cog):
         await self.get_objs(ctx, "passenger")
 
     @commands.command(name="get_objs", aliases=["objs", "obj"])
-    async def get_objs(self, ctx, name=""):
+    async def get_objs(self, ctx, name: str = "", detail_lvl: int = 1):
         cs = self.session_data.get_ship_curr()
-        c = BbwContainer(name="results:")
-        for i, _ in cs.containers().get_objs(name=name).objs():
-            c.dist_obj(i)
-        await self._container(ctx, 2, [c])
+        c = [i for i, _ in cs.containers().get_objs(name=name).objs()]
+        await self._container(ctx, detail_lvl, c)
 
     @commands.command(name="log", aliases=["ll"])
     async def get_log(self, ctx, log_lines=10, name="", transactions=0):
