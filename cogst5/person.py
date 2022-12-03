@@ -37,6 +37,7 @@ class BbwPerson(BbwObj):
         self.set_reinvest(reinvest)
         self.set_skill_rank(skill_rank)
 
+
     def set_skill(self, name, value=None):
         if value is None:
             name, value = eval(name)

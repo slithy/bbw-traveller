@@ -127,6 +127,7 @@ class BbwRes:
         return f"count:`{self.count()}`, len objs: `{len(self.objs())}`"
 
 
+@BbwUtils.for_all_methods(BbwUtils.type_sanitizer_decor)
 class BbwContainer(dict):
     def __init__(self, name="", capacity=float("inf"), size=0.0):
         self.set_name(name)
@@ -143,30 +144,35 @@ class BbwContainer(dict):
     def count(self):
         return 1
 
-    def set_size(self, v):
-        v = float(v)
+    def set_size(self, v: float = 0.0):
+        if v is None:
+            v = 0.0
         BbwUtils.test_geq("size", v, 0.0)
         BbwUtils.test_leq("size", v, self._capacity)
 
         self._size = v
 
-    def set_name(self, v):
+    def set_name(self, v: str):
         v = str(v)
         self._name = v
 
-    def set_capacity(self, v):
-        if v is not None:
-            v = float(v)
+    def set_capacity(self, v: float=float("inf")):
+        if v is None:
+            v = float("inf")
 
         BbwUtils.test_geq("capacity", v, 0.0)
         self._capacity = v
+        self.set_size(min(self.size(), v))
+
 
     def name(self):
         return self._name
 
+    @BbwUtils.set_if_not_present_decor
     def size(self):
         return sum([i.capacity() for i in self.values()]) + self._size
 
+    @BbwUtils.set_if_not_present_decor
     def capacity(self):
         return self._capacity
 
@@ -291,14 +297,13 @@ class BbwContainer(dict):
     #             return ans
     #     return BbwRes()
 
-    def dist_obj(self, obj, unbreakable=False, cont=None, *args, **kwargs):
+    def dist_obj(self, obj, unbreakable: bool=False, cont: str=None, *args, **kwargs):
         if type(obj) is BbwContainer:
             if len(BbwUtils.get_objs([self], name=cont, *args, **kwargs)):
                 return self._add_obj(obj)
             else:
                 return BbwRes()
 
-        unbreakable = bool(int(unbreakable))
         ans = BbwRes()
         n = obj.count()
 
@@ -351,10 +356,10 @@ class BbwContainer(dict):
         return BbwRes(count=delta_count, objs=[(self[k], self)])
 
     @staticmethod
-    def _header(detail_lvl=0):
+    def _header(detail_lvl: int=0):
         return ["", "name", "status"]
 
-    def _str_table(self, detail_lvl=0):
+    def _str_table(self, detail_lvl: int=0):
         return [None, self.name(), self.status()]
 
     def __str__(self, detail_lvl=0, lsort=lambda x: x.name()):

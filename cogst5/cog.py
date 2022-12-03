@@ -792,6 +792,10 @@ class Game(commands.Cog):
                 res_to = cs.containers().dist_obj(i, cont=cont_from)
                 await self._send_add_res(ctx, res_to, count)
 
+
+
+
+
     @commands.command(
         name="move_vip", aliases=["move_to_world", "move_from_world", "move_to_planet", "move_from_planet"]
     )
