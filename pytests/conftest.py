@@ -1,7 +1,8 @@
 import pytest
 
-from cogst5.world import BbwWorld
 from cogst5.vehicle import BbwSpaceShip
+from cogst5.world import BbwWorld
+
 
 @pytest.fixture
 def max_detail_level():

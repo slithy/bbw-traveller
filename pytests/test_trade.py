@@ -1,7 +1,5 @@
-from cogst5.world import BbwWorld
 from cogst5.trade import BbwTrade
-from cogst5.base import BbwContainer
-from cogst5.vehicle import BbwSpaceShip
+
 
 def test_load_passengers(cs, w0, w1):
     header = ["high", "middle", "basic", "low"]

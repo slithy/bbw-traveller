@@ -1,8 +1,7 @@
-from cogst5.base import BbwObj, BbwContainer
-from cogst5.utils import BbwUtils
-
-from cogst5.models.errors import *
 import pytest
+
+from cogst5.base import BbwObj, BbwContainer
+from cogst5.models.errors import *
 
 
 def test_setters_and_print(max_detail_level):
