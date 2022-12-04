@@ -88,7 +88,7 @@ class Game(commands.Cog):
 
         await self.send(ctx, f"Session data saved as: {p}. Backup in: {p_backup}")
 
-    @commands.command(name="load")
+    @commands.command(name="load", aliases=["Load"])
     async def load_session_data(self, ctx, filename: str = "session_data.json"):
         """Load session data from a JSON-formatted file."""
 
@@ -107,17 +107,18 @@ class Game(commands.Cog):
     async def load_passengers(self, ctx, carouse_or_broker_or_streetwise_mod: int, SOC_mod: int, w_to_name: str):
         cs = self.session_data.get_ship_curr()
         w0, w1 = self.session_data.get_worlds(w_to_name=w_to_name)
+        n_sectors = BbwWorld.distance(w0, w1)
 
         header = ["high", "middle", "basic", "low"]
         counter = ["0/0"] * len(header)
         s = ""
         for idx, i in enumerate(header):
-            p, n_sectors, r, nd = BbwTrade.find_passengers(cs, carouse_or_broker_or_streetwise_mod, SOC_mod, i, w0, w1)
+            person, r = BbwTrade.find_passengers(cs, carouse_or_broker_or_streetwise_mod, SOC_mod, i, w0, w1)
             s += f"{Game._msg_divisor if idx else ''}{i} passenger table modifier:\n{r}\n"
-            s += f"{Game._msg_divisor}{i} passengers available: {nd}\n"
-            if p is not None:
-                res = await self.add_person(ctx, name=i, count=p.count(), n_sectors=n_sectors, mute=True)
-                counter[idx] = f"{res.count()}/{p.count()}"
+            s += f"{Game._msg_divisor}{i} passengers available: {0 if person is None else person.count()}\n"
+            if person:
+                res = await self.add_person(ctx, name=i, count=person.count(), n_sectors=n_sectors, mute=True)
+                counter[idx] = f"{res.count()}/{person.count()}"
 
         await self.send(
             ctx,
@@ -131,24 +132,34 @@ class Game(commands.Cog):
     async def find_mail_and_freight(self, ctx, broker_or_streetwise_mod: int, SOC_mod: int, w_to_name: str):
         cs = self.session_data.get_ship_curr()
         w0, w1 = self.session_data.get_worlds(w_to_name=w_to_name)
+        n_sectors = BbwWorld.distance(w0, w1)
 
         header = ["mail", "major", "minor", "incidental"]
+
         if BbwWorld.distance(w0, w1) >= 5:
             header = ["major", "minor", "incidental", "mail"]
         counter = ["0/0"] * len(header)
         s = ""
         mail_value, n_canisters = 0, 0
+
+        def nd_tpl(item):
+            tons_per_lot = 0
+            if item is not None and item.count():
+                tons_per_lot = int(item.capacity(is_per_obj=True))
+
+            nd = 0 if item is None else item.count()
+            return nd, tons_per_lot
+
         for idx, i in enumerate(header):
             if i == "mail":
-                item, n_sectors, r, nd, rft = BbwTrade.find_mail(cs, broker_or_streetwise_mod, SOC_mod, w0, w1)
+                item, r, rft = BbwTrade.find_mail(cs, broker_or_streetwise_mod, SOC_mod, w0, w1)
+                nd, tons_per_lot = nd_tpl(item)
                 s += f"freight table modifier:\n{rft}\n"
                 s += f"{Game._msg_divisor}mail table modifier (qualified if  > 0):\n{r}\n"
                 s += f"{Game._msg_divisor}available mail canisters (5 tons each) (take all or nothing): {nd}\n"
             else:
-                item, n_sectors, r, nd = BbwTrade.find_freight(broker_or_streetwise_mod, SOC_mod, i, w0, w1)
-                tons_per_lot = 0
-                if item is not None and item.count():
-                    tons_per_lot = int(item.capacity(is_per_obj=True))
+                item, r = BbwTrade.find_freight(broker_or_streetwise_mod, SOC_mod, i, w0, w1)
+                nd, tons_per_lot = nd_tpl(item)
 
                 s += f"{Game._msg_divisor}{i} freight table modifier:\n{r}\n"
                 s += (
@@ -156,9 +167,15 @@ class Game(commands.Cog):
                     f" unbreakable): {nd}\n"
                 )
 
-            if item is not None:
-                res = await self._add_item(
-                    ctx, name=i, count=item.count(), n_sectors=n_sectors, unbreakable=(i == "mail"), mute=True
+            if item is not None and item.count():
+                res = await self.add_item(
+                    ctx,
+                    name=i,
+                    count=item.count(),
+                    capacity=tons_per_lot,
+                    n_sectors=n_sectors,
+                    unbreakable=(i == "mail"),
+                    mute=True,
                 )
                 if i == "mail" and res.count():
                     mail_value, n_canisters = sum([i.value() for i, _ in res.objs()]), res.count()
@@ -539,6 +556,9 @@ class Game(commands.Cog):
 
     async def _container(self, ctx, detail_lvl: int, res):
         s = "\n".join([i.__str__(detail_lvl) for i in res])
+
+        free_space = sum([i.free_space() for i in res])
+        s += f"{Game._msg_divisor}\nfree space: `{free_space:.2f}`"
         await self.send(ctx, s)
 
     @commands.command(name="container", aliases=["cont", "inv"])
@@ -556,7 +576,7 @@ class Game(commands.Cog):
             else:
                 detail_lvl = 2
                 for i in args:
-                    res += args
+                    res += i
 
         await self._container(ctx, detail_lvl, [i for i, _ in res.objs()])
 
@@ -631,10 +651,12 @@ class Game(commands.Cog):
         await self.send(ctx, f"Hull status: `{cs.hull()}`")
 
     @commands.command(name="add_container", aliases=["add_cont"])
-    async def add_container(self, ctx, name: str, capacity: float = float("inf"), size: float = 0.0, cont: str = None):
-        cs = self.session_data.get_ship_curr()
+    async def add_container(
+        self, ctx, name: str, capacity: float = float("inf"), size: float = 0.0, cont: str = None, conts: str = None
+    ):
+        containers = self.session_data.get_containers(name=conts)
         new_container = BbwContainer(name=name, capacity=capacity, size=size)
-        res = cs.containers().dist_obj(obj=new_container, cont=cont)
+        res = containers.dist_obj(obj=new_container, cont=cont)
         if res.count():
             await self.send(ctx, f"container `{name}` added to `{res.objs()[0][1].name()}`")
         else:
@@ -713,38 +735,12 @@ class Game(commands.Cog):
             await self._send_add_res(ctx, res_p, res_p.count())
         return res_p
 
-    async def _add_item(
-        self,
-        ctx,
-        name: str,
-        count: int = 1,
-        capacity: float = None,
-        TL: int = None,
-        value: int = None,
-        cont: str = "cargo",
-        unbreakable: bool = False,
-        n_sectors: int = 1,
-        mute: bool = False,
+    @commands.command(name="del_person", aliases=["del_obj", "del", "del_item"])
+    async def del_obj(
+        self, ctx, name: str, count: float = float("inf"), cont: str = None, conts: str = None, mute: bool = False
     ):
-        try:
-            new_item = BbwItemFactory.make(
-                name=name, count=count, TL=TL, value=value, capacity=capacity, n_sectors=n_sectors
-            )
-        except SelectionException:
-            new_item = BbwItem(name=name, count=count, TL=TL, value=value, capacity=capacity)
-
-        cs = self.session_data.get_ship_curr()
-        res = cs.containers().dist_obj(obj=new_item, cont=cont, unbreakable=unbreakable)
-
-        if not mute:
-            await self._send_add_res(ctx, res, count)
-
-        return res
-
-    @commands.command(name="del_person", aliases=["del_obj", "del"])
-    async def del_obj(self, ctx, name: str, count: float = float("inf"), cont: str = None, mute: bool = False):
-        cs = self.session_data.get_ship_curr()
-        res = cs.containers().del_obj(name=name, count=count, cont=cont)
+        containers = self.session_data.get_containers(conts)
+        res = containers.del_obj(name=name, count=count, cont=cont)
 
         if count:
             msg = f"deleted: `{res.count()}/{count}`"
@@ -758,16 +754,16 @@ class Game(commands.Cog):
         return res
 
     @commands.command(name="rename_person", aliases=["rename_obj", "rename_item", "rename"])
-    async def rename_obj(self, ctx, name: str, new_name: str, cont: str = None):
-        cs = self.session_data.get_ship_curr()
-        res = cs.containers().rename_obj(name=name, new_name=new_name, cont=cont, only_one=True)
+    async def rename_obj(self, ctx, name: str, new_name: str, cont: str = None, conts: str = None):
+        containers = self.session_data.get_containuers(conts)
+        res = containers.rename_obj(name=name, new_name=new_name, cont=cont, only_one=True)
 
         await self._send_add_res(ctx, res, 1)
 
     @commands.command(name="set_obj_attr_in_cont", aliases=[])
-    async def set_obj_attr_in_cont(self, ctx, name: str, attr_name: str, cont: str = None, *args):
-        cs = self.session_data.get_ship_curr()
-        res = cs.containers().get_objs(name=name, cont=cont, only_one=True)
+    async def set_obj_attr_in_cont(self, ctx, name: str, attr_name: str, cont: str = None, conts: str = None, *args):
+        containers = self.session_data.get_containers(conts)
+        res = containers.get_objs(name=name, cont=cont, only_one=True)
 
         res.objs()[0][0].set_attr(attr_name, *args)
 
@@ -775,26 +771,39 @@ class Game(commands.Cog):
 
     @commands.command(name="set_person_attr", aliases=["set_item_attr", "set_obj_attr"])
     async def set_obj_attr(self, ctx, name: str, attr_name: str, *args):
-        await self.set_obj_attr_in_cont(ctx, name, attr_name, None, *args)
+        await self.set_obj_attr_in_cont(ctx, name, attr_name, None, None, *args)
 
     @commands.command(name="move", aliases=[])
-    async def move(self, ctx, name: str, cont_to: str, count: float = float("inf"), cont_from: str = "cargo"):
-        """add item to container"""
-        cs = self.session_data.get_ship_curr()
+    async def move(
+        self,
+        ctx,
+        name: str,
+        cont_to: str,
+        count: float = float("inf"),
+        cont_from: str = "cargo",
+        conts_from: str = None,
+        conts_to=None,
+    ):
+        """add item to container
+        conts_from and conts_to are the super containers that contain the containers that need to do the job.
 
-        res = cs.containers().del_obj(name=name, count=count, cont=cont_from)
+        Example: cs.containers()
+        None means the container of the ship
+        """
+        conts_from, conts_to = self.session_data.get_containers(conts_from), self.session_data.get_containers(conts_to)
+
+        res = conts_from.del_obj(name=name, count=count, cont=cont_from)
+        if res.count() == 0:
+            raise SelectionException(f"object `{name}` not found in `{cont_from}`")
+
         for i, _ in res.objs():
-            res_to = cs.containers().dist_obj(i, cont=cont_to)
+            res_to = conts_to.dist_obj(i, cont=cont_to)
             await self._send_add_res(ctx, res_to, count)
 
             if i.count() > res_to.count():
                 i.set_count(i.count() - res_to.count())
-                res_to = cs.containers().dist_obj(i, cont=cont_from)
+                res_to = conts_from.dist_obj(i, cont=cont_from)
                 await self._send_add_res(ctx, res_to, count)
-
-
-
-
 
     @commands.command(
         name="move_vip", aliases=["move_to_world", "move_from_world", "move_to_planet", "move_from_planet"]
@@ -940,6 +949,34 @@ class Game(commands.Cog):
 
         await self.add_money(ctx, value=-value, description=f"docking fee")
 
+    async def _add_item(
+        self,
+        ctx,
+        name: str,
+        count: int = 1,
+        capacity: float = None,
+        TL: int = None,
+        value: int = None,
+        cont: str = "cargo",
+        unbreakable: bool = False,
+        n_sectors: int = 1,
+        mute: bool = False,
+    ):
+        try:
+            new_item = BbwItemFactory.make(
+                name=name, count=count, TL=TL, value=value, capacity=capacity, n_sectors=n_sectors
+            )
+        except SelectionException:
+            new_item = BbwItem(name=name, count=count, TL=TL, value=value, capacity=capacity)
+
+        cs = self.session_data.get_ship_curr()
+        res = cs.containers().dist_obj(obj=new_item, cont=cont, unbreakable=unbreakable)
+
+        if not mute:
+            await self._send_add_res(ctx, res, count)
+
+        return res
+
     @commands.command(name="add_obj", aliases=["add_item"])
     async def add_item(
         self,
@@ -950,8 +987,25 @@ class Game(commands.Cog):
         TL: int = None,
         value: int = None,
         cont: str = "cargo",
+        conts: str = None,
+        n_sectors: int = 1,
+        unbreakable: bool = False,
+        mute: bool = False,
     ):
-        await self.buy(ctx, name=name, count=count, price_multi=0, capacity=capacity, TL=TL, value=value, cont=cont)
+        return await self.buy(
+            ctx,
+            name=name,
+            count=count,
+            price_multi=0,
+            n_sectors=n_sectors,
+            capacity=capacity,
+            TL=TL,
+            value=value,
+            cont=cont,
+            conts=conts,
+            unbreakable=unbreakable,
+            mute=mute,
+        )
 
     @commands.command(name="buy", aliases=[])
     async def buy(
@@ -965,6 +1019,8 @@ class Game(commands.Cog):
         value: int = None,
         n_sectors: int = 1,
         cont: str = "cargo",
+        conts: str = None,
+        unbreakable=False,
         mute: bool = False,
     ):
         try:
@@ -974,33 +1030,40 @@ class Game(commands.Cog):
         except SelectionException:
             new_item = BbwItem(name=name, count=count, TL=TL, value=value, capacity=capacity)
 
-        cs = self.session_data.get_ship_curr()
+        containers = self.session_data.get_containers(conts)
 
-        free_slots = cs.containers().free_slots(
+        free_slots = containers.free_slots(
             caps=[
                 (new_item.capacity(is_per_obj=True), cont, {}),
             ]
         )
 
-        if free_slots == 0:
-            await self.send(ctx, f"No space!")
-            return
+        if free_slots == 0 or (unbreakable and new_item.count() > free_slots):
+            if not mute:
+                await self.send(ctx, f"No space!")
+            return BbwRes()
 
         new_item.set_count(min(new_item.count(), free_slots))
 
         price_payed = int(new_item.value() * price_multi)
+        description = f"{new_item.name()} ({new_item.count()})"
+        if price_payed != 0:
+            await self.add_money(ctx, value=-price_payed, description=f"buy: {description}")
+        else:
+            self.session_data.add_log_entry(f"add item: {description}")
 
-        description = f"buy: {new_item.name()} ({new_item.count()})"
-        await self.add_money(ctx, value=-price_payed, description=description)
-
-        res = cs.containers().dist_obj(obj=new_item, cont=cont)
+        res = containers.dist_obj(obj=new_item, cont=cont)
 
         if not mute:
             await self._send_add_res(ctx, res, res.count())
 
+        return res
+
     @commands.command(name="sell", aliases=[])
-    async def sell(self, ctx, name: str, count: float = float("inf"), price_multi: float = 1.0, cont: str = None):
-        res = await self.del_obj(ctx, name=name, count=count, cont=cont)
+    async def sell(
+        self, ctx, name: str, count: float = float("inf"), price_multi: float = 1.0, cont: str = None, conts: str = None
+    ):
+        res = await self.del_obj(ctx, name=name, count=count, cont=cont, conts=conts)
 
         description = f"sell: {', '.join(set([i.name() for i, _ in res.objs()]))} ({res.count()})"
 

@@ -383,10 +383,10 @@ class BbwTrade:
         nd = BbwExpr(d20.roll(f"{nd}d6"))
 
         if int(nd) <= 0:
-            return (None, n_sectors, r, nd)
+            return None, r
 
         person.set_count(int(nd))
-        return (person, n_sectors, r, nd)
+        return person, r
 
     @staticmethod
     def _freight_traffic_table_roll(brocker_or_streetwise_mod, SOC_mod, kind, w0, w1):
@@ -443,10 +443,11 @@ class BbwTrade:
         - w0: departure world data (pop, starport, TL, zone)
         - w1: arrival world data (pop, starport, TL, zone)
         """
+
         crew = [i for i, _ in cs.containers().get_objs(name="crew", type0=BbwPerson).objs()]
         max_naval_or_scout_rank = max(BbwPerson.max_rank(crew, "navy")[0][1], BbwPerson.max_rank(crew, "scout")[0][1])
 
-        max_SOC_mod = BbwUtils.get_modifier(BbwPerson.max_stat(crew, "SOC")[0], BbwPerson._stat_2_mod)
+        max_SOC_mod = max(SOC_mod, BbwUtils.get_modifier(BbwPerson.max_stat(crew, "SOC")[0], BbwPerson._stat_2_mod))
 
         n_sectors, rft = BbwTrade._freight_traffic_table_roll(brocker_or_streetwise_mod, SOC_mod, "mail", w0, w1)
         r = BbwExpr()
@@ -462,10 +463,10 @@ class BbwTrade:
             r += ("armed", 2)
 
         if int(r) < 0:
-            return None, n_sectors, r, 0, rft
+            return None, r, rft
 
         nd = BbwExpr(d20.roll(f"1d6"))
-        return BbwItemFactory.make(name="mail", count=int(nd)), n_sectors, r, nd, rft
+        return BbwItemFactory.make(name="mail", count=int(nd)), r, rft
 
     @staticmethod
     def find_freight(
@@ -486,7 +487,7 @@ class BbwTrade:
         nd = BbwUtils.get_modifier(int(r), BbwTrade._passenger_traffic_table)
         nd = BbwExpr(d20.roll(f"{nd}d6"))
 
-        return BbwItemFactory.make(name=kind, count=int(nd), n_sectors=n_sectors), n_sectors, r, nd
+        return BbwItemFactory.make(name=kind, count=int(nd), n_sectors=n_sectors), r
 
 
 # w1 = BbwWorld(name="enope", uwp="C411988-7", zone="normal", hex="2205", sector=(-4, 1))

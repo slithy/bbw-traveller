@@ -251,6 +251,7 @@ class BbwUtils:
             return ans
 
         ans = _get_objs(name, ans)
+
         if only_one:
             if len(ans) == 0:
                 raise SelectionException(f"object `{name}` not found! Optons: `{', '.join(names)}`")

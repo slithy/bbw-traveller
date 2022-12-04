@@ -1,4 +1,6 @@
 from cogst5.base import BbwObj, BbwContainer
+from cogst5.utils import BbwUtils
+
 from cogst5.models.errors import *
 import pytest
 
@@ -134,7 +136,20 @@ def test_del_obj():
     c0.del_obj("oo", 1)
     assert c0.get_objs("oo").count() == 1
 
+def test_free_space():
+    base, c1, c2, c3, c4 = BbwContainer("base"), BbwContainer("c1", 8), BbwContainer("c2", 3, 1), BbwContainer("c3", 3), BbwContainer("c4", 2, 1)
+    c1.dist_obj(c2)
+    base.dist_obj(c1)
+    def fs(name=None):
+        return sum([i.free_space() for i in [i for i, _ in base.get_objs(name=name, type0=BbwContainer).objs()]])
 
+    assert fs() == 7
+    base.dist_obj(c3, cont="c1")
+    base.dist_obj(c4, cont="c3")
+    assert fs() == 6
+    assert fs("c3") == 1
+    assert fs("c4") == 1
+    assert fs("c1") == 2
 
 if __name__ == "__main__":
-    test_del_obj()
+    test_free_space()

@@ -37,6 +37,14 @@ class BbwPerson(BbwObj):
         self.set_reinvest(reinvest)
         self.set_skill_rank(skill_rank)
 
+    def set_containers(self):
+        self._containers = BbwContainer("containers")
+        self._containers.dist_obj(BbwContainer("backpack"))
+        self._containers.dist_obj(BbwContainer("cybernetics"))
+
+    @BbwUtils.set_if_not_present_decor
+    def containers(self):
+        return self._containers
 
     def set_skill(self, name, value=None):
         if value is None:
@@ -258,6 +266,7 @@ class BbwPerson(BbwObj):
             t.append(["PSI", BbwUtils.print_code(self.PSI()[0]), f"{self.PSI()[1]}"])
 
         s += BbwUtils.print_table(t, headers=h, detail_lvl=1)
+        s += "\n".join([i.__str__(detail_lvl=2) for i, _ in self.containers().get_objs(type0=BbwContainer).objs()])
 
         if detail_lvl == 1:
             return s
@@ -266,6 +275,7 @@ class BbwPerson(BbwObj):
         t = [[k, str(v)] for k, v in sorted(self.skill_rank().items())]
 
         s += BbwUtils.print_table(t, headers=h, detail_lvl=1)
+
         return s
 
     @staticmethod

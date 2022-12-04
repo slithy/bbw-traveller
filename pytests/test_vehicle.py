@@ -1,4 +1,6 @@
 from cogst5.vehicle import BbwSpaceShip
+from cogst5.base import BbwContainer
+from cogst5.world import BbwWorld
 from cogst5.models.errors import *
 import pytest
 
@@ -65,5 +67,7 @@ def test_m_drive():
         s.flight_time_m_drive(-1)
 
 
+
+
 if __name__ == "__main__":
-    test_setters_and_print(2)
+    pass

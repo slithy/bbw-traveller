@@ -46,6 +46,13 @@ class BbwObj:
     def count(self):
         return self._count
 
+    def free_space(self):
+        c = self.capacity()
+        s = self.size()
+        if c == float("inf") and s == float("inf"):
+            return float("inf")
+        return c - s
+
     def name(self):
         return self._name
 
@@ -156,14 +163,13 @@ class BbwContainer(dict):
         v = str(v)
         self._name = v
 
-    def set_capacity(self, v: float=float("inf")):
+    def set_capacity(self, v: float = float("inf")):
         if v is None:
             v = float("inf")
 
         BbwUtils.test_geq("capacity", v, 0.0)
         self._capacity = v
         self.set_size(min(self.size(), v))
-
 
     def name(self):
         return self._name
@@ -181,11 +187,9 @@ class BbwContainer(dict):
         s = self.size()
         if c == float("inf") and s == float("inf"):
             return float("inf")
-        return self.capacity() - self.size()
+        return c - s
 
     def status(self):
-        if self.capacity() == float("inf"):
-            return ""
         return f"{self.size()}/{self.capacity()}"
 
     def _get_children_containers(self):
@@ -297,11 +301,15 @@ class BbwContainer(dict):
     #             return ans
     #     return BbwRes()
 
-    def dist_obj(self, obj, unbreakable: bool=False, cont: str=None, *args, **kwargs):
+    def dist_obj(self, obj, unbreakable: bool = False, cont: str = None, *args, **kwargs):
         if type(obj) is BbwContainer:
             if len(BbwUtils.get_objs([self], name=cont, *args, **kwargs)):
                 return self._add_obj(obj)
             else:
+                for i in self._get_children_containers():
+                    res = i.dist_obj(obj, unbreakable=unbreakable, cont=cont, *args, **kwargs)
+                    if res.count():
+                        return res
                 return BbwRes()
 
         ans = BbwRes()
@@ -356,10 +364,10 @@ class BbwContainer(dict):
         return BbwRes(count=delta_count, objs=[(self[k], self)])
 
     @staticmethod
-    def _header(detail_lvl: int=0):
+    def _header(detail_lvl: int = 0):
         return ["", "name", "status"]
 
-    def _str_table(self, detail_lvl: int=0):
+    def _str_table(self, detail_lvl: int = 0):
         return [None, self.name(), self.status()]
 
     def __str__(self, detail_lvl=0, lsort=lambda x: x.name()):
@@ -371,7 +379,7 @@ class BbwContainer(dict):
 
         entry_detail_lvl = max(1, detail_lvl)
         maxIndex, _ = max(
-            enumerate([len(i._header(detail_lvl=entry_detail_lvl)) for i in self.values()]), key=lambda v: v[1]
+            enumerate([len(type(i)._header(detail_lvl=entry_detail_lvl)) for i in self.values()]), key=lambda v: v[1]
         )
         h = type(list(self.values())[maxIndex])._header(detail_lvl=entry_detail_lvl)
 
