@@ -588,7 +588,7 @@ class Game(commands.Cog):
 
     @commands.command(name="fuel", aliases=[])
     async def fuel(self, ctx):
-        await self.container(ctx, "fuel")
+        await self.container(ctx, "fuel tank")
 
     @commands.command(name="crew", aliases=[])
     async def crew(self, ctx):

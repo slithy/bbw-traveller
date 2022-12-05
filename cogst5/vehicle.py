@@ -5,7 +5,7 @@ from cogst5.models.errors import *
 import math
 import d20
 
-from cogst5.base import *
+from cogst5.base import BbwObj
 from cogst5.person import *
 from cogst5.item import *
 from cogst5.utils import *
@@ -29,33 +29,23 @@ class BbwVehicle(BbwObj):
         self.set_type(type)
         self.set_TL(TL)
         self.set_armour(armour)
-        self.set_containers()
         self.set_info(info)
         self.set_HP()
 
+    @BbwUtils.set_if_not_present_decor
     def info(self):
         return self._info
 
-    def set_info(self, v):
-        self._info = str(v)
-
-    def set_containers(self):
-        """set container root"""
-        self._containers = BbwContainer(name="containers")
-
-    def containers(self):
-        """container root"""
-        return self._containers
+    def set_info(self, v: str = ""):
+        self._info = v
 
     def crew(self):
-        return [i for i, _ in self.containers().get_objs(name="crew").objs()]
+        return [i for i, _ in self.get_objs(name="crew").objs()]
 
-    def set_type(self, v):
-        v = str(v)
+    def set_type(self, v: str):
         self._type = v
 
-    def set_TL(self, v):
-        v = int(v)
+    def set_TL(self, v: int):
         BbwUtils.test_geq("TL", v, 0)
         BbwUtils.test_leq("TL", v, 30)
         self._TL = v
@@ -65,9 +55,6 @@ class BbwVehicle(BbwObj):
 
     def TL(self):
         return self._TL
-
-    def set_hull(self, v):
-        self.set_capacity(v)
 
     def max_HP(self):
         return self.capacity() / 2.5
@@ -86,9 +73,6 @@ class BbwVehicle(BbwObj):
 
     def hull(self):
         return f"({self.HP()}/{self.max_HP()})"
-
-    def status(self):
-        return self.containers().status()
 
     @staticmethod
     def _header(is_compact=True):
@@ -111,15 +95,16 @@ class BbwVehicle(BbwObj):
 
         return s
 
-    def __str__(self, is_compact=True):
+    def __str__(self, detail_lvl: int=0):
         s = ""
         s += BbwUtils.print_table(
-            self._str_table(is_compact), headers=BbwVehicle._header(is_compact), is_compact=is_compact == 0
+            self._str_table(detail_lvl=detail_lvl), headers=BbwVehicle._header(detail_lvl=detail_lvl), detail_lvl=detail_lvl
         )
+        if detail_lvl == 0:
+            return s
 
-        for i, _ in self.containers().get_objs(type0=BbwContainer).objs():
-            s += i.__str__(is_compact=False)
-            s += "\n"
+        for i in self.get_children():
+            s += i.__str__(detail_lvl=detail_lvl)
 
         return s
 
@@ -189,7 +174,7 @@ class BbwSpaceShip(BbwVehicle):
                 f"ship's j drive (`{self.j_drive()}`) < distance (`{n_sectors}`) between `{w1.name()}` and"
                 f" `{w0.name()}`. Too far!"
             )
-        res = self.containers().get_objs(name="fuel, refined", cont="fuel")
+        res = self.get_objs(name="fuel, refined", cont="fuel tank")
 
         rs = BbwSpaceShip.j_drive_required_fuel(n_sectors)
         if res.count() < rs:
@@ -215,7 +200,7 @@ class BbwSpaceShip(BbwVehicle):
         base_price = fuel_obj.value()
         fuel_obj.set_count(count)
 
-        res = self.containers().dist_obj(obj=fuel_obj, cont="fuel", type0=BbwContainer)
+        res = self.dist_obj(obj=fuel_obj, cont="fuel tank")
 
         price = 0 if require_scoop == 1 else res.count() * base_price
 
@@ -227,19 +212,19 @@ class BbwSpaceShip(BbwVehicle):
         if count == 0:
             return BbwRes()
 
-        res = self.containers().get_objs(name="fuel, refined", cont="fuel")
+        res = self.get_objs(name="fuel, refined", cont="fuel tank")
         if res.count() < count:
             raise NotAllowed(f"not enough refined fuel! In tanks: `{res.count()}` < requested: `{count}`")
-        return self.containers().del_obj(name="fuel, refined", count=count, cont="fuel")
+        return self.del_obj(name="fuel, refined", count=count, cont="fuel tank")
 
     def refine_fuel(self):
-        res = self.containers().del_obj(name="fuel, unrefined", cont="fuel")
+        res = self.del_obj(name="fuel, unrefined", cont="fuel tank")
         total_time = res.count() / self.fuel_refiner_speed()
         new_fuel = BbwItemFactory.make(name="fuel, refined", count=res.count())
         if new_fuel is None:
             return BbwRes(), 0
 
-        self.containers().dist_obj(obj=new_fuel, cont="fuel")
+        self.dist_obj(obj=new_fuel, cont="fuel tank")
         return res, total_time
 
     def set_has_cargo_crane(self, v):
@@ -317,12 +302,12 @@ class BbwSpaceShip(BbwVehicle):
         t = int(t)
         BbwUtils.test_geq("trip time", t, 0)
 
-        res = self.containers().get_objs(type0=BbwPerson)
+        res = self.get_objs(type0=BbwPerson)
 
         return res, round(1000 * res.count() * t / 28)
 
     def is_armed(self):
-        return self.containers().get_objs(with_all_tags={"weapon"}, type0=BbwItem).count() > 0
+        return self.get_objs(with_all_tags={"weapon"}, type0=BbwItem).count() > 0
 
     @staticmethod
     def _header(detail_lvl=0):
@@ -378,7 +363,7 @@ class BbwSpaceShip(BbwVehicle):
         if detail_lvl == 1:
             return s
 
-        for i, _ in self.containers().get_objs(type0=BbwContainer).objs():
+        for i in self.get_children():
             s += i.__str__(detail_lvl=1)
             s += "\n"
 

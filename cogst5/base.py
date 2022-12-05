@@ -5,70 +5,267 @@ from cogst5.utils import *
 
 
 @BbwUtils.for_all_methods(BbwUtils.type_sanitizer_decor)
-class BbwObj:
+class BbwObj(dict):
     def __init__(self, name="", capacity=None, count=1, size=None):
-        if size is None:
-            size = capacity
+        self.set_capacity()
+        self.set_size()
 
         self.set_name(name)
         self.set_count(count)
         self.set_capacity(capacity)
         self.set_size(size)
 
-    def set_size(self, v: float = None):
+    def _per_obj(self, v, is_per_obj):
+        return v if is_per_obj else v * self.count()
+
+
+
+    def set_size(self, v: float = 0.0):
+        if v == 0:
+            self._size = v
+            return
+
         if v is None:
             v = self._capacity
 
-        if v != self._capacity:
-            BbwUtils.test_geq("size", v, 0.0)
-        BbwUtils.test_leq("size", v, self._capacity)
+
+
+        BbwUtils.test_geq("size", self.free_space(size=v), 0.0)
+        BbwUtils.test_geq("size", v, 0.0)
+
         self._size = v
-
-    def set_capacity(self, v: float = None):
-        if v is None:
-            v = 0.0
-
-        self._capacity = v
-        if self.size(is_per_obj=True) > self.capacity(is_per_obj=True):
-            self.set_size(self.capacity(is_per_obj=True))
-
-    def set_name(self, v: str):
-        self._name = v
-
-    def set_count(self, v: float):
-        if v == float("inf"):
-            self._count = v
-            return
-
-        BbwUtils.test_g("count", v, 0)
-        self._count = v
-
-    def count(self):
-        return self._count
-
-    def free_space(self):
-        c = self.capacity()
-        s = self.size()
-        if c == float("inf") and s == float("inf"):
-            return float("inf")
-        return c - s
-
-    def name(self):
-        return self._name
-
-    def _per_obj(self, v, is_per_obj):
-        return v if is_per_obj else v * self.count()
 
     @BbwUtils.set_if_not_present_decor
     def size(self, is_per_obj: bool = False):
         return self._per_obj(self._size, is_per_obj)
 
+
+    def set_capacity(self, v: float = 0.0):
+        if v is None:
+            v = 0.0
+
+        if v == float("inf"):
+            self._capacity = v
+            return
+
+        BbwUtils.test_geq("size", self.free_space(capacity=v), 0.0)
+        BbwUtils.test_geq("capacity", v, 0.0)
+        self._capacity = v
+
     @BbwUtils.set_if_not_present_decor
     def capacity(self, is_per_obj=False):
         return self._per_obj(self._capacity, is_per_obj)
 
+
+    def set_name(self, v: str = "new_name"):
+        self._name = v
+
+    @BbwUtils.set_if_not_present_decor
+    def name(self):
+        return self._name
+
+    def set_count(self, v: float = 1):
+
+        BbwUtils.test_g("count", v, 0)
+        BbwUtils.test_l("count", v, float("inf"))
+        self._count = v
+
+    @BbwUtils.set_if_not_present_decor
+    def count(self):
+        return self._count
+
+
+
+    def free_space(self, capacity: float = None, size: float = None, is_per_obj=False):
+        if capacity is None:
+            capacity = self.capacity(is_per_obj=True)
+        if size is None:
+            size = self.size(is_per_obj=True)
+
+        if capacity == float("inf") and size == float("inf"):
+            return float("inf")
+
+        return self._per_obj(capacity - size - self.used_space(), is_per_obj)
+
+
+
+
     def status(self):
-        return f"({self.size()}/{self.capacity()})"
+        return f"({self.size()+self.used_space()}/{self.capacity()})"
+
+    def used_space(self):
+        return sum([i.capacity() for i in self.values()])
+
+    def get_children(self):
+        return sorted(
+            self.values(),
+            key=lambda x: not BbwUtils.has_any_tags(x, {"main"}),
+        )
+
+    def rename_obj(self, name, new_name, cont=None, only_one=True, *args, **kwargs):
+        if type(name) is not str:
+            name = name.name()
+        if type(new_name) is not str:
+            new_name = new_name.name()
+
+        res = BbwRes()
+
+        if len(BbwUtils.get_objs([self], name=cont)):
+            objs = BbwUtils.get_objs(self.values(), name=name, *args, **kwargs)
+            if len(objs) > 1:
+                raise SelectionException(
+                    f"too many matches for container `{name}`: `{', '.join([i.name() for i in objs])}`"
+                )
+            if len(objs):
+                obj = copy.deepcopy(objs[0])
+                del self[obj.name()]
+                obj.set_name(new_name)
+                self[obj.name()] = obj
+                res += BbwRes(count=obj.count(), objs=[(obj, self)])
+                if only_one:
+                    return res
+
+        for i in self.get_children():
+            if res.count() and only_one:
+                return res
+            res += i.rename_obj(name=name, new_name=new_name, cont=cont, *args, **kwargs)
+
+        return res
+
+    def del_obj(self, name=None, count=float("inf"), cont=None, *args, **kwargs):
+        count = float(count)
+        BbwUtils.test_geq("count", count, 0.0)
+
+        ans = BbwRes()
+        if len(BbwUtils.get_objs([self], name=cont)):
+            objs = [i.name() for i in BbwUtils.get_objs(raw_list=self.values(), name=name, *args, **kwargs)]
+
+            for i in objs:
+                if ans.count() == count:
+                    return ans
+
+                nr = min(self[i].count(), count)
+                if nr == self[i].count():
+                    ans += BbwRes(count=nr, objs=[(copy.deepcopy(self[i]), self)])
+                    del self[i]
+                else:
+                    self[i].set_count(self[i].count() - nr)
+                    elimnated = copy.deepcopy(self[i])
+                    elimnated.set_count(nr)
+                    ans += BbwRes(count=nr, objs=[(elimnated, self)])
+
+        for i in self.get_children():
+            if ans.count() == count:
+                return ans
+            ans += i.del_obj(name=name, count=count - ans.count(), cont=cont, *args, **kwargs)
+
+        return ans
+
+    def free_slots(self, caps):
+        ans = float("inf")
+        for i, cont, with_any_tags in caps:
+            ans = min(ans, self._free_slots(cap=i, recursive=True, cont=cont, with_any_tags=with_any_tags))
+        return ans
+
+    def _free_slots(self, cap, recursive, cont=None, *args, **kwargs):
+        cap = float(cap)
+        BbwUtils.test_geq("cap", cap, 0)
+        if cap == 0:
+            return float("inf")
+
+        ans = 0
+        if len(BbwUtils.get_objs(raw_list=[self], name=cont, *args, **kwargs)):
+            if self.free_space() == float("inf") or cap == 0:
+                return float("inf")
+            ans += int(self.free_space() / cap)
+
+        if recursive:
+            for i in self.get_children():
+                ans += i._free_slots(cap, recursive, cont=cont, *args, **kwargs)
+        return ans
+
+    def dist_obj(self, obj, unbreakable: bool = False, cont: str = None, *args, **kwargs):
+        ans = BbwRes()
+        n = obj.count()
+
+        if unbreakable and n > self._free_slots(
+                cap=obj.capacity(is_per_obj=True), recursive=True, cont=cont, *args, **kwargs
+        ):
+            return ans
+
+        if len(BbwUtils.get_objs([self], name=cont, *args, **kwargs)):
+            ans += self._fit_obj(obj)
+
+        for i in self.get_children():
+            if ans.count() == n:
+                break
+
+            obj.set_count(n - ans.count())
+            ans += i.dist_obj(obj, unbreakable=False, cont=cont, *args, **kwargs)
+
+        obj.set_count(n)
+        return ans
+
+    def get_objs(self, name=None, recursive=True, self_included=False, only_one=False, cont=None, *args, **kwargs):
+        ans = BbwRes()
+
+        if len(BbwUtils.get_objs([self], name=cont)):
+            l = sorted([i for i in self.values()], key=lambda x: not BbwUtils.has_any_tags(x, {"main"}))
+            if self_included:
+                l = [self, *l]
+
+            objs = BbwUtils.get_objs(raw_list=l, name=name, *args, **kwargs)
+            ans += BbwRes(count=sum([i.count() for i in objs]), objs=zip(objs, [self] * len(objs)))
+
+        def only_one_ck(only_one, ans):
+            if not only_one:
+                return
+            if len(ans.objs()) == 0:
+                raise SelectionException(f"object `{name}` not found!")
+            elif len(ans.objs()) > 1:
+                raise SelectionException(
+                    f"too many matches for `{name}`: `{', '.join([o.name() for o, _ in ans.objs()])}`"
+                )
+
+        if not recursive:
+            only_one_ck(only_one, ans)
+            return ans
+
+        for i in self.get_children():
+            ans += i.get_objs(recursive=True, self_included=False, name=name, cont=cont, *args, **kwargs)
+
+        only_one_ck(only_one, ans)
+        return ans
+
+    def _fit_obj(self, v):
+        n = v.count()
+        ns = self._free_slots(cap=v.capacity(is_per_obj=True), recursive=False)
+
+        if ns:
+            nfitting = min(ns, n)
+            v.set_count(nfitting)
+            ans = self._add_obj(v)
+            v.set_count(n)
+            return ans
+        v.set_count(n)
+        return BbwRes()
+
+    def _add_obj(self, v):
+        k = v.name()
+
+        if k in self:
+            new_obj = copy.deepcopy(self[k])
+            new_obj.set_count(new_obj.count() + v.count())
+            delta_capacity, delta_count = new_obj.capacity() - self[k].capacity(), v.count()
+        else:
+            delta_capacity, delta_count = v.capacity(), v.count()
+            new_obj = copy.deepcopy(v)
+
+        BbwUtils.test_geq("final container capacity", self.free_space() - delta_capacity, 0.0)
+
+        self[k] = new_obj
+
+        return BbwRes(count=delta_count, objs=[(self[k], self)])
 
     def set_attr(self, v: str, *args, **kwargs):
         if v == "name":
@@ -76,23 +273,31 @@ class BbwObj:
         f = getattr(self, f"set_{v}")
         f(*args, **kwargs)
 
-    def _str_table(self, detail_lvl: int = 0):
-        if detail_lvl == 0:
-            return [self.count(), self.name()]
-        else:
-            return [self.count(), self.name(), self.capacity()]
-
-    def __str__(self, detail_lvl: int = 0):
-        return BbwUtils.print_table(
-            self._str_table(detail_lvl), headers=BbwObj._header(detail_lvl), detail_lvl=detail_lvl
-        )
-
     @staticmethod
     def _header(detail_lvl: int = 0):
-        if detail_lvl == 0:
-            return ["count", "name"]
-        else:
-            return ["count", "name", "capacity"]
+        return ["count", "name", "status"]
+
+    def _str_table(self, detail_lvl: int = 0):
+        return [self.count(), self.name(), self.status()]
+
+    def __str__(self, detail_lvl: int=0, lsort=lambda x: x.name()):
+        s = ""
+        s += BbwUtils.print_table(self._str_table(detail_lvl), headers=BbwObj._header(detail_lvl=detail_lvl), tablefmt="plain", detail_lvl=detail_lvl)
+
+        if detail_lvl == 0 or not len(self.keys()):
+            return s
+
+        entry_detail_lvl = 0
+        maxIndex, _ = max(
+            enumerate([len(type(i)._header(detail_lvl=entry_detail_lvl)) for i in self.values()]), key=lambda v: v[1]
+        )
+        h = type(list(self.values())[maxIndex])._header(detail_lvl=entry_detail_lvl)
+
+        t = sorted(self.values(), key=lsort)
+        t = [i._str_table(detail_lvl=entry_detail_lvl) for i in t]
+
+        s += BbwUtils.print_table(t, headers=h, detail_lvl=entry_detail_lvl)
+        return s
 
 
 class BbwRes:
@@ -133,310 +338,298 @@ class BbwRes:
     def __str__(self):
         return f"count:`{self.count()}`, len objs: `{len(self.objs())}`"
 
-
-@BbwUtils.for_all_methods(BbwUtils.type_sanitizer_decor)
-class BbwContainer(dict):
-    def __init__(self, name="", capacity=float("inf"), size=0.0):
-        self.set_name(name)
-        self.set_capacity()
-        self.set_size()
-        self.set_capacity(capacity)
-        self.set_size(size)
-
-    def set_attr(self, v, *args, **kwargs):
-        if v == "name":
-            raise NotAllowed(f"Setting the name in this way is not allowed! Use rename instead")
-
-        f = getattr(self, f"set_{v}")
-        f(*args, **kwargs)
-
-    def count(self):
-        return 1
-
-    def set_size(self, v: float = 0.0):
-        if v is None:
-            v = 0.0
-
-        if v == 0:
-            self._size = v
-            return
-
-        BbwUtils.test_geq("size", self.free_space(size=v), 0.0)
-        BbwUtils.test_geq("size", v, 0.0)
-
-        self._size = v
-
-    def set_name(self, v: str):
-        v = str(v)
-        self._name = v
-
-    def set_capacity(self, v: float = float("inf")):
-        if v is None:
-            v = float("inf")
-
-        if v == float("inf"):
-            self._capacity = v
-            return
-
-        BbwUtils.test_geq("size", self.free_space(capacity=v), 0.0)
-        BbwUtils.test_geq("capacity", v, 0.0)
-        self._capacity = v
-
-    def name(self):
-        return self._name
-
-    @BbwUtils.set_if_not_present_decor
-    def size(self):
-        return self._size
-
-    @BbwUtils.set_if_not_present_decor
-    def capacity(self):
-        return self._capacity
-
-    def free_space(self, capacity: float = None, size: float = None):
-        if capacity is None:
-            capacity = self.capacity()
-        if size is None:
-            size = self.size()
-
-        if capacity == float("inf") and size == float("inf"):
-            return float("inf")
-
-        return capacity - size - self.used_space()
-
-    def used_space(self):
-        return sum([i.capacity() for i in self.values()])
-
-    def status(self):
-        return f"{self.size()}/{self.capacity()}"
-
-    def _get_children_containers(self):
-        return sorted(
-            [i for i in self.values() if issubclass(BbwContainer, type(i))],
-            key=lambda x: not BbwUtils.has_any_tags(x, {"main"}),
-        )
-
-    def _get_children_objs(self):
-        return sorted(
-            [i for i in self.values() if not issubclass(BbwContainer, type(i))],
-            key=lambda x: not BbwUtils.has_any_tags(x, {"main"}),
-        )
-
-    def rename_obj(self, name, new_name, cont=None, only_one=True, *args, **kwargs):
-        if type(name) is not str:
-            name = name.name()
-        if type(new_name) is not str:
-            new_name = new_name.name()
-
-        res = BbwRes()
-
-        if len(BbwUtils.get_objs([self], name=cont)):
-            objs = BbwUtils.get_objs(self.values(), name=name, *args, **kwargs)
-            if len(objs) > 1:
-                raise SelectionException(
-                    f"too many matches for container `{name}`: `{', '.join([i.name() for i in objs])}`"
-                )
-            if len(objs):
-                obj = copy.deepcopy(objs[0])
-                del self[obj.name()]
-                obj.set_name(new_name)
-                self[obj.name()] = obj
-                res += BbwRes(count=obj.count(), objs=[(obj, self)])
-                if only_one:
-                    return res
-
-        for i in self._get_children_containers():
-            if res.count() and only_one:
-                return res
-            res += i.rename_obj(name=name, new_name=new_name, cont=cont, *args, **kwargs)
-
-        return res
-
-    def del_obj(self, name=None, count=float("inf"), cont=None, *args, **kwargs):
-        count = float(count)
-        BbwUtils.test_geq("count", count, 0.0)
-
-        ans = BbwRes()
-        if len(BbwUtils.get_objs([self], name=cont)):
-            objs = [i.name() for i in BbwUtils.get_objs(raw_list=self.values(), name=name, *args, **kwargs)]
-
-            for i in objs:
-                if ans.count() == count:
-                    return ans
-
-                nr = min(self[i].count(), count)
-                if nr == self[i].count():
-                    ans += BbwRes(count=nr, objs=[(copy.deepcopy(self[i]), self)])
-                    del self[i]
-                else:
-                    self[i].set_count(self[i].count() - nr)
-                    elimnated = copy.deepcopy(self[i])
-                    elimnated.set_count(nr)
-                    ans += BbwRes(count=nr, objs=[(elimnated, self)])
-
-        for i in self._get_children_containers():
-            if ans.count() == count:
-                return ans
-            ans += i.del_obj(name=name, count=count - ans.count(), cont=cont, *args, **kwargs)
-
-        return ans
-
-    def free_slots(self, caps):
-        ans = float("inf")
-        for i, cont, with_any_tags in caps:
-            ans = min(ans, self._free_slots(cap=i, recursive=True, cont=cont, with_any_tags=with_any_tags))
-        return ans
-
-    def _free_slots(self, cap, recursive, cont=None, *args, **kwargs):
-        cap = float(cap)
-        BbwUtils.test_geq("cap", cap, 0)
-        if cap == 0:
-            return float("inf")
-
-        ans = 0
-        if len(BbwUtils.get_objs(raw_list=[self], name=cont, *args, **kwargs)):
-            if self.free_space() == float("inf") or cap == 0:
-                return float("inf")
-            ans += int(self.free_space() / cap)
-
-        if recursive:
-            for i in self._get_children_containers():
-                ans += i._free_slots(cap, recursive, cont=cont, *args, **kwargs)
-        return ans
-
-    # def add_obj(self, obj, cont=None, *args, **kwargs):
-    #     if len(BbwUtils.get_objs([self], name=cont, *args, **kwargs)):
-    #         if type(obj) is not BbwContainer:
-    #             old_count = self[obj.name()].count() if obj.name() in self else 0.0
-    #             ans = self._add_obj(obj)
-    #             return ans
-    #         else:
-    #             return self._add_obj(obj)
-    #
-    #     for i in self._get_children_containers():
-    #         ans = i.add_obj(obj, cont=cont, *args, **kwargs)
-    #         if ans.count():
-    #             return ans
-    #     return BbwRes()
-
-    def dist_obj(self, obj, unbreakable: bool = False, cont: str = None, *args, **kwargs):
-        if type(obj) is BbwContainer:
-            if len(BbwUtils.get_objs([self], name=cont, *args, **kwargs)):
-                return self._add_obj(obj)
-            else:
-                for i in self._get_children_containers():
-                    res = i.dist_obj(obj, unbreakable=unbreakable, cont=cont, *args, **kwargs)
-                    if res.count():
-                        return res
-                return BbwRes()
-
-        ans = BbwRes()
-        n = obj.count()
-
-        if unbreakable and n > self._free_slots(
-            cap=obj.capacity(is_per_obj=True), recursive=True, cont=cont, *args, **kwargs
-        ):
-            return ans
-
-        if len(BbwUtils.get_objs([self], name=cont, *args, **kwargs)):
-            ans += self._fit_obj(obj)
-
-        for i in self._get_children_containers():
-            if ans.count() == n:
-                break
-
-            obj.set_count(n - ans.count())
-            ans += i.dist_obj(obj, unbreakable=False, cont=cont, *args, **kwargs)
-
-        obj.set_count(n)
-        return ans
-
-    def _fit_obj(self, v):
-        n = v.count()
-        ns = self._free_slots(cap=v.capacity(is_per_obj=True), recursive=False)
-
-        if ns:
-            nfitting = min(ns, n)
-            v.set_count(nfitting)
-            ans = self._add_obj(v)
-            v.set_count(n)
-            return ans
-        v.set_count(n)
-        return BbwRes()
-
-    def _add_obj(self, v):
-        k = v.name()
-
-        if k in self:
-            new_obj = copy.deepcopy(self[k])
-            new_obj.set_count(new_obj.count() + v.count())
-            delta_capacity, delta_count = new_obj.capacity() - self[k].capacity(), v.count()
-        else:
-            delta_capacity, delta_count = v.capacity(), v.count()
-            new_obj = copy.deepcopy(v)
-
-        BbwUtils.test_geq("final container capacity", self.free_space() - delta_capacity, 0.0)
-
-        self[k] = new_obj
-
-        return BbwRes(count=delta_count, objs=[(self[k], self)])
-
-    @staticmethod
-    def _header(detail_lvl: int = 0):
-        return ["", "name", "status"]
-
-    def _str_table(self, detail_lvl: int = 0):
-        return [None, self.name(), self.status()]
-
-    def __str__(self, detail_lvl=0, lsort=lambda x: x.name()):
-        s = ""
-        s += BbwUtils.print_table(self._str_table(detail_lvl), tablefmt="plain", detail_lvl=0)
-
-        if detail_lvl == 0 or not len(self.keys()):
-            return s
-
-        entry_detail_lvl = max(1, detail_lvl)
-        maxIndex, _ = max(
-            enumerate([len(type(i)._header(detail_lvl=entry_detail_lvl)) for i in self.values()]), key=lambda v: v[1]
-        )
-        h = type(list(self.values())[maxIndex])._header(detail_lvl=entry_detail_lvl)
-
-        t = sorted(self.values(), key=lsort)
-        t = [i._str_table(detail_lvl=entry_detail_lvl) for i in t]
-
-        s += BbwUtils.print_table(t, headers=h, detail_lvl=entry_detail_lvl)
-        return s
-
-    def get_objs(self, name=None, recursive=True, self_included=False, only_one=False, cont=None, *args, **kwargs):
-        ans = BbwRes()
-
-        if len(BbwUtils.get_objs([self], name=cont)):
-            l = sorted([i for i in self.values()], key=lambda x: not BbwUtils.has_any_tags(x, {"main"}))
-            if self_included:
-                l = [self, *l]
-
-            objs = BbwUtils.get_objs(raw_list=l, name=name, *args, **kwargs)
-            ans += BbwRes(count=sum([i.count() for i in objs]), objs=zip(objs, [self] * len(objs)))
-
-        def only_one_ck(only_one, ans):
-            if not only_one:
-                return
-            if len(ans.objs()) == 0:
-                raise SelectionException(f"object `{name}` not found!")
-            elif len(ans.objs()) > 1:
-                raise SelectionException(
-                    f"too many matches for `{name}`: `{', '.join([o.name() for o, _ in ans.objs()])}`"
-                )
-
-        if not recursive:
-            only_one_ck(only_one, ans)
-            return ans
-
-        for i in self._get_children_containers():
-            ans += i.get_objs(recursive=True, self_included=False, name=name, cont=cont, *args, **kwargs)
-
-        only_one_ck(only_one, ans)
-        return ans
+#
+# @BbwUtils.for_all_methods(BbwUtils.type_sanitizer_decor)
+# class BbwContainer(dict):
+#     def __init__(self, name="", capacity=float("inf"), size=0.0):
+#         self.set_name(name)
+#         self.set_capacity()
+#         self.set_size()
+#         self.set_capacity(capacity)
+#         self.set_size(size)
+#
+#     def set_attr(self, v, *args, **kwargs):
+#         if v == "name":
+#             raise NotAllowed(f"Setting the name in this way is not allowed! Use rename instead")
+#
+#         f = getattr(self, f"set_{v}")
+#         f(*args, **kwargs)
+#
+#     def count(self):
+#         return 1
+#
+#     def set_size(self, v: float = 0.0):
+#         if v is None:
+#             v = 0.0
+#
+#         if v == 0:
+#             self._size = v
+#             return
+#
+#         BbwUtils.test_geq("size", self.free_space(size=v), 0.0)
+#         BbwUtils.test_geq("size", v, 0.0)
+#
+#         self._size = v
+#
+#     def set_name(self, v: str):
+#         v = str(v)
+#         self._name = v
+#
+#     def set_capacity(self, v: float = float("inf")):
+#         if v is None:
+#             v = float("inf")
+#
+#         if v == float("inf"):
+#             self._capacity = v
+#             return
+#
+#         BbwUtils.test_geq("size", self.free_space(capacity=v), 0.0)
+#         BbwUtils.test_geq("capacity", v, 0.0)
+#         self._capacity = v
+#
+#     def name(self):
+#         return self._name
+#
+#     @BbwUtils.set_if_not_present_decor
+#     def size(self):
+#         return self._size
+#
+#     @BbwUtils.set_if_not_present_decor
+#     def capacity(self):
+#         return self._capacity
+#
+#     def free_space(self, capacity: float = None, size: float = None):
+#         if capacity is None:
+#             capacity = self.capacity()
+#         if size is None:
+#             size = self.size()
+#
+#         if capacity == float("inf") and size == float("inf"):
+#             return float("inf")
+#
+#         return capacity - size - self.used_space()
+#
+#
+#
+#     def status(self):
+#         return f"{self.size()}/{self.capacity()}"
+#
+#     def used_space(self):
+#         return sum([i.capacity() for i in self.values()])
+#
+#     def get_children_containers(self):
+#         return sorted(
+#             [i for i in self.values() if issubclass(BbwContainer, type(i))],
+#             key=lambda x: not BbwUtils.has_any_tags(x, {"main"}),
+#         )
+#
+#     def get_children_objs(self):
+#         return sorted(
+#             [i for i in self.values() if not issubclass(BbwContainer, type(i))],
+#             key=lambda x: not BbwUtils.has_any_tags(x, {"main"}),
+#         )
+#
+#     def rename_obj(self, name, new_name, cont=None, only_one=True, *args, **kwargs):
+#         if type(name) is not str:
+#             name = name.name()
+#         if type(new_name) is not str:
+#             new_name = new_name.name()
+#
+#         res = BbwRes()
+#
+#         if len(BbwUtils.get_objs([self], name=cont)):
+#             objs = BbwUtils.get_objs(self.values(), name=name, *args, **kwargs)
+#             if len(objs) > 1:
+#                 raise SelectionException(
+#                     f"too many matches for container `{name}`: `{', '.join([i.name() for i in objs])}`"
+#                 )
+#             if len(objs):
+#                 obj = copy.deepcopy(objs[0])
+#                 del self[obj.name()]
+#                 obj.set_name(new_name)
+#                 self[obj.name()] = obj
+#                 res += BbwRes(count=obj.count(), objs=[(obj, self)])
+#                 if only_one:
+#                     return res
+#
+#         for i in self.get_children_containers():
+#             if res.count() and only_one:
+#                 return res
+#             res += i.rename_obj(name=name, new_name=new_name, cont=cont, *args, **kwargs)
+#
+#         return res
+#
+#     def del_obj(self, name=None, count=float("inf"), cont=None, *args, **kwargs):
+#         count = float(count)
+#         BbwUtils.test_geq("count", count, 0.0)
+#
+#         ans = BbwRes()
+#         if len(BbwUtils.get_objs([self], name=cont)):
+#             objs = [i.name() for i in BbwUtils.get_objs(raw_list=self.values(), name=name, *args, **kwargs)]
+#
+#             for i in objs:
+#                 if ans.count() == count:
+#                     return ans
+#
+#                 nr = min(self[i].count(), count)
+#                 if nr == self[i].count():
+#                     ans += BbwRes(count=nr, objs=[(copy.deepcopy(self[i]), self)])
+#                     del self[i]
+#                 else:
+#                     self[i].set_count(self[i].count() - nr)
+#                     elimnated = copy.deepcopy(self[i])
+#                     elimnated.set_count(nr)
+#                     ans += BbwRes(count=nr, objs=[(elimnated, self)])
+#
+#         for i in self.get_children_containers():
+#             if ans.count() == count:
+#                 return ans
+#             ans += i.del_obj(name=name, count=count - ans.count(), cont=cont, *args, **kwargs)
+#
+#         return ans
+#
+#     def free_slots(self, caps):
+#         ans = float("inf")
+#         for i, cont, with_any_tags in caps:
+#             ans = min(ans, self._free_slots(cap=i, recursive=True, cont=cont, with_any_tags=with_any_tags))
+#         return ans
+#
+#     def _free_slots(self, cap, recursive, cont=None, *args, **kwargs):
+#         cap = float(cap)
+#         BbwUtils.test_geq("cap", cap, 0)
+#         if cap == 0:
+#             return float("inf")
+#
+#         ans = 0
+#         if len(BbwUtils.get_objs(raw_list=[self], name=cont, *args, **kwargs)):
+#             if self.free_space() == float("inf") or cap == 0:
+#                 return float("inf")
+#             ans += int(self.free_space() / cap)
+#
+#         if recursive:
+#             for i in self.get_children_containers():
+#                 ans += i._free_slots(cap, recursive, cont=cont, *args, **kwargs)
+#         return ans
+#
+#
+#     def dist_obj(self, obj, unbreakable: bool = False, cont: str = None, *args, **kwargs):
+#         if type(obj) is BbwContainer:
+#             if len(BbwUtils.get_objs([self], name=cont, *args, **kwargs)):
+#                 return self._add_obj(obj)
+#             else:
+#                 for i in self.get_children_containers():
+#                     res = i.dist_obj(obj, unbreakable=unbreakable, cont=cont, *args, **kwargs)
+#                     if res.count():
+#                         return res
+#                 return BbwRes()
+#
+#         ans = BbwRes()
+#         n = obj.count()
+#
+#         if unbreakable and n > self._free_slots(
+#             cap=obj.capacity(is_per_obj=True), recursive=True, cont=cont, *args, **kwargs
+#         ):
+#             return ans
+#
+#         if len(BbwUtils.get_objs([self], name=cont, *args, **kwargs)):
+#             ans += self._fit_obj(obj)
+#
+#         for i in self.get_children_containers():
+#             if ans.count() == n:
+#                 break
+#
+#             obj.set_count(n - ans.count())
+#             ans += i.dist_obj(obj, unbreakable=False, cont=cont, *args, **kwargs)
+#
+#         obj.set_count(n)
+#         return ans
+#
+#     def _fit_obj(self, v):
+#         n = v.count()
+#         ns = self._free_slots(cap=v.capacity(is_per_obj=True), recursive=False)
+#
+#         if ns:
+#             nfitting = min(ns, n)
+#             v.set_count(nfitting)
+#             ans = self._add_obj(v)
+#             v.set_count(n)
+#             return ans
+#         v.set_count(n)
+#         return BbwRes()
+#
+#     def _add_obj(self, v):
+#         k = v.name()
+#
+#         if k in self:
+#             new_obj = copy.deepcopy(self[k])
+#             new_obj.set_count(new_obj.count() + v.count())
+#             delta_capacity, delta_count = new_obj.capacity() - self[k].capacity(), v.count()
+#         else:
+#             delta_capacity, delta_count = v.capacity(), v.count()
+#             new_obj = copy.deepcopy(v)
+#
+#         BbwUtils.test_geq("final container capacity", self.free_space() - delta_capacity, 0.0)
+#
+#         self[k] = new_obj
+#
+#         return BbwRes(count=delta_count, objs=[(self[k], self)])
+#
+#     @staticmethod
+#     def _header(detail_lvl: int = 0):
+#         return ["", "name", "status"]
+#
+#     def _str_table(self, detail_lvl: int = 0):
+#         return [None, self.name(), self.status()]
+#
+#     def __str__(self, detail_lvl=0, lsort=lambda x: x.name()):
+#         s = ""
+#         s += BbwUtils.print_table(self._str_table(detail_lvl), tablefmt="plain", detail_lvl=0)
+#
+#         if detail_lvl == 0 or not len(self.keys()):
+#             return s
+#
+#         entry_detail_lvl = max(1, detail_lvl)
+#         maxIndex, _ = max(
+#             enumerate([len(type(i)._header(detail_lvl=entry_detail_lvl)) for i in self.values()]), key=lambda v: v[1]
+#         )
+#         h = type(list(self.values())[maxIndex])._header(detail_lvl=entry_detail_lvl)
+#
+#         t = sorted(self.values(), key=lsort)
+#         t = [i._str_table(detail_lvl=entry_detail_lvl) for i in t]
+#
+#         s += BbwUtils.print_table(t, headers=h, detail_lvl=entry_detail_lvl)
+#         return s
+#
+#     def get_objs(self, name=None, recursive=True, self_included=False, only_one=False, cont=None, *args, **kwargs):
+#         ans = BbwRes()
+#
+#         if len(BbwUtils.get_objs([self], name=cont)):
+#             l = sorted([i for i in self.values()], key=lambda x: not BbwUtils.has_any_tags(x, {"main"}))
+#             if self_included:
+#                 l = [self, *l]
+#
+#             objs = BbwUtils.get_objs(raw_list=l, name=name, *args, **kwargs)
+#             ans += BbwRes(count=sum([i.count() for i in objs]), objs=zip(objs, [self] * len(objs)))
+#
+#         def only_one_ck(only_one, ans):
+#             if not only_one:
+#                 return
+#             if len(ans.objs()) == 0:
+#                 raise SelectionException(f"object `{name}` not found!")
+#             elif len(ans.objs()) > 1:
+#                 raise SelectionException(
+#                     f"too many matches for `{name}`: `{', '.join([o.name() for o, _ in ans.objs()])}`"
+#                 )
+#
+#         if not recursive:
+#             only_one_ck(only_one, ans)
+#             return ans
+#
+#         for i in self.get_children_containers():
+#             ans += i.get_objs(recursive=True, self_included=False, name=name, cont=cont, *args, **kwargs)
+#
+#         only_one_ck(only_one, ans)
+#         return ans
 
 
 #
