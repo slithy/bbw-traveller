@@ -4,6 +4,7 @@ from cogst5.models.errors import *
 from cogst5.utils import *
 
 
+@BbwUtils.for_all_methods(BbwUtils.type_sanitizer_decor)
 class BbwObj:
     def __init__(self, name="", capacity=None, count=1, size=None):
         if size is None:
@@ -14,51 +15,43 @@ class BbwObj:
         self.set_capacity(capacity)
         self.set_size(size)
 
-    @staticmethod
-    def set_if_not_present_decor(func):
-        """We assume that the variable is _{func_name} and the setter is set_{func_name}"""
-
-        def wrapper(self):
-            if not hasattr(self, f"_{func.__name__}"):
-                getattr(self, f"set_{func.__name__}")()
-            return func(self)
-
-        return wrapper
-
-    def set_size(self, v):
+    def set_size(self, v: float = None):
         if v is None:
             v = self._capacity
 
-        v = float(v)
         if v != self._capacity:
             BbwUtils.test_geq("size", v, 0.0)
         BbwUtils.test_leq("size", v, self._capacity)
         self._size = v
 
-    def set_capacity(self, v):
+    def set_capacity(self, v: float = None):
         if v is None:
             v = 0.0
-        v = float(v)
 
         self._capacity = v
         if self.size(is_per_obj=True) > self.capacity(is_per_obj=True):
             self.set_size(self.capacity(is_per_obj=True))
 
-    def set_name(self, v):
-        v = str(v)
+    def set_name(self, v: str):
         self._name = v
 
-    def set_count(self, v):
+    def set_count(self, v: float):
         if v == float("inf"):
             self._count = v
             return
 
-        v = int(v)
         BbwUtils.test_g("count", v, 0)
         self._count = v
 
     def count(self):
         return self._count
+
+    def free_space(self):
+        c = self.capacity()
+        s = self.size()
+        if c == float("inf") and s == float("inf"):
+            return float("inf")
+        return c - s
 
     def name(self):
         return self._name
@@ -66,40 +59,36 @@ class BbwObj:
     def _per_obj(self, v, is_per_obj):
         return v if is_per_obj else v * self.count()
 
-    def size(self, is_per_obj=False):
-        try:
-            size = self._size
-        except AttributeError:
-            self._size = self._capacity
-            size = self._size
+    @BbwUtils.set_if_not_present_decor
+    def size(self, is_per_obj: bool = False):
+        return self._per_obj(self._size, is_per_obj)
 
-        return self._per_obj(size, is_per_obj)
-
+    @BbwUtils.set_if_not_present_decor
     def capacity(self, is_per_obj=False):
         return self._per_obj(self._capacity, is_per_obj)
 
     def status(self):
         return f"({self.size()}/{self.capacity()})"
 
-    def set_attr(self, v, k):
+    def set_attr(self, v: str, *args, **kwargs):
         if v == "name":
             raise NotAllowed(f"Setting the name in this way is not allowed! Use rename instead")
         f = getattr(self, f"set_{v}")
-        f(k)
+        f(*args, **kwargs)
 
-    def _str_table(self, detail_lvl=0):
+    def _str_table(self, detail_lvl: int = 0):
         if detail_lvl == 0:
             return [self.count(), self.name()]
         else:
             return [self.count(), self.name(), self.capacity()]
 
-    def __str__(self, detail_lvl=0):
+    def __str__(self, detail_lvl: int = 0):
         return BbwUtils.print_table(
-            self._str_table(detail_lvl), headers=self._header(detail_lvl), detail_lvl=detail_lvl
+            self._str_table(detail_lvl), headers=BbwObj._header(detail_lvl), detail_lvl=detail_lvl
         )
 
     @staticmethod
-    def _header(detail_lvl=0):
+    def _header(detail_lvl: int = 0):
         if detail_lvl == 0:
             return ["count", "name"]
         else:
@@ -145,46 +134,51 @@ class BbwRes:
         return f"count:`{self.count()}`, len objs: `{len(self.objs())}`"
 
 
+@BbwUtils.for_all_methods(BbwUtils.type_sanitizer_decor)
 class BbwContainer(dict):
     def __init__(self, name="", capacity=float("inf"), size=0.0):
         self.set_name(name)
         self.set_capacity(capacity)
         self.set_size(size)
 
-    def set_attr(self, v, k):
+    def set_attr(self, v, *args, **kwargs):
         if v == "name":
             raise NotAllowed(f"Setting the name in this way is not allowed! Use rename instead")
 
         f = getattr(self, f"set_{v}")
-        f(k)
+        f(*args, **kwargs)
 
     def count(self):
         return 1
 
-    def set_size(self, v):
-        v = float(v)
+    def set_size(self, v: float = 0.0):
+        if v is None:
+            v = 0.0
         BbwUtils.test_geq("size", v, 0.0)
         BbwUtils.test_leq("size", v, self._capacity)
 
         self._size = v
 
-    def set_name(self, v):
+    def set_name(self, v: str):
         v = str(v)
         self._name = v
 
-    def set_capacity(self, v):
-        if v is not None:
-            v = float(v)
+    def set_capacity(self, v: float = float("inf")):
+        if v is None:
+            v = float("inf")
 
         BbwUtils.test_geq("capacity", v, 0.0)
         self._capacity = v
+        self.set_size(min(self.size(), v))
 
     def name(self):
         return self._name
 
+    @BbwUtils.set_if_not_present_decor
     def size(self):
         return sum([i.capacity() for i in self.values()]) + self._size
 
+    @BbwUtils.set_if_not_present_decor
     def capacity(self):
         return self._capacity
 
@@ -193,11 +187,9 @@ class BbwContainer(dict):
         s = self.size()
         if c == float("inf") and s == float("inf"):
             return float("inf")
-        return self.capacity() - self.size()
+        return c - s
 
     def status(self):
-        if self.capacity() == float("inf"):
-            return ""
         return f"{self.size()}/{self.capacity()}"
 
     def _get_children_containers(self):
@@ -309,14 +301,17 @@ class BbwContainer(dict):
     #             return ans
     #     return BbwRes()
 
-    def dist_obj(self, obj, unbreakable=False, cont=None, *args, **kwargs):
+    def dist_obj(self, obj, unbreakable: bool = False, cont: str = None, *args, **kwargs):
         if type(obj) is BbwContainer:
             if len(BbwUtils.get_objs([self], name=cont, *args, **kwargs)):
                 return self._add_obj(obj)
             else:
+                for i in self._get_children_containers():
+                    res = i.dist_obj(obj, unbreakable=unbreakable, cont=cont, *args, **kwargs)
+                    if res.count():
+                        return res
                 return BbwRes()
 
-        unbreakable = bool(int(unbreakable))
         ans = BbwRes()
         n = obj.count()
 
@@ -369,10 +364,10 @@ class BbwContainer(dict):
         return BbwRes(count=delta_count, objs=[(self[k], self)])
 
     @staticmethod
-    def _header(detail_lvl=0):
+    def _header(detail_lvl: int = 0):
         return ["", "name", "status"]
 
-    def _str_table(self, detail_lvl=0):
+    def _str_table(self, detail_lvl: int = 0):
         return [None, self.name(), self.status()]
 
     def __str__(self, detail_lvl=0, lsort=lambda x: x.name()):
@@ -384,7 +379,7 @@ class BbwContainer(dict):
 
         entry_detail_lvl = max(1, detail_lvl)
         maxIndex, _ = max(
-            enumerate([len(i._header(detail_lvl=entry_detail_lvl)) for i in self.values()]), key=lambda v: v[1]
+            enumerate([len(type(i)._header(detail_lvl=entry_detail_lvl)) for i in self.values()]), key=lambda v: v[1]
         )
         h = type(list(self.values())[maxIndex])._header(detail_lvl=entry_detail_lvl)
 
@@ -412,7 +407,7 @@ class BbwContainer(dict):
                 raise SelectionException(f"object `{name}` not found!")
             elif len(ans.objs()) > 1:
                 raise SelectionException(
-                    f"too many matches for `{name}`: `{', '.join([i.name() for o, _ in ans.objs()])}`"
+                    f"too many matches for `{name}`: `{', '.join([o.name() for o, _ in ans.objs()])}`"
                 )
 
         if not recursive:

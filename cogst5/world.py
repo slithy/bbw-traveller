@@ -24,12 +24,13 @@ class WorldCodes:
     def description(self):
         return self._description
 
-    def __str__(self, detail_lvl=0):
+    def __str__(self, detail_lvl: int = 0):
         if detail_lvl == 0:
             return self.name
         return f"{self.description()} (`{self.name()}`)"
 
 
+@BbwUtils.for_all_methods(BbwUtils.type_sanitizer_decor)
 class BbwWorld(BbwObj):
     _zones = ["normal", "amber", "red"]
     _trade_code_table = BbwUtils.gen_dict(
@@ -149,13 +150,13 @@ class BbwWorld(BbwObj):
         "totalitarian oligarchy",
     ]
     _LAW_table = [
-        "no restrictions",
+        "",
         "poison gas, explosives, undetectable weapons, WMD, battle dress",
         "portable energy weapons, combat armour",
         "military weapons, flak",
-        "light assault weapons , submachine guns, cloth",
+        "light assault weapons, submachine guns, cloth",
         "personal concealable weapons, mesh",
-        "all firearms except shotguns and stunners, carring weapons discouraged",
+        "all firearms except shotguns and stunners, carrying weapons discouraged",
         "shotguns",
         "all bladed weapons, stunners, all visible armour",
         "all weapons, all armour",
@@ -181,19 +182,18 @@ class BbwWorld(BbwObj):
         for i in obj:
             i.set_supply(bbwtrade, self, t)
 
+    @BbwUtils.set_if_not_present_decor
     def suppliers(self):
-        if not hasattr(self, "_suppliers"):
-            self.set_suppliers()
         return self._suppliers
 
     def set_people(self):
         self._people = BbwContainer(name="people")
 
+    @BbwUtils.set_if_not_present_decor
     def people(self):
-        if not hasattr(self, "_people"):
-            self.set_people()
         return self._people
 
+    @BbwUtils.set_if_not_present_decor
     def uwp(self):
         return self._uwp
 
@@ -212,7 +212,7 @@ class BbwWorld(BbwObj):
             if v == self:
                 self.set_trade_code(k, 1)
 
-    def set_trade_code(self, name, value=None):
+    def set_trade_code(self, name: str, value: int = None):
         if value is None:
             name, value = eval(name)
 
@@ -226,39 +226,37 @@ class BbwWorld(BbwObj):
 
         self.trade_codes().add(name)
 
+    @BbwUtils.set_if_not_present_decor
     def trade_codes(self):
-        if not hasattr(self, "_trade_codes"):
-            self.set_trade_codes()
         return self._trade_codes
 
+    @BbwUtils.set_if_not_present_decor
     def sector(self):
         return self._sector
 
-    def set_sector(self, v):
-        if type(v) is str:
-            v = eval(v)
+    def set_sector(self, x: int = 0, y: int = 0):
+        self._sector = (x, y)
 
-        self._sector = v
+    def set_sector(self, x: tuple = (0, 0)):
+        self._sector = x
 
-    def set_uwp(self, v):
-        v = str(v)
+    def set_uwp(self, v: str = "A0000000"):
         v = v.replace("-", "")
         BbwUtils.test_hexstr("uwp", v, [8])
         self._uwp = v
 
+    @BbwUtils.set_if_not_present_decor
     def zone(self):
         return self._zone
 
-    def set_zone(self, v):
-        v = str(v)
+    def set_zone(self, v: str = "normal"):
         v = BbwUtils.get_objs(self._zones, v, only_one=True)[0]
         self._zone = v
 
     def d_km(self):
         return self.SIZE()[3]
 
-    def set_hex(self, v):
-        v = str(v)
+    def set_hex(self, v: str = "0000"):
         if len(v) != 4:
             raise AttributeError(f"the hex location {v} must be 4 digits long!")
 
@@ -266,6 +264,7 @@ class BbwWorld(BbwObj):
         row = int(v[2:4])
         self._hex = v
 
+    @BbwUtils.set_if_not_present_decor
     def hex(self):
         return self._hex
 
@@ -286,14 +285,14 @@ class BbwWorld(BbwObj):
         idx = min(idx, len(table) - 1)
         return table[idx]
 
-    def set_docking_fee(self, v=None):
+    def set_docking_fee(self, v: int = None):
         if v is None:
             v = self._get_SP_table_entry(BbwWorld._SP_docking_fee_table) * d20.roll("1d6").total
 
         v = int(v)
         self._docking_fee = v
 
-    @BbwObj.set_if_not_present_decor
+    @BbwUtils.set_if_not_present_decor
     def docking_fee(self):
         return self._docking_fee
 
@@ -339,7 +338,14 @@ class BbwWorld(BbwObj):
 
     def LAW(self):
         idx = int(self.uwp()[6], 36)
-        return self.uwp()[6], idx, BbwWorld._LAW_table[min(idx, len(BbwWorld._LAW_table) - 1)]
+
+        idx2 = min(idx, len(BbwWorld._LAW_table))
+        restrictions = "\n".join(BbwWorld._LAW_table[:idx2])
+        if not restrictions:
+            restrictions = "no restrictions"
+        else:
+            restrictions = "banned weapons and armour:" + restrictions
+        return self.uwp()[6], idx, restrictions
 
     def TL(self):
         return self.uwp()[7], int(self.uwp()[7], 36)
@@ -361,14 +367,16 @@ class BbwWorld(BbwObj):
             *BbwUtils.hex_2_cube(*BbwUtils.local_2_global(x1, y1, xs1, ys1)),
         )
 
-    def _str_table(self, detail_lvl=0):
+    def _str_table(self, detail_lvl: int = 0):
         if detail_lvl == 0:
             return [self.name(), self.uwp()]
         else:
             return [self.name(), self.uwp(), self.d_km(), self.zone(), self.hex(), str(self.sector())]
 
-    def __str__(self, detail_lvl=0):
-        s = BbwUtils.print_table(self._str_table(detail_lvl), headers=self._header(detail_lvl), detail_lvl=detail_lvl)
+    def __str__(self, detail_lvl: int = 0):
+        s = BbwUtils.print_table(
+            self._str_table(detail_lvl), headers=BbwWorld._header(detail_lvl), detail_lvl=detail_lvl
+        )
         if detail_lvl == 0:
             return s
 
@@ -400,25 +408,8 @@ class BbwWorld(BbwObj):
         return s
 
     @staticmethod
-    def _header(detail_lvl=0):
+    def _header(detail_lvl: int = 0):
         if detail_lvl == 0:
             return ["name", "uwp"]
         else:
             return ["name", "uwp", "d_km", "zone", "hex", "sector"]
-
-
-# a = BbwWorld(name="feri", uwp="B384879-B", zone="normal", hex="1904", sector=(-4, 1))
-# a.set_trade_code("('Ri', 1)")
-#
-#
-# exit()
-# b = BbwWorld(name="regina", uwp="A788899-C", zone="normal", hex="2005", sector=(-4, 1))
-# print(b.__str__(1))
-# exit()
-#
-# print(a.SIZE())
-# print(a.d_km())
-# #
-# print(BbwWorld.distance(a, b))
-# #
-# exit()

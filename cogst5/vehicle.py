@@ -99,7 +99,7 @@ class BbwVehicle(BbwObj):
     def __str__(self, is_compact=True):
         s = ""
         s += BbwUtils.print_table(
-            self._str_table(is_compact), headers=self._header(is_compact), is_compact=is_compact == 0
+            self._str_table(is_compact), headers=BbwVehicle._header(is_compact), is_compact=is_compact == 0
         )
 
         for i, _ in self.containers().get_objs(type0=BbwContainer).objs():
@@ -109,6 +109,7 @@ class BbwVehicle(BbwObj):
         return s
 
 
+@BbwUtils.for_all_methods(BbwUtils.type_sanitizer_decor)
 class BbwSpaceShip(BbwVehicle):
     _require_fuel_scoop = {"gas giant": 1, "planet": 1, "world": 1, "refined": 0, "unrefined": 0}
 
@@ -135,7 +136,7 @@ class BbwSpaceShip(BbwVehicle):
         self.set_has_cargo_crane(has_cargo_crane)
         super().__init__(*args, **kwargs)
 
-    def flight_time_m_drive(self, d_km):
+    def flight_time_m_drive(self, d_km: int):
         """
         We suppose that we start from 0 speed and we reach the destination with 0 speed. d is the distance we want to cover.
         the time to cover half of the distance follows the equation: 1/2 * a * t**2 = d/2 -> t = sqrt(d/a). The time to cover
@@ -326,7 +327,9 @@ class BbwSpaceShip(BbwVehicle):
 
     def __str__(self, detail_lvl=1):
         s = ""
-        s += BbwUtils.print_table(self._str_table(detail_lvl), headers=self._header(detail_lvl), detail_lvl=detail_lvl)
+        s += BbwUtils.print_table(
+            self._str_table(detail_lvl), headers=BbwSpaceShip._header(detail_lvl), detail_lvl=detail_lvl
+        )
 
         if detail_lvl == 0:
             return s
@@ -381,21 +384,8 @@ class BbwSpaceShip(BbwVehicle):
 #         capacity=200,
 #     size=170,
 #     )
-#
-# print(a.__str__(0))
-# exit()
-# cont = BbwContainer(name="fleet")
-# cont.add_item(a)
-# print(cont.__str__(False))
-# cont.rename_item("zana", "bau")
-# print(cont.__str__(False))
-# exit()
 
-# dc = BbwContainer("docking space, cargo, main", 22, )
-# launch = BbwContainer("launch, cargo", 20, )
-#
-# a.containers().add_item(dc)
-# a.containers().add_item(launch, dc.name())
+
 #
 # print(dc.__str__(False))
 

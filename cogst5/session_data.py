@@ -96,3 +96,11 @@ class BbwSessionData(BbwObj):
     def add_log_entry(self, description, value=0):
         self.log().add_entry(description=description, value=value, t=self.calendar().t())
         self.company().add_money(value)
+
+    def get_containers(self, name=None):
+        """get the container that contains the containers. For example cs.containers()"""
+        cs = self.get_ship_curr()
+        if name is None or len(name) == 0:
+            return cs.containers()
+
+        return cs.containers().get_objs(name=name, only_one=True).objs()[0][0].containers()

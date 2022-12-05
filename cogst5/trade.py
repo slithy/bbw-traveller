@@ -123,6 +123,7 @@ class Good:
         return self._sell_mods
 
 
+@BbwUtils.for_all_methods(BbwUtils.type_sanitizer_decor)
 class BbwTrade:
     _passenger_wp_table = [[1, 5, 7, 16], [-4, 0, 1, 3]]
     _passenger_starport_table = [
@@ -142,62 +143,71 @@ class BbwTrade:
     _mail_TL_table = [[5, 1000], [-4, 0]]
 
     _speculative_trading_table = [
-        Good("common electronics", "2d6", 10, {"In": 2, "Ht": 3, "Ri": 1}, {"Ni": 2, "Lt": 1, "Po": 1}),
-        Good("common industrial goods", "2d6", 10, {"Na": 2, "In": 5}, {"Ni": 2, "Ag": 2}),
-        Good("common manufactured goods", "2d6", 10, {"Na": 2, "In": 5}, {"Ni": 3, "Hi": 2}),
-        Good("common raw materials", "2d6", 20, {"Ag": 3, "Ga": 2}, {"In": 2, "Po": 2}),
+        Good("common electronics, spt", "2d6", 10, {"In": 2, "Ht": 3, "Ri": 1}, {"Ni": 2, "Lt": 1, "Po": 1}),
+        Good("common industrial goods, spt", "2d6", 10, {"Na": 2, "In": 5}, {"Ni": 2, "Ag": 2}),
+        Good("common manufactured goods, spt", "2d6", 10, {"Na": 2, "In": 5}, {"Ni": 3, "Hi": 2}),
+        Good("common raw materials, spt", "2d6", 20, {"Ag": 3, "Ga": 2}, {"In": 2, "Po": 2}),
         Good(
-            "common consumables",
+            "common consumables, spt",
             "2d6",
             20,
             {"Ag": 3, "Wa": 2, "Ga": 1, "As": -4},
             {"As": 1, "Fl": 1, "Ic": 1, "Hi": 1},
         ),
-        Good("common ore", "2d6", 20, {"As": 4}, {"In": 3, "Ni": 1}),
-        Good("advanced electronics", "1d6", 5, {"In": 2, "Ht": 3}, {"Ni": 1, "Ri": 2, "As": 3}, {"In", "Ht"}),
-        Good("advanced machine parts", "1d6", 5, {"In": 2, "Ht": 1}, {"Ni": 1, "As": 2}, {"In", "Ht"}),
-        Good("advanced manufactured goods", "1d6", 5, {"In": 1}, {"Hi": 1, "Ri": 2}, {"In", "Ht"}),
-        Good("advanced weapons", "1d6", 5, {"Ht": 2}, {"Po": 1, "amber": 2, "red": 4}, {"In", "Ht"}),
-        Good("advanced vehicles", "1d6", 5, {"Ht": 2}, {"As": 2, "Ri": 2}, {"In", "Ht"}),
-        Good("biochemicals", "1d6", 5, {"Ag": 1, "Wa": 2}, {"In": 2}, {"Ag", "Wa"}),
-        Good("crystals and gems", "1d6", 5, {"As": 2, "De": 1, "Ic": 1}, {"In": 3, "Ri": 2}, {"As", "De", "Ic"}),
-        Good("cybernetics", "1d6", 1, {"Ht": 1}, {"As": 1, "Ic": 1, "Ri": 2}, {"Ht"}),
-        Good("live animals", "1d6", 10, {"Ag": 2}, {"Ln": 3}, {"Ag", "Ga"}),
-        Good("luxury consumables", "1d6", 10, {"Ag": 2, "Wa": 1}, {"Ri": 2, "Hi": 2}, {"Ag", "Ga", "Wa"}),
-        Good("luxury goods", "1d6", 1, {"Hi": 1}, {"Ri": 4}, {"Hi"}),
-        Good("medical supplies", "1d6", 5, {"Hi": 2}, {"In": 2, "Po": 1, "Ri": 1}, {"Hi", "Ht"}),
-        Good("petrochemicals", "1d6", 10, {"De": 2}, {"In": 2, "Ag": 1, "Lt": 2}, {"De", "Fl", "Ic", "Wa"}),
-        Good("pharmaceuticals", "1d6", 1, {"As": 2, "Hi": 1}, {"Ri": 2, "Lt": 1}, {"As", "De", "Hi", "Wa"}),
-        Good("polymers", "1d6", 10, {"In": 1}, {"Ri": 2, "Ni": 1}, {"In"}),
+        Good("common ore, spt", "2d6", 20, {"As": 4}, {"In": 3, "Ni": 1}),
+        Good("advanced electronics, spt", "1d6", 5, {"In": 2, "Ht": 3}, {"Ni": 1, "Ri": 2, "As": 3}, {"In", "Ht"}),
+        Good("advanced machine parts, spt", "1d6", 5, {"In": 2, "Ht": 1}, {"Ni": 1, "As": 2}, {"In", "Ht"}),
+        Good("advanced manufactured goods, spt", "1d6", 5, {"In": 1}, {"Hi": 1, "Ri": 2}, {"In", "Ht"}),
+        Good("advanced weapons, spt", "1d6", 5, {"Ht": 2}, {"Po": 1, "amber": 2, "red": 4}, {"In", "Ht"}),
+        Good("advanced vehicles, spt", "1d6", 5, {"Ht": 2}, {"As": 2, "Ri": 2}, {"In", "Ht"}),
+        Good("biochemicals, spt", "1d6", 5, {"Ag": 1, "Wa": 2}, {"In": 2}, {"Ag", "Wa"}),
+        Good("crystals and gems, spt", "1d6", 5, {"As": 2, "De": 1, "Ic": 1}, {"In": 3, "Ri": 2}, {"As", "De", "Ic"}),
+        Good("cybernetics, spt", "1d6", 1, {"Ht": 1}, {"As": 1, "Ic": 1, "Ri": 2}, {"Ht"}),
+        Good("live animals, spt", "1d6", 10, {"Ag": 2}, {"Ln": 3}, {"Ag", "Ga"}),
+        Good("luxury consumables, spt", "1d6", 10, {"Ag": 2, "Wa": 1}, {"Ri": 2, "Hi": 2}, {"Ag", "Ga", "Wa"}),
+        Good("luxury goods, spt", "1d6", 1, {"Hi": 1}, {"Ri": 4}, {"Hi"}),
+        Good("medical supplies, spt", "1d6", 5, {"Hi": 2}, {"In": 2, "Po": 1, "Ri": 1}, {"Hi", "Ht"}),
+        Good("petrochemicals, spt", "1d6", 10, {"De": 2}, {"In": 2, "Ag": 1, "Lt": 2}, {"De", "Fl", "Ic", "Wa"}),
+        Good("pharmaceuticals, spt", "1d6", 1, {"As": 2, "Hi": 1}, {"Ri": 2, "Lt": 1}, {"As", "De", "Hi", "Wa"}),
+        Good("polymers, spt", "1d6", 10, {"In": 1}, {"Ri": 2, "Ni": 1}, {"In"}),
         Good(
-            "precious metals",
+            "precious metals, spt",
             "1d6",
             1,
             {"As": 3, "De": 1, "Ic": 2},
             {"Ri": 3, "In": 2, "Ht": 1},
             {"As", "De", "Ic", "Wa"},
         ),
-        Good("radioactives", "1d6", 1, {"As": 2, "Ln": 2}, {"In": 3, "Ht": 1, "Ni": -2, "Ag": -3}, {"As", "De", "Ln"}),
-        Good("robots", "1d6", 5, {"In": 1}, {"Ag": 2, "Ht": 1}, {"In"}),
-        Good("spices", "1d6", 10, {"De": 2}, {"Hi": 2, "Ri": 3, "Poor": 3}, {"Ga", "De", "Wa"}),
-        Good("textiles", "1d6", 20, {"Ag": 7}, {"Hi": 3, "Na": 2}, {"Ag", "Ni"}),
-        Good("uncommon ore", "1d6", 20, {"As": 4}, {"In": 3, "Ni": 1}, {"As", "Ic"}),
-        Good("uncommon raw materials", "1d6", 10, {"Ag": 2, "Wa": 1}, {"In": 2, "Ht": 1}, {"Ag", "De", "Wa"}),
-        Good("wood", "1d6", 20, {"Ag": 6}, {"Ri": 2, "In": 1}, {"Ag", "Ga"}),
-        Good("vehicles", "1d6", 10, {"In": 2, "Ht": 1}, {"Ni": 2, "Hi": 1}, {"In", "Ht"}),
-        Good("biochemicals, illegal", "1d6", 5, {"Wa": 2}, {"In": 6}, {"Ag", "Wa"}),
-        Good("cybernetics, illegal", "1d6", 1, {"Ht": 1}, {"As": 4, "Ic": 4, "Ri": 8, "amber": 6, "red": 6}, {"Ht"}),
         Good(
-            "drugs, illegal",
+            "radioactives, spt",
+            "1d6",
+            1,
+            {"As": 2, "Ln": 2},
+            {"In": 3, "Ht": 1, "Ni": -2, "Ag": -3},
+            {"As", "De", "Ln"},
+        ),
+        Good("robots, spt", "1d6", 5, {"In": 1}, {"Ag": 2, "Ht": 1}, {"In"}),
+        Good("spices, spt", "1d6", 10, {"De": 2}, {"Hi": 2, "Ri": 3, "Poor": 3}, {"Ga", "De", "Wa"}),
+        Good("textiles, spt", "1d6", 20, {"Ag": 7}, {"Hi": 3, "Na": 2}, {"Ag", "Ni"}),
+        Good("uncommon ore, spt", "1d6", 20, {"As": 4}, {"In": 3, "Ni": 1}, {"As", "Ic"}),
+        Good("uncommon raw materials, spt", "1d6", 10, {"Ag": 2, "Wa": 1}, {"In": 2, "Ht": 1}, {"Ag", "De", "Wa"}),
+        Good("wood, spt", "1d6", 20, {"Ag": 6}, {"Ri": 2, "In": 1}, {"Ag", "Ga"}),
+        Good("vehicles, spt", "1d6", 10, {"In": 2, "Ht": 1}, {"Ni": 2, "Hi": 1}, {"In", "Ht"}),
+        Good("biochemicals, illegal, spt", "1d6", 5, {"Wa": 2}, {"In": 6}, {"Ag", "Wa"}),
+        Good(
+            "cybernetics, illegal, spt", "1d6", 1, {"Ht": 1}, {"As": 4, "Ic": 4, "Ri": 8, "amber": 6, "red": 6}, {"Ht"}
+        ),
+        Good(
+            "drugs, illegal, spt",
             "1d6",
             1,
             {"As": 1, "De": 1, "Ga": 1, "Wa": 1},
             {"Ri": 6, "Hi": 6},
             {"As", "De", "Hi", "Wa"},
         ),
-        Good("luxuries, illegal", "1d6", 1, {"Ag": 2, "Wa": 1}, {"Ri": 6, "Hi": 4}, {"Ag", "Ga", "Wa"}),
-        Good("weapons, illegal", "1d6", 5, {"Ht": 2}, {"Po": 6, "amber": 8, "red": 10}, {"In", "Ht"}),
-        Good("exotics, illegal", "1d1", 1, {}, {}, {"None"}),
+        Good("luxuries, illegal, spt", "1d6", 1, {"Ag": 2, "Wa": 1}, {"Ri": 6, "Hi": 4}, {"Ag", "Ga", "Wa"}),
+        Good("weapons, illegal, spt", "1d6", 5, {"Ht": 2}, {"Po": 6, "amber": 8, "red": 10}, {"In", "Ht"}),
+        Good("exotics, illegal, spt", "1d1", 1, {}, {}, {"None"}),
     ]
 
     _speculative_trading_modified_price_buy_table = [
@@ -265,7 +275,7 @@ class BbwTrade:
         return ans
 
     @staticmethod
-    def get_deal_st(name, broker, w, roll="3d6"):
+    def get_deal_st(name, broker: int, w, roll: str = "3d6"):
         broker = int(broker)
 
         obj = copy.deepcopy(
@@ -383,10 +393,10 @@ class BbwTrade:
         nd = BbwExpr(d20.roll(f"{nd}d6"))
 
         if int(nd) <= 0:
-            return (None, n_sectors, r, nd)
+            return None, r
 
         person.set_count(int(nd))
-        return (person, n_sectors, r, nd)
+        return person, r
 
     @staticmethod
     def _freight_traffic_table_roll(brocker_or_streetwise_mod, SOC_mod, kind, w0, w1):
@@ -443,10 +453,11 @@ class BbwTrade:
         - w0: departure world data (pop, starport, TL, zone)
         - w1: arrival world data (pop, starport, TL, zone)
         """
+
         crew = [i for i, _ in cs.containers().get_objs(name="crew", type0=BbwPerson).objs()]
         max_naval_or_scout_rank = max(BbwPerson.max_rank(crew, "navy")[0][1], BbwPerson.max_rank(crew, "scout")[0][1])
 
-        max_SOC_mod = BbwUtils.get_modifier(BbwPerson.max_stat(crew, "SOC")[0], BbwPerson._stat_2_mod)
+        max_SOC_mod = max(SOC_mod, BbwUtils.get_modifier(BbwPerson.max_stat(crew, "SOC")[0], BbwPerson._stat_2_mod))
 
         n_sectors, rft = BbwTrade._freight_traffic_table_roll(brocker_or_streetwise_mod, SOC_mod, "mail", w0, w1)
         r = BbwExpr()
@@ -462,10 +473,10 @@ class BbwTrade:
             r += ("armed", 2)
 
         if int(r) < 0:
-            return None, n_sectors, r, 0, rft
+            return None, r, rft
 
         nd = BbwExpr(d20.roll(f"1d6"))
-        return BbwItemFactory.make(name="mail", count=int(nd)), n_sectors, r, nd, rft
+        return BbwItemFactory.make(name="mail", count=int(nd)), r, rft
 
     @staticmethod
     def find_freight(
@@ -486,7 +497,7 @@ class BbwTrade:
         nd = BbwUtils.get_modifier(int(r), BbwTrade._passenger_traffic_table)
         nd = BbwExpr(d20.roll(f"{nd}d6"))
 
-        return BbwItemFactory.make(name=kind, count=int(nd), n_sectors=n_sectors), n_sectors, r, nd
+        return BbwItemFactory.make(name=kind, count=int(nd), n_sectors=n_sectors), r
 
 
 # w1 = BbwWorld(name="enope", uwp="C411988-7", zone="normal", hex="2205", sector=(-4, 1))
