@@ -138,6 +138,8 @@ class BbwRes:
 class BbwContainer(dict):
     def __init__(self, name="", capacity=float("inf"), size=0.0):
         self.set_name(name)
+        self.set_capacity()
+        self.set_size()
         self.set_capacity(capacity)
         self.set_size(size)
 
@@ -154,8 +156,13 @@ class BbwContainer(dict):
     def set_size(self, v: float = 0.0):
         if v is None:
             v = 0.0
+
+        if v == 0:
+            self._size = v
+            return
+
+        BbwUtils.test_geq("size", self.free_space(size=v), 0.0)
         BbwUtils.test_geq("size", v, 0.0)
-        BbwUtils.test_leq("size", v, self._capacity)
 
         self._size = v
 
@@ -167,27 +174,38 @@ class BbwContainer(dict):
         if v is None:
             v = float("inf")
 
+        if v == float("inf"):
+            self._capacity = v
+            return
+
+        BbwUtils.test_geq("size", self.free_space(capacity=v), 0.0)
         BbwUtils.test_geq("capacity", v, 0.0)
         self._capacity = v
-        self.set_size(min(self.size(), v))
 
     def name(self):
         return self._name
 
     @BbwUtils.set_if_not_present_decor
     def size(self):
-        return sum([i.capacity() for i in self.values()]) + self._size
+        return self._size
 
     @BbwUtils.set_if_not_present_decor
     def capacity(self):
         return self._capacity
 
-    def free_space(self):
-        c = self.capacity()
-        s = self.size()
-        if c == float("inf") and s == float("inf"):
+    def free_space(self, capacity: float = None, size: float = None):
+        if capacity is None:
+            capacity = self.capacity()
+        if size is None:
+            size = self.size()
+
+        if capacity == float("inf") and size == float("inf"):
             return float("inf")
-        return c - s
+
+        return capacity - size - self.used_space()
+
+    def used_space(self):
+        return sum([i.capacity() for i in self.values()])
 
     def status(self):
         return f"{self.size()}/{self.capacity()}"

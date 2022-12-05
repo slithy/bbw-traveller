@@ -15,6 +15,7 @@ def test_load_passengers(cs, w0, w1):
         assert person.count() > 0
         assert i in person.name()
 
+
 def test_find_mail(cs, w0, w1):
     for _ in range(10):
         item, r, rt = BbwTrade.find_mail(cs, 2, 3, w0, w1)
@@ -24,6 +25,7 @@ def test_find_mail(cs, w0, w1):
     assert item is not None
     assert item.count() > 0
     assert "mail" in item.name()
+
 
 def test_find_cargo(cs, w0, w1):
     header = ["major", "minor", "incidental"]
@@ -36,6 +38,7 @@ def test_find_cargo(cs, w0, w1):
         assert item is not None
         assert item.count() > 0
         assert i in item.name()
+
 
 def test_optimize_st_and_suppliers(cs, w0, w1):
     supp = BbwSupplier(name="john, illegal")
@@ -54,4 +57,3 @@ def test_optimize_st_and_suppliers(cs, w0, w1):
     supp = w0.suppliers()["ben"]
     assert not supp.is_illegal()
     assert len(filter_illegal(supp.supply())) == 0
-

@@ -114,10 +114,9 @@ class BbwItemFactory:
             item.set_name(f"{item.name()} (ns: {n_sectors})")
 
         if "freight" in item.name():
-            item.set_capacity(d20.roll("1d6").total * item.capacity())
-            item.set_value(BbwItemFactory._tickets[int(n_sectors) - 1] * item.capacity())
-            item.set_size(item.capacity())
-            item.set_name(f"{item.name()} (ns: {n_sectors}, lot: {item.capacity()} tons)")
+            item.set_capacity(d20.roll("1d6").total * item.capacity(is_per_obj=True))
+            item.set_value(BbwItemFactory._tickets[int(n_sectors) - 1] * item.capacity(is_per_obj=True))
+            item.set_size(item.capacity(is_per_obj=True))
 
         if value is not None:
             item.set_value(value)
@@ -125,8 +124,11 @@ class BbwItemFactory:
             item.set_TL(TL)
         if capacity is not None:
             item.set_capacity(capacity)
-            item.set_size(item.capacity())
+            item.set_size(item.capacity(is_per_obj=True))
         if count is not None:
             item.set_count(count)
+
+        if "freight" in item.name():
+            item.set_name(f"{item.name()} (ns: {n_sectors}, lot: {item.capacity(is_per_obj=True)} tons)")
 
         return item

@@ -30,11 +30,16 @@ class Game(commands.Cog):
         save_path = "../../" if os.getcwd() == "/home/bambleweeny" else ""
         if not filename.endswith(".json"):
             filename += ".json"
+
+        s = f"{save_path}save/{filename}"
         if not with_timestamp:
-            return f"{save_path}save/{filename}"
+            return s
         ts = time.gmtime()
         timestamp = time.strftime("%Y%m%d%H%M%S", ts)
-        return f"{save_path}save/{filename}_{timestamp}"
+
+        split_tup = os.path.splitext(s)
+
+        return f"{split_tup[0]}_{timestamp}{split_tup[1]}"
 
     @commands.command(name="send", aliases=[])
     async def send(self, ctx, msg: str):
@@ -564,16 +569,16 @@ class Game(commands.Cog):
 
     @commands.command(name="container", aliases=["cont", "inv"])
     async def container(self, ctx, *args):
-        cs = self.session_data.get_ship_curr()
+        containers = self.session_data.get_containers()
 
         detail_lvl = 1
         res = BbwRes()
         if len(args) == 0:
-            res += cs.containers().get_objs(type0=BbwContainer)
+            res += containers.get_objs(type0=BbwContainer)
         else:
             if type(args[0]) is str:
                 for i in args:
-                    res += cs.containers().get_objs(name=i, type0=BbwContainer)
+                    res += containers.get_objs(name=i, type0=BbwContainer)
             else:
                 detail_lvl = 2
                 for i in args:
@@ -646,9 +651,9 @@ class Game(commands.Cog):
         await self.send(ctx, s)
 
     @commands.command(name="ship_HP", aliases=["ship_hp", "hp_ship", "HP_ship", "HP", "hp", "Hp"])
-    async def HP(self, ctx, v: int):
+    async def HP(self, ctx, v: float):
         cs = self.session_data.get_ship_curr()
-        cs.HP(v)
+        cs.set_HP(cs.HP() + v)
         await self.send(ctx, f"Hull status: `{cs.hull()}`")
 
     @commands.command(name="add_container", aliases=["add_cont"])
@@ -764,7 +769,7 @@ class Game(commands.Cog):
     @commands.command(name="set_obj_attr_in_cont", aliases=[])
     async def set_obj_attr_in_cont(self, ctx, name: str, attr_name: str, cont: str = None, conts: str = None, *args):
         containers = self.session_data.get_containers(conts)
-        res = containers.get_objs(name=name, cont=cont, only_one=True)
+        res = containers.get_objs(name=name, cont=cont, only_one=True, self_included=True)
 
         res.objs()[0][0].set_attr(attr_name, *args)
 
@@ -1089,7 +1094,6 @@ class Game(commands.Cog):
         s += BbwUtils.print_table(t=t, headers=h, detail_lvl=1, tablefmt="fancy_grid")
 
         await self.send(ctx, s)
-
 
     @commands.command(name="trade_st", aliases=["trade"])
     async def get_deal_st(self, ctx, broker_skill: int, name: str, roll: str = "3d6"):

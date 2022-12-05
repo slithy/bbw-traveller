@@ -14,6 +14,7 @@ from cogst5.world import *
 import bisect
 
 
+@BbwUtils.for_all_methods(BbwUtils.type_sanitizer_decor)
 class BbwVehicle(BbwObj):
     def __init__(
         self,
@@ -30,6 +31,7 @@ class BbwVehicle(BbwObj):
         self.set_armour(armour)
         self.set_containers()
         self.set_info(info)
+        self.set_HP()
 
     def info(self):
         return self._info
@@ -67,18 +69,30 @@ class BbwVehicle(BbwObj):
     def set_hull(self, v):
         self.set_capacity(v)
 
-    def HP(self, v):
-        v = int(v)
-        v = min(self.size() + v, self.capacity())
+    def max_HP(self):
+        return self.capacity() / 2.5
+
+    def set_HP(self, v: float = None):
+        if v is None:
+            v = self.max_HP()
+
+        v = min(self.max_HP(), v)
         v = max(0, v)
-        self.set_size(v)
+        self._HP = v
+
+    @BbwUtils.set_if_not_present_decor
+    def HP(self):
+        return self._HP
 
     def hull(self):
-        return self.status()
+        return f"({self.HP()}/{self.max_HP()})"
+
+    def status(self):
+        return self.containers().status()
 
     @staticmethod
     def _header(is_compact=True):
-        s = ["name", "HP", "type", "TL", "armour", "info"]
+        s = ["name", "HP", "type", "TL", "armour", "status", "info"]
         return s
 
     def _str_table(self, is_compact=True):
@@ -90,6 +104,7 @@ class BbwVehicle(BbwObj):
                 self.type(),
                 self.TL(),
                 self.armour(),
+                self.status(),
                 self.info(),
             ]
         ]

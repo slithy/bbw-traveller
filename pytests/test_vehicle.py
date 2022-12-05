@@ -18,7 +18,7 @@ def test_setters_and_print(max_detail_level):
         has_cargo_scoop="1",
         has_cargo_crane="0",
         info="repair DM-1",
-        capacity="80",
+        capacity="200",
         size="79.0",
         armour="14",
         TL="14",
@@ -34,9 +34,9 @@ def test_setters_and_print(max_detail_level):
     assert s.info() == "repair DM-1"
     assert s.armour() == 14
     assert s.TL() == 14
-    assert s.capacity() == 80
+    assert s.capacity() == 200
     assert s.size() == 79
-    assert s.hull() == "(79.0/80.0)"
+    assert s.hull() == "(80.0/80.0)"
 
     for i in range(max_detail_level):
         print(s.__str__(detail_lvl=i))
@@ -65,8 +65,6 @@ def test_m_drive():
     assert s.flight_time_m_drive("0") == 0
     with pytest.raises(InvalidArgument):
         s.flight_time_m_drive(-1)
-
-
 
 
 if __name__ == "__main__":
