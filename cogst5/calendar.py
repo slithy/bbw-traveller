@@ -4,27 +4,23 @@ from cogst5.base import *
 from cogst5.utils import *
 
 
+@BbwUtils.for_all_methods(BbwUtils.type_sanitizer_decor)
 class BbwCalendar:
     _days_in_week = 7
     _days_in_month = 28
     _days_in_year = 365
     _nmonths_per_year = int((_days_in_year - 1) / _days_in_month)
 
-    def __init__(self, t=0):
+    def __init__(self, t: int = 0):
         self.set_t(t)
 
     def set_t(self, v):
-        v = int(v)
         self._t = v
 
-    def set_date(self, day, year):
-        day = int(day)
-        year = int(year)
+    def set_date(self, day: int, year: int):
         self.set_t(BbwCalendar.date2t(day, year))
 
-    def add_t(self, v):
-        v = int(v)
-
+    def add_t(self, v: int):
         old_month = self.month()
         old_year = self.year()
 

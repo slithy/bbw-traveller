@@ -1,6 +1,5 @@
 from cogst5.world import BbwWorld
 
-
 def test_world_stats():
     w0 = BbwWorld(name="w0", uwp="B3848F9-B", zone="normal", hex="1904", sector=(-4, 1))
 
@@ -81,5 +80,10 @@ def test_set_docking_fee():
     assert w0.docking_fee() != oldv
 
 
+
+
+
+
 if __name__ == "__main__":
-    test_setters()
+    test_setters_and_print(2)
+

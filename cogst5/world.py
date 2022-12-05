@@ -150,13 +150,13 @@ class BbwWorld(BbwObj):
         "totalitarian oligarchy",
     ]
     _LAW_table = [
-        "no restrictions",
+        "",
         "poison gas, explosives, undetectable weapons, WMD, battle dress",
         "portable energy weapons, combat armour",
         "military weapons, flak",
-        "light assault weapons , submachine guns, cloth",
+        "light assault weapons, submachine guns, cloth",
         "personal concealable weapons, mesh",
-        "all firearms except shotguns and stunners, carring weapons discouraged",
+        "all firearms except shotguns and stunners, carrying weapons discouraged",
         "shotguns",
         "all bladed weapons, stunners, all visible armour",
         "all weapons, all armour",
@@ -226,9 +226,8 @@ class BbwWorld(BbwObj):
 
         self.trade_codes().add(name)
 
+    @BbwUtils.set_if_not_present_decor
     def trade_codes(self):
-        if not hasattr(self, "_trade_codes"):
-            self.set_trade_codes()
         return self._trade_codes
 
     @BbwUtils.set_if_not_present_decor
@@ -339,7 +338,14 @@ class BbwWorld(BbwObj):
 
     def LAW(self):
         idx = int(self.uwp()[6], 36)
-        return self.uwp()[6], idx, BbwWorld._LAW_table[min(idx, len(BbwWorld._LAW_table) - 1)]
+
+        idx2 = min(idx, len(BbwWorld._LAW_table))
+        restrictions = "\n".join(BbwWorld._LAW_table[:idx2])
+        if not restrictions:
+            restrictions = "no restrictions"
+        else:
+            restrictions = "banned weapons and armour:" + restrictions
+        return self.uwp()[6], idx, restrictions
 
     def TL(self):
         return self.uwp()[7], int(self.uwp()[7], 36)

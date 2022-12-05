@@ -331,15 +331,11 @@ class BbwSupplier(BbwPerson):
             return
         self._t = BbwCalendar(t)
 
+    @BbwUtils.set_if_not_present_decor
     def supply(self):
-        if not hasattr(self, "_supply"):
-            self.set_supply()
-
         return self._supply
 
     def _str_table(self, detail_lvl=0):
-        # l = sorted(self.supply(), key=lambda x: x[0])
-        # s = ["\n".join([str(i[q]) for i in l]) for q in range(3)]
         return [self.name(), self.t()]
 
     def __str__(self, detail_lvl=0):

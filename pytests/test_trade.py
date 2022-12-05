@@ -1,4 +1,6 @@
 from cogst5.trade import BbwTrade
+from cogst5.person import BbwSupplier
+from cogst5.calendar import BbwCalendar
 
 
 def test_load_passengers(cs, w0, w1):
@@ -11,6 +13,7 @@ def test_load_passengers(cs, w0, w1):
 
         assert person is not None
         assert person.count() > 0
+        assert i in person.name()
 
 def test_find_mail(cs, w0, w1):
     for _ in range(10):
@@ -20,6 +23,7 @@ def test_find_mail(cs, w0, w1):
 
     assert item is not None
     assert item.count() > 0
+    assert "mail" in item.name()
 
 def test_find_cargo(cs, w0, w1):
     header = ["major", "minor", "incidental"]
@@ -31,12 +35,23 @@ def test_find_cargo(cs, w0, w1):
 
         assert item is not None
         assert item.count() > 0
+        assert i in item.name()
 
+def test_optimize_st_and_suppliers(cs, w0, w1):
+    supp = BbwSupplier(name="john, illegal")
+    w0.suppliers().dist_obj(supp)
+    supp = BbwSupplier(name="ben")
+    w0.suppliers().dist_obj(supp)
+    w0.set_supply(BbwTrade, BbwCalendar(12345).t(), None)
 
-if __name__ == "__main__":
-    from conftest import *
-    def csw0w1():
-        return cs.__pytest_wrapped__.obj(), w0.__pytest_wrapped__.obj(), w1.__pytest_wrapped__.obj()
-    test_load_passengers(*csw0w1())
-    test_find_cargo(*csw0w1())
-    test_find_mail(*csw0w1())
+    def filter_illegal(t):
+        return [i for i in t if "illegal" in i[0]]
+
+    supp = w0.suppliers()["john, illegal"]
+    assert supp.is_illegal()
+    assert len(filter_illegal(supp.supply()))
+
+    supp = w0.suppliers()["ben"]
+    assert not supp.is_illegal()
+    assert len(filter_illegal(supp.supply())) == 0
+

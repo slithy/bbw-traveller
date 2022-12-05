@@ -2,6 +2,7 @@ import os
 import time
 
 from discord.ext import commands
+import discord
 
 from cogst5.company import *
 from cogst5.library import Library
@@ -92,6 +93,12 @@ class Game(commands.Cog):
             self.session_data = jsonpickle.decode(enc_data)
 
         await self.send(ctx, f"Session data loaded from {p}.")
+
+    @commands.command(name="get_session_data", aliases=[])
+    async def get_session_data(self, ctx):
+        """send session_data.json in the chat"""
+
+        await ctx.send(file=discord.File(self.save_path("session_data.json")))
 
     ##################################################
     ### trade
@@ -432,7 +439,7 @@ class Game(commands.Cog):
         self.session_data.add_log_entry(f"jump j: {w0.name()} -> {w1.name()}")
 
         await self.consume_fuel(ctx, rf)
-        t = cs.j_drive_required_time()
+        t = BbwSpaceShip.j_drive_required_time()
         await self.send(ctx, f"jump time: `{BbwUtils.conv_days_2_time(t)}`")
         await self.newday(ctx, ndays=t, travel_accounting=True)
         await self.set_world_curr(ctx, w_to_name)
@@ -749,7 +756,7 @@ class Game(commands.Cog):
 
     @commands.command(name="rename_person", aliases=["rename_obj", "rename_item", "rename"])
     async def rename_obj(self, ctx, name: str, new_name: str, cont: str = None, conts: str = None):
-        containers = self.session_data.get_containuers(conts)
+        containers = self.session_data.get_containers(conts)
         res = containers.rename_obj(name=name, new_name=new_name, cont=cont, only_one=True)
 
         await self._send_add_res(ctx, res, 1)
@@ -846,7 +853,8 @@ class Game(commands.Cog):
 
     @commands.command(name="newday", aliases=["advance"])
     async def newday(self, ctx, ndays: int = 1, msg: str = "", travel_accounting: bool = False):
-        if abs(ndays) == 0:
+        ndays = int(ndays)
+        if abs(ndays) < 1:
             return
 
         if travel_accounting:
@@ -1065,7 +1073,7 @@ class Game(commands.Cog):
 
         await self.add_money(ctx, value=price_payed, description=description)
 
-    @commands.command(name="st", aliases=[])
+    @commands.command(name="st", aliases=["spt"])
     async def speculative_trading(self, ctx, w_to_name: str, supplier: str = None, w_from_name: str = None):
         w0, w1 = self.session_data.get_worlds(w_to_name=w_to_name, w_from_name=w_from_name)
         cs = self.session_data.get_ship_curr()

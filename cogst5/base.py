@@ -407,7 +407,7 @@ class BbwContainer(dict):
                 raise SelectionException(f"object `{name}` not found!")
             elif len(ans.objs()) > 1:
                 raise SelectionException(
-                    f"too many matches for `{name}`: `{', '.join([i.name() for o, _ in ans.objs()])}`"
+                    f"too many matches for `{name}`: `{', '.join([o.name() for o, _ in ans.objs()])}`"
                 )
 
         if not recursive:
