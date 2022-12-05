@@ -1090,6 +1090,7 @@ class Game(commands.Cog):
 
         await self.send(ctx, s)
 
+
     @commands.command(name="trade_st", aliases=["trade"])
     async def get_deal_st(self, ctx, broker_skill: int, name: str, roll: str = "3d6"):
         w = self.session_data.get_world()
