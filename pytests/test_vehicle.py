@@ -1,6 +1,7 @@
+import copy
+
 from cogst5.vehicle import BbwSpaceShip
-from cogst5.base import BbwContainer
-from cogst5.world import BbwWorld
+from cogst5.item import BbwItem
 from cogst5.models.errors import *
 import pytest
 
@@ -36,11 +37,31 @@ def test_setters_and_print(max_detail_level):
     assert s.TL() == 14
     assert s.capacity() == 200
     assert s.size() == 79
-    assert s.hull() == "(80.0/80.0)"
+    assert s.hull() == "(80/80)"
 
     for i in range(max_detail_level):
         print(s.__str__(detail_lvl=i))
 
+def test_armour():
+    s = BbwSpaceShip(
+        name="Zana's Nickel",
+        m_drive="1",
+        j_drive="2",
+        type="k (safari ship)",
+        power_plant="105",
+        fuel_refiner_speed="40",
+        is_streamlined="1",
+        has_fuel_scoop="1",
+        has_cargo_scoop="1",
+        has_cargo_crane="0",
+        info="repair DM-1",
+        capacity="200",
+        size="79.0",
+        TL="14",
+    )
+    assert s.armour() == 0
+    s.dist_obj(BbwItem(name="armour, bonded superdense", capacity=22.4, armour=14))
+    assert s.armor() == 14
 
 def test_m_drive():
     s = BbwSpaceShip(
@@ -55,8 +76,8 @@ def test_m_drive():
         has_cargo_scoop="1",
         has_cargo_crane="0",
         info="repair DM-1",
-        capacity="80",
-        size="79.0",
+        capacity="200",
+        size=0,
         armour="14",
         TL="14",
     )
@@ -66,6 +87,29 @@ def test_m_drive():
     with pytest.raises(InvalidArgument):
         s.flight_time_m_drive(-1)
 
+def test_fuel_tank(cs):
+    ft = cs.get_objs("fuel tank").objs()[0][0]
+    assert ft.capacity() == 41
+    cs.add_fuel("refined")
+    assert ft.free_space() == 0
+    cs.consume_fuel(5)
+    assert ft.free_space() == 5
+    assert ft.used_space() == 41-5
+    cs.add_fuel("gas")
+    assert ft.free_space() == 0
+    assert ft.get_objs("refined").objs()[0][0].count() == 36
+    assert ft.get_objs("unrefined").objs()[0][0].count() == 5
+    q, t = cs.refine_fuel()
+    assert q.count() == 5
+    assert t == 5/40
+    assert ft.get_objs("refined").objs()[0][0].count() == 41
+    assert ft.free_space() == 0
 
 if __name__ == "__main__":
-    pass
+    from conftest import cs
+
+    test_setters_and_print(2)
+    test_m_drive()
+    cs = cs.__pytest_wrapped__.obj()
+    test_fuel_tank(copy.deepcopy(cs))
+    test_armour()

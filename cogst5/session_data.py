@@ -8,11 +8,12 @@ from cogst5.log import *
 from .models.errors import *
 
 
+@BbwUtils.for_all_methods(BbwUtils.type_sanitizer_decor)
 class BbwSessionData(BbwObj):
     def __init__(self):
-        self._fleet = BbwContainer(name="fleet")
-        self._wishlist = BbwWishlist(name="wishlist")
-        self._charted_space = BbwContainer(name="charted space")
+        self._fleet = BbwObj(name="fleet", capacity="inf", size=0)
+        self._wishlist = BbwWishlist(name="wishlist", capacity="inf", size=0)
+        self._charted_space = BbwObj(name="charted space", capacity="inf", size=0)
 
         self._world_curr = ""
         self._ship_curr = ""
@@ -20,8 +21,7 @@ class BbwSessionData(BbwObj):
         self._calendar = BbwCalendar()
         self.set_log()
 
-    def set_ship_curr(self, v):
-        v = str(v)
+    def set_ship_curr(self, v: str = ""):
         if v == "":
             self._ship_curr = ""
             return
@@ -29,6 +29,7 @@ class BbwSessionData(BbwObj):
         res = self.fleet().get_objs(name=v, only_one=True)
         self._ship_curr = res.objs()[0][0].name()
 
+    @BbwUtils.set_if_not_present_decor
     def ship_curr(self):
         return self._ship_curr
 
@@ -36,7 +37,7 @@ class BbwSessionData(BbwObj):
         if not self.ship_curr():
             raise InvalidArgument("curr ship not set!")
 
-        return self.fleet().get_objs(name=self.ship_curr(), only_one=True).objs()[0][0]
+        return self.fleet().get_objs(name=self.ship_curr(), only_one=True)[0]
 
     def charted_space(self):
         return self._charted_space
@@ -96,11 +97,3 @@ class BbwSessionData(BbwObj):
     def add_log_entry(self, description, value=0):
         self.log().add_entry(description=description, value=value, t=self.calendar().t())
         self.company().add_money(value)
-
-    def get_containers(self, name=None):
-        """get the container that contains the containers. For example cs.containers()"""
-        cs = self.get_ship_curr()
-        if name is None or len(name) == 0:
-            return cs.containers()
-
-        return cs.containers().get_objs(name=name, only_one=True).objs()[0][0].containers()

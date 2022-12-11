@@ -1,30 +1,27 @@
+import copy
+
 from cogst5.world import BbwWorld
 
 
-def test_world_stats():
-    w0 = BbwWorld(name="w0", uwp="B3848F9-B", zone="normal", hex="1904", sector=(-4, 1))
-
-    assert w0.SP()[:2] == ("B", 1)
-    assert w0.SIZE()[:2] == ("3", 3)
+def test_world_stats(w0):
+    assert w0.SP()[:2] == ("A", 0)
+    assert w0.SIZE()[:2] == ("7", 7)
     assert w0.ATM()[:2] == ("8", 8)
-    assert w0.HYDRO()[:2] == ("4", 4)
+    assert w0.HYDRO()[:2] == ("8", 8)
     assert w0.POP()[:2] == ("8", 8)
-    assert w0.GOV()[:2] == ("F", 15)
+    assert w0.GOV()[:2] == ("9", 9)
     assert w0.LAW()[:2] == ("9", 9)
-    assert w0.TL()[:2] == ("B", 11)
+    assert w0.TL()[:2] == ("C", 12)
 
 
-def test_setters_and_print(max_detail_level):
-    w0 = BbwWorld(name="w0", uwp="B3848F9-B", zone="normal", hex="1904", sector=(-4, 1))
+def test_setters_and_print(max_detail_level, w0):
     for i in range(max_detail_level):
         w0.__str__(detail_lvl=i)
 
 
-def test_distance():
-    w0 = BbwWorld(name="w0", uwp="B3848F9-B", zone="normal", hex="1910", sector=(-4, 1))
-    w1 = BbwWorld(name="w1", uwp="B3848F9-B", zone="normal", hex="1910", sector=(-4, 1))
+def test_distance(w0, w1):
 
-    assert BbwWorld.distance(w0, w1) == 0
+    assert BbwWorld.distance(w0, w1) == 2
     for i in ["1909", "1809", "1810", "1911", "2010", "2009"]:
         w1.set_hex(i)
         assert BbwWorld.distance(w0, w1) == 1
@@ -48,8 +45,7 @@ def test_distance():
     assert BbwWorld.distance(w0, w1) == 20
 
 
-def test_set_trade_code():
-    w0 = BbwWorld(name="w0", uwp="A788899-C", zone="normal", hex="1910", sector=(-4, 1))
+def test_set_trade_code(w0):
     assert w0.trade_codes() == {"Ri", "Ht"}
     w0.set_trade_code("('Ri', None)")
     assert w0.trade_codes() == {"Ht"}
@@ -59,13 +55,11 @@ def test_set_trade_code():
     assert w0.trade_codes() == {"Ri", "Ht"}
 
 
-def test_people():
-    w0 = BbwWorld(name="w0", uwp="A788899-C", zone="normal", hex="1910", sector=(-4, 1))
+def test_people(w0):
     w0.people()
 
 
-def test_set_docking_fee():
-    w0 = BbwWorld(name="w0", uwp="A788899-C", zone="normal", hex="1910", sector=(-4, 1))
+def test_set_docking_fee(w0):
 
     w0.set_docking_fee(1000)
     assert w0.docking_fee() == 1000
@@ -82,4 +76,12 @@ def test_set_docking_fee():
 
 
 if __name__ == "__main__":
-    test_setters_and_print(2)
+    from conftest import w0, w1
+
+    w0, w1 = w0.__pytest_wrapped__.obj(), w1.__pytest_wrapped__.obj()
+    test_world_stats(copy.deepcopy(w0))
+    test_setters_and_print(2, copy.deepcopy(w0))
+    test_distance(copy.deepcopy(w0), copy.deepcopy(w1))
+    test_set_trade_code(copy.deepcopy(w0))
+    test_people(copy.deepcopy(w0))
+    test_set_docking_fee(copy.deepcopy(w0))

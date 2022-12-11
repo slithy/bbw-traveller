@@ -35,7 +35,7 @@ class BbwUtils:
                 if t is float:
                     return float(val)
                 if t is bool:
-                    if val is str:
+                    if type(val) is str:
                         if val.lower() == "true":
                             return True
                         if val.lower() == "false":
@@ -123,6 +123,10 @@ class BbwUtils:
         return t
 
     @staticmethod
+    def secondary_armour(obj):
+        return sum([i.armour() for i in obj.get_children() if hasattr(i, "armour")])
+
+    @staticmethod
     def conv_days_2_time(d):
         days = int(d)
         d = d % 1
@@ -139,6 +143,26 @@ class BbwUtils:
         ans.append(f"{minutes}m")
 
         return "-".join(ans)
+
+    @staticmethod
+    def conv_d20_2_traveller(v: str):
+        return v.replace("d6*10", "DD").replace("d6", "D")
+
+    @staticmethod
+    def conv_traveller_2_d20(v: str):
+        return v.replace("DD", "d6*10").replace("D", "d6")
+
+    @staticmethod
+    def to_traveller_roll(v: str):
+        if "d" in v:
+            v = BbwUtils.conv_d20_2_traveller(v)
+        return v
+
+    @staticmethod
+    def to_d20_roll(v: str):
+        if "D" in v:
+            v = BbwUtils.conv_traveller_2_d20(v)
+        return v
 
     @staticmethod
     def print_code(i):
@@ -260,6 +284,10 @@ class BbwUtils:
 
         ans = sorted(ans, key=lambda q: custom_sort(q))
         return [i for _, i in ans]
+
+    @staticmethod
+    def pf(f: float):
+        return f"{f:.3f}".rstrip("0").rstrip(".")
 
     @staticmethod
     def get_modifier(key, ll):
