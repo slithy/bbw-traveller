@@ -6,6 +6,7 @@ def test_print_code():
     assert "A" == BbwUtils.print_code("A")[0]
     assert "10" in BbwUtils.print_code("A")
 
+
 def test_convert_d20_traveller():
     assert BbwUtils.conv_d20_2_traveller("3d6+5") == "3D+5"
     assert "3d6+5" == BbwUtils.conv_traveller_2_d20("3D+5")

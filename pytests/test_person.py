@@ -9,6 +9,7 @@ import pytest
 def test_setters_and_print(p0):
     print(p0.__str__(detail_lvl=2))
 
+
 def test_basic_functions(p0):
     assert p0.salary_ticket() == -5000
     assert p0.life_expenses() == 5000
@@ -22,7 +23,7 @@ def test_basic_functions(p0):
     assert p0.skill("bau")[0][1] == -3
     assert p0.rank("bau")[0][1] == 0
     assert p0.capacity() == 4
-    assert p0.size() == 4-0.028
+    assert p0.size() == 4 - 0.028
 
 
 def test_person_factory():
@@ -30,6 +31,7 @@ def test_person_factory():
     assert person.capacity() == 4
     assert not person.reinvest()
     assert person.size() == 4
+
 
 def test_size_capacity():
     person = BbwPersonFactory.make("high")
@@ -57,18 +59,17 @@ def test_size_capacity():
 
 def test_std_person():
     p = BbwPerson(name="Marie")
-    assert p.capacity() == 4
-    assert p.size() == 4
+    assert p.capacity() == 2
+    assert p.size() == 2
     p.set_upp("377CCF")
-    assert p.size() == pytest.approx(3.98)
-    p.set_capacity(2)
     assert p.size() == pytest.approx(1.98)
-
+    p.set_capacity(4)
+    assert p.size() == pytest.approx(3.98)
 
 
 if __name__ == "__main__":
-
     from conftest import p0
+
     p0 = p0.__pytest_wrapped__.obj()
     # test_setters_and_print(copy.deepcopy(p0))
     test_basic_functions(copy.deepcopy(p0))

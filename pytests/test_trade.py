@@ -58,6 +58,7 @@ def test_optimize_st_and_suppliers(cs, w0, w1):
     assert not supp.is_illegal()
     assert len(filter_illegal(supp.supply())) == 0
 
+
 if __name__ == "__main__":
     from conftest import cs, w0, w1
 

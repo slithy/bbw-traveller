@@ -23,10 +23,10 @@ def cs():
         has_cargo_scoop="1",
         has_cargo_crane="0",
         info="repair DM-1",
-        armour="14",
         TL="14",
     )
     return ship
+
 
 @pytest.fixture
 def w0():
@@ -37,6 +37,9 @@ def w0():
 def w1():
     return BbwWorld(name="Wypoc", uwp="E9C45479", zone="amber", hex="2011", sector=(-4, 1))
 
+
 @pytest.fixture
 def p0():
-    return BbwPerson(upp="35AFFC3", reinvest="True", skill_rank={"seafarer": 0, "gun combat, slug": 1, "athletics, strength": 1})
+    return BbwPerson(
+        upp="35AFFC3", reinvest="True", skill_rank={"seafarer": 0, "gun combat, slug": 1, "athletics, strength": 1}
+    )

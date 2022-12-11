@@ -164,6 +164,7 @@ def test_free_space():
     )
     c1.dist_obj(c2)
     base.dist_obj(c1)
+
     def fs(name=None):
         return sum([i.free_space() for i in [i for i, _ in base.get_objs(name=name, type0=BbwObj).objs()]])
 
@@ -175,6 +176,7 @@ def test_free_space():
     assert fs("c3") == 1
     assert fs("c4") == 1
     assert fs("c1") == 2
+
 
 def test_res():
     c0 = BbwObj("c0", 9, size=0)
@@ -203,7 +205,7 @@ def test_res():
 
     res0 = c0.get_objs("o0")
     res1 = c0.get_objs("o1")
-    res = res0+res1
+    res = res0 + res1
     assert res.count() == 4
     assert len(res) == 2
     res0 = c0.dist_obj(BbwObj("o0", capacity=1, count=1))
@@ -215,6 +217,7 @@ def test_res():
     res0 = c0.dist_obj(BbwObj("o0", capacity=1, count=1))
     assert res0.objs()[0][1].name() == "c1"
 
+
 if __name__ == "__main__":
     test_setters_and_print(2)
     test_capacity_and_size()
@@ -223,4 +226,3 @@ if __name__ == "__main__":
     test_del_obj()
     test_free_space()
     test_res()
-

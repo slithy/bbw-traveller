@@ -20,7 +20,6 @@ def test_setters_and_print(max_detail_level, w0):
 
 
 def test_distance(w0, w1):
-
     assert BbwWorld.distance(w0, w1) == 2
     for i in ["1909", "1809", "1810", "1911", "2010", "2009"]:
         w1.set_hex(i)
@@ -60,7 +59,6 @@ def test_people(w0):
 
 
 def test_set_docking_fee(w0):
-
     w0.set_docking_fee(1000)
     assert w0.docking_fee() == 1000
 
