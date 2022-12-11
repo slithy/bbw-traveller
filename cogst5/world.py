@@ -163,6 +163,9 @@ class BbwWorld(BbwObj):
     ]
 
     def __init__(self, uwp, zone, hex, sector, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.set_capacity("inf")
+        self.set_size(0)
         self.set_uwp(uwp)
         self.set_zone(zone)
         self.set_hex(hex)
@@ -172,10 +175,8 @@ class BbwWorld(BbwObj):
         self.set_suppliers()
         self.set_docking_fee()
 
-        super().__init__(*args, **kwargs)
-
     def set_suppliers(self):
-        self._suppliers = BbwContainer(name="suppliers")
+        self.dist_obj(BbwObj(name="suppliers", capacity="inf", size=0))
 
     def set_supply(self, bbwtrade, t, names=""):
         obj = [i for i, _ in self.suppliers().get_objs(name=names).objs()]
@@ -184,14 +185,14 @@ class BbwWorld(BbwObj):
 
     @BbwUtils.set_if_not_present_decor
     def suppliers(self):
-        return self._suppliers
+        return self.get_objs("suppliers").objs()[0][0]
 
     def set_people(self):
-        self._people = BbwContainer(name="people")
+        self.dist_obj(BbwObj(name="people", capacity="inf", size=0))
 
     @BbwUtils.set_if_not_present_decor
     def people(self):
-        return self._people
+        return self.get_objs("people").objs()[0][0]
 
     @BbwUtils.set_if_not_present_decor
     def uwp(self):
@@ -234,10 +235,10 @@ class BbwWorld(BbwObj):
     def sector(self):
         return self._sector
 
-    def set_sector(self, x: int = 0, y: int = 0):
-        self._sector = (x, y)
+    def set_sector(self, x=(0, 0)):
+        if type(x) is str:
+            x = eval(x)
 
-    def set_sector(self, x: tuple = (0, 0)):
         self._sector = x
 
     def set_uwp(self, v: str = "A0000000"):

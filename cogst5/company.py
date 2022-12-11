@@ -5,6 +5,7 @@ from cogst5.base import *
 from cogst5.calendar import *
 
 
+@BbwUtils.for_all_methods(BbwUtils.type_sanitizer_decor)
 class BbwDebt(BbwObj):
     def __init__(self, due_t, period=None, end_t=None, *args, **kwargs):
         self._due_t = 0
@@ -13,12 +14,18 @@ class BbwDebt(BbwObj):
         self.set_period(period)
         super().__init__(*args, **kwargs)
 
-    def set_attr(self, v, *args, **kwargs):
-        if v == "name":
-            raise NotAllowed(f"Setting the name in this way is not allowed! Use rename instead")
+    def set_amount(self, v: int = 0):
+        self.set_capacity(v)
 
-        f = getattr(self, f"set_{v}")
-        f(*args, **kwargs)
+    def set_capacity(self, v: int = 0):
+        self._capacity = v
+        self.set_size()
+
+    def set_size(self, v: int = None):
+        if v is None:
+            v = self.capacity(is_per_obj=True)
+
+        self._size = v
 
     def set_due_t(self, v):
         v = int(v)
@@ -65,13 +72,13 @@ class BbwDebt(BbwObj):
 class BbwCompany:
     def __init__(self):
         self._money = 0
-        self._debts = BbwContainer(name="debts")
+        self._debts = BbwObj(name="debts", capacity="inf", size=0)
 
     def debts(self):
         return self._debts
 
     def _pay_debt(self, log, curr_t, name):
-        debt = self.debts().get_objs(name=name, only_one=True).objs()[0][0]
+        debt = self.debts().get_objs(name=name, only_one=True)[0]
 
         log.add_entry(f"debt: {debt.name()}", curr_t, debt.capacity())
 
@@ -108,8 +115,7 @@ class BbwCompany:
         for i in no_reinvest_crew:
             tot_not_reinvested += i.salary_ticket()
 
-        crew_line = "\n".join([i.name() for i in crew])
-        log.add_entry(f"salaries for:\n{crew_line}", time, tot)
+        log.add_entry(f"salaries for the crew", time, tot)
         if tot_not_reinvested:
             crew_line = "\n".join([i.name() for i in no_reinvest_crew])
             log.add_entry(f"safeguard salaries for:\n{crew_line}", time, -tot_not_reinvested)

@@ -1,12 +1,44 @@
 from cogst5.base import *
 
 
+@BbwUtils.for_all_methods(BbwUtils.type_sanitizer_decor)
 class BbwItem(BbwObj):
-    def __init__(self, TL=None, value=None, *args, **kwargs):
+    def __init__(self, TL=None, value=None, armour=0, damage: str = "", *args, **kwargs):
         self.set_value(value)
         self.set_TL(TL)
+        self.set_armour(armour)
+        self.set_damage(damage)
 
         super().__init__(*args, **kwargs)
+
+    def set_armour(self, v: int = 0):
+        BbwUtils.test_geq("armour", v, 0)
+        self._armour = v
+
+    def set_armor(self, v: int = 0):
+        self.set_armour(v)
+
+    @BbwUtils.set_if_not_present_decor
+    def armour(self, is_per_obj=True):
+        return self._per_obj(self._armour, is_per_obj)
+
+    @BbwUtils.set_if_not_present_decor
+    def armor(self, is_per_obj=True):
+        return self.armour(is_per_obj=is_per_obj)
+
+    def set_damage(self, v: str = ""):
+        self._damage = BbwUtils.to_d20_roll(v)
+
+    def set_dmg(self, v: str = ""):
+        self.set_damage(v)
+
+    @BbwUtils.set_if_not_present_decor
+    def damage(self):
+        return self._damage
+
+    @BbwUtils.set_if_not_present_decor
+    def dmg(self):
+        return self.damage()
 
     def TL(self):
         return self._TL
@@ -29,6 +61,16 @@ class BbwItem(BbwObj):
         BbwUtils.test_leq("TL", v, 30)
         self._TL = v
 
+    def info(self):
+        t = []
+        if self.armour():
+            t.append(f"AC: {self.armour()}")
+        if self.damage():
+            t.append(f"dmg: {BbwUtils.to_traveller_roll(self.damage())}")
+        if super().info():
+            t.append(super().info())
+        return ", ".join(t)
+
     def _str_table(self, detail_lvl: int = 0):
         if detail_lvl == 0:
             return [self.count(), self.name(), self.capacity() if self.capacity() else None]
@@ -39,6 +81,7 @@ class BbwItem(BbwObj):
             self.capacity() if self.capacity() else None,
             self.TL() if self.TL() else None,
             self.value() if self.value() else None,
+            self.info(),
         ]
 
     def __str__(self, detail_lvl: int = 0):
@@ -51,7 +94,7 @@ class BbwItem(BbwObj):
         if detail_lvl == 0:
             return ["count", "name", "capacity"]
         else:
-            return ["count", "name", "capacity", "TL", "value"]
+            return ["count", "name", "capacity", "TL", "value", "info"]
 
 
 class BbwItemFactory:
@@ -114,7 +157,10 @@ class BbwItemFactory:
             item.set_name(f"{item.name()} (ns: {n_sectors})")
 
         if "freight" in item.name():
-            item.set_capacity(d20.roll("1d6").total * item.capacity(is_per_obj=True))
+            v = d20.roll("1d6").total * item.capacity(is_per_obj=True)
+            item.set_size(0)
+            item.set_capacity(v)
+            item.set_size(v)
             item.set_value(BbwItemFactory._tickets[int(n_sectors) - 1] * item.capacity(is_per_obj=True))
             item.set_size(item.capacity(is_per_obj=True))
 
@@ -123,7 +169,9 @@ class BbwItemFactory:
         if TL is not None:
             item.set_TL(TL)
         if capacity is not None:
+            item.set_size(0)
             item.set_capacity(capacity)
+            item.set_size(capacity)
             item.set_size(item.capacity(is_per_obj=True))
         if count is not None:
             item.set_count(count)

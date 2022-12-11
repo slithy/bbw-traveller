@@ -322,7 +322,7 @@ class BbwTrade:
 
     @staticmethod
     def optimize_st(w0, w1, cs, supplier=None):
-        crew = cs.crew()
+        crew = cs.get_objs("crew")
         max_broker = BbwPerson.max_skill(crew, "broker")[0][1]
 
         filter = (
@@ -361,7 +361,7 @@ class BbwTrade:
         """
         carouse_or_broker_or_streetwise_mod, SOC_mod = int(carouse_or_broker_or_streetwise_mod), int(SOC_mod)
 
-        crew = cs.crew()
+        crew = cs.get_objs("crew")
         max_steward = BbwPerson.max_skill(crew, "steward")[0][1]
 
         n_sectors = BbwWorld.distance(w0, w1)
@@ -454,7 +454,7 @@ class BbwTrade:
         - w1: arrival world data (pop, starport, TL, zone)
         """
 
-        crew = [i for i, _ in cs.containers().get_objs(name="crew", type0=BbwPerson).objs()]
+        crew = cs.get_objs("crew")
         max_naval_or_scout_rank = max(BbwPerson.max_rank(crew, "navy")[0][1], BbwPerson.max_rank(crew, "scout")[0][1])
 
         max_SOC_mod = max(SOC_mod, BbwUtils.get_modifier(BbwPerson.max_stat(crew, "SOC")[0], BbwPerson._stat_2_mod))

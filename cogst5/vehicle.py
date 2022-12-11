@@ -20,27 +20,19 @@ class BbwVehicle(BbwObj):
         self,
         type="",
         TL=0,
-        armour=0,
-        info="",
         *args,
         **kwargs,
     ):
         super().__init__(*args, **kwargs)
         self.set_type(type)
         self.set_TL(TL)
-        self.set_armour(armour)
-        self.set_info(info)
         self.set_HP()
 
-    @BbwUtils.set_if_not_present_decor
-    def info(self):
-        return self._info
+    def armour(self):
+        return BbwUtils.secondary_armour(self)
 
-    def set_info(self, v: str = ""):
-        self._info = v
-
-    def crew(self):
-        return [i for i, _ in self.get_objs(name="crew").objs()]
+    def armor(self):
+        return self.armour()
 
     def set_type(self, v: str):
         self._type = v
@@ -50,9 +42,11 @@ class BbwVehicle(BbwObj):
         BbwUtils.test_leq("TL", v, 30)
         self._TL = v
 
+    @BbwUtils.set_if_not_present_decor
     def type(self):
         return self._type
 
+    @BbwUtils.set_if_not_present_decor
     def TL(self):
         return self._TL
 
@@ -72,7 +66,7 @@ class BbwVehicle(BbwObj):
         return self._HP
 
     def hull(self):
-        return f"({self.HP()}/{self.max_HP()})"
+        return f"({BbwUtils.pf(self.HP())}/{BbwUtils.pf(self.max_HP())})"
 
     @staticmethod
     def _header(is_compact=True):
@@ -95,10 +89,12 @@ class BbwVehicle(BbwObj):
 
         return s
 
-    def __str__(self, detail_lvl: int=0):
+    def __str__(self, detail_lvl: int = 0):
         s = ""
         s += BbwUtils.print_table(
-            self._str_table(detail_lvl=detail_lvl), headers=BbwVehicle._header(detail_lvl=detail_lvl), detail_lvl=detail_lvl
+            self._str_table(detail_lvl=detail_lvl),
+            headers=BbwVehicle._header(detail_lvl=detail_lvl),
+            detail_lvl=detail_lvl,
         )
         if detail_lvl == 0:
             return s
@@ -115,9 +111,11 @@ class BbwSpaceShip(BbwVehicle):
 
     def __init__(
         self,
-        m_drive=0,
-        j_drive=0,
-        power_plant=0,
+        capacity: float = 200,
+        size: float = 0.0,
+        m_drive=1,
+        j_drive=2,
+        power_plant=105,
         fuel_refiner_speed=40,
         is_streamlined=True,
         has_fuel_scoop=True,
@@ -134,7 +132,10 @@ class BbwSpaceShip(BbwVehicle):
         self.set_has_fuel_scoop(has_fuel_scoop)
         self.set_has_cargo_scoop(has_cargo_scoop)
         self.set_has_cargo_crane(has_cargo_crane)
-        super().__init__(*args, **kwargs)
+        super().__init__(capacity=capacity, size=size, *args, **kwargs)
+        self.dist_obj(BbwObj("fuel tank", 41, size=0))
+        self.dist_obj(BbwObj("cargo0, main", 30, size=0))
+        self.dist_obj(BbwObj("stateroom, main", 44, size=0))
 
     def flight_time_m_drive(self, d_km: int):
         """
@@ -206,8 +207,7 @@ class BbwSpaceShip(BbwVehicle):
 
         return res, price
 
-    def consume_fuel(self, count):
-        count = int(count)
+    def consume_fuel(self, count: int):
         BbwUtils.test_geq("count", count, 0)
         if count == 0:
             return BbwRes()
@@ -254,17 +254,6 @@ class BbwSpaceShip(BbwVehicle):
 
     def is_streamlined(self):
         return self._is_streamlined
-
-    def set_armour(self, v):
-        v = int(v)
-        BbwUtils.test_geq("armour", v, 0)
-        self._armour = v
-
-    def set_armor(self, v):
-        self.set_armour(v)
-
-    def armour(self):
-        return self._armour
 
     def set_fuel_refiner_speed(self, v):
         v = int(v)
@@ -363,92 +352,6 @@ class BbwSpaceShip(BbwVehicle):
         if detail_lvl == 1:
             return s
 
-        for i in self.get_children():
-            s += i.__str__(detail_lvl=1)
-            s += "\n"
+        s += super(BbwVehicle, self).__str__(detail_lvl=-1)
 
         return s
-
-
-# a = BbwSpaceShip(
-#         name="Zana's Nickel",
-#         m_drive=1,
-#         j_drive=2,
-#         type="k (safari ship)",
-#         power_plant=105,
-#         fuel_refiner_speed=40,
-#         is_streamlined=True,
-#         has_fuel_scoop=True,
-#         has_cargo_crane=True,
-#         info="",
-#         capacity=200,
-#     size=170,
-#     )
-
-
-#
-# print(dc.__str__(False))
-
-
-# print(a.containers().__str__(False))
-
-# launch = BbwContainer("launch, cargo", 20, )
-# a.get_container("docking").dist_item(launch)
-#
-#
-# print([i.name() for i in a.get_cargos()])
-# w = BbwWorld(name="regina", uwp="AAAAAAA-A", zone="normal", hex="1424")
-# new_person = BbwPerson(
-#     name="aaa",
-#     count=1,
-#     salary_ticket=-1,
-#     capacity=1,
-#     reinvest=False,
-#     upp="337CCF",
-#     ranks={'steward':1, 'scout':1},
-# )
-# a.get_main_stateroom().dist_item(new_person)
-#
-# print(a.find_mail(2, 3, w, w))
-# print(a.find_freight(2, 3, "minor", w, w))
-# print(a.__str__())
-
-#
-#
-# print(conv_days_2_time(a.add_fuel("gas", 1)[2]))
-
-#
-# new_person = BbwPerson(
-#     name="aaa",
-#     count=1,
-#     role="crew: other",
-#     salary_ticket=-1,
-#     capacity=1,
-#     reinvest=False,
-#     upp="337CCF",
-#     ranks={'steward':1},
-# )
-# a.get_main_stateroom().dist_item(new_person)
-# # print(a.__str__(False))
-# print(a.find_passengers(2, 3, "high", w, w))
-
-
-#
-#
-#
-#
-#
-# b = BbwItem(name="stuff", count=7, capacity=0.1)
-# a.add_fuel("planet", 10)
-# a.add_fuel("refined")
-# # print(a.get_fuel_tank().__str__(False))
-# print(a.refine_fuel())
-# a.consume_fuel(42)
-# print(a.get_fuel_tank().__str__(False))
-
-
-###############################################################
-
-
-# #
-# #

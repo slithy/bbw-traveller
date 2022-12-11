@@ -4,11 +4,13 @@ from cogst5.calendar import *
 import bisect
 
 
+@BbwUtils.for_all_methods(BbwUtils.type_sanitizer_decor)
 class BbwPerson(BbwObj):
     _soc_2_life_expenses = [
-        [2, 4, 5, 6, 7, 8, 10, 12, 14, 15],
+        [2, 4, 5, 6, 7, 8, 10, 12, 14, 100],
         [400, 800, 1000, 1200, 1500, 2000, 2500, 5000, 12000, 20000],
     ]
+    _soc_2_capacity = [[11, 100], [2, 4]]
     _stat_2_mod = [["0", "2", "5", "8", "B", "E", "Z"], [-3, -2, -1, 0, 1, 2, 3]]
     _general_skills = [
         "animals",
@@ -30,21 +32,25 @@ class BbwPerson(BbwObj):
         "tactics",
     ]
 
-    def __init__(self, upp=None, salary_ticket=None, reinvest=False, skill_rank={}, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.set_salary_ticket(salary_ticket)
+    def __init__(self, upp=None, salary_ticket=None, reinvest=True, skill_rank={}, *args, **kwargs):
+        self._size = 0
+        self._capacity = 2
         self.set_upp(upp)
+        self.set_salary_ticket(salary_ticket)
         self.set_reinvest(reinvest)
         self.set_skill_rank(skill_rank)
+        super().__init__(*args, **kwargs)
 
-    def set_containers(self):
-        self._containers = BbwContainer("containers")
-        self._containers.dist_obj(BbwContainer("backpack"))
-        self._containers.dist_obj(BbwContainer("cybernetics"))
+    def armour(self):
+        return BbwUtils.secondary_armour(self)
 
-    @BbwUtils.set_if_not_present_decor
-    def containers(self):
-        return self._containers
+    def armor(self):
+        return self.armour()
+
+    def get_obj_capacity(self, i, is_per_obj=False):
+        if i.armour() > 0 or "wearable" in i.name():
+            return i.capacity(is_per_obj=is_per_obj) / 4
+        return i.capacity(is_per_obj=is_per_obj)
 
     def set_skill(self, name, value=None):
         if value is None:
@@ -63,6 +69,23 @@ class BbwPerson(BbwObj):
             if i in name:
                 self._skill_rank[i] = 0
 
+        self.set_size()
+
+    def set_capacity(self, v: float = None):
+        if v is None:
+            if self.SOC() is not None:
+                v = BbwUtils.get_modifier(int(self.SOC()[0], 36), BbwPerson._soc_2_capacity)
+            else:
+                v = 2
+        self._capacity = v
+        self.set_size()
+        super().set_capacity(v)
+
+    def set_size(self, v: float = None):
+        if v is None:
+            v = self._capacity - self.carrying_capacity()
+        super().set_size(v)
+
     def set_rank(self, name, value=None):
         if value is None:
             name, value = eval(name)
@@ -76,7 +99,7 @@ class BbwPerson(BbwObj):
         BbwUtils.test_leq("skill", value, 6)
         self._skill_rank[name] = value
 
-    def set_skill_rank(self, skill_rank):
+    def set_skill_rank(self, skill_rank={}):
         if type(skill_rank) is str:
             skill_rank = eval(skill_rank)
         if type(skill_rank) is not dict:
@@ -89,6 +112,9 @@ class BbwPerson(BbwObj):
             else:
                 self.set_skill(k, v)
 
+        self.set_size()
+
+    @BbwUtils.set_if_not_present_decor
     def skill_rank(self):
         return self._skill_rank
 
@@ -99,24 +125,25 @@ class BbwPerson(BbwObj):
         res = [(k, v) for k, v in self.skill_rank().items() if name in k]
         return sorted(res, key=lambda x: x[1]) if len(res) else [(name, default_value)]
 
+    @BbwUtils.set_if_not_present_decor
     def salary_ticket(self, is_per_obj=False):
         return self._per_obj(self._salary_ticket, is_per_obj)
 
+    @BbwUtils.set_if_not_present_decor
     def reinvest(self):
         return self._reinvest
 
-    def set_reinvest(self, v):
-        self._reinvest = bool(int(v))
+    def set_reinvest(self, v: bool = True):
+        self._reinvest = v
 
-    def set_salary_ticket(self, v):
+    def set_salary_ticket(self, v: float = None):
         """v < 0 means salary. Otherwise, ticket"""
-        if v is None:
-            v = 0
-
-        v = float(v)
+        if v is None or v == float("inf"):
+            v = -self.life_expenses()
 
         self._salary_ticket = v
 
+    @BbwUtils.set_if_not_present_decor
     def upp(self):
         return self._upp
 
@@ -163,7 +190,7 @@ class BbwPerson(BbwObj):
 
         return self.upp()[6], BbwUtils.get_modifier(self.upp()[6], BbwPerson._stat_2_mod)
 
-    def set_upp(self, v):
+    def set_upp(self, v: str = None):
         if v is None:
             self._upp = v
             return
@@ -172,12 +199,39 @@ class BbwPerson(BbwObj):
 
         BbwUtils.test_hexstr("upp", v, [6, 7])
         self._upp = v
+        self.set_size()
+        self.set_salary_ticket()
 
     def life_expenses(self):
         if self.SOC() is None:
-            return None
+            return 0
 
-        return self._soc_2_life_expenses[1][bisect.bisect_left(self._soc_2_life_expenses[0], int(self.SOC()[0], 36))]
+        return BbwUtils.get_modifier(int(self.SOC()[0], 36), self._soc_2_life_expenses)
+
+    def carrying_capacity(self):
+        if self.upp() is None:
+            return 0
+
+        return (
+            (
+                int(self.STR()[0], 36)
+                + int(self.END()[0], 36)
+                + self.rank("athletics, strength", 0)[0][1]
+                + self.rank("athletics, endurance", 0)[0][1]
+            )
+            * 2
+            / 1000
+        )
+
+    def info(self):
+        l = []
+        if l:
+            l.append(super().info())
+
+        if self.free_space() < self.carrying_capacity() / 2:
+            l.append("encumbered DM-2")
+
+        return ", ".join(l)
 
     def trip_payback(self, t):
         t = int(t)
@@ -228,23 +282,16 @@ class BbwPerson(BbwObj):
     def _str_table(self, detail_lvl: int = 0):
         if detail_lvl == 0:
             return [self.count(), self.name()]
-        elif detail_lvl == 1:
-            return [
-                self.count(),
-                self.name(),
-                self.upp(),
-                self.salary_ticket(),
-                self.capacity(),
-                self.reinvest(),
-            ]
         else:
             return [
                 self.count(),
                 self.name(),
                 self.upp(),
                 self.salary_ticket(),
-                self.capacity(),
+                self.status(),
                 self.reinvest(),
+                self.armour(),
+                self.info(),
             ]
 
     def __str__(self, detail_lvl: int = 0):
@@ -253,28 +300,32 @@ class BbwPerson(BbwObj):
         if detail_lvl == 0:
             return s
 
-        h = ["stat", "value", "modifier"]
-        t = [
-            ["STR", BbwUtils.print_code(self.STR()[0]), f"{self.STR()[1]}"],
-            ["DEX", BbwUtils.print_code(self.DEX()[0]), f"{self.DEX()[1]}"],
-            ["END", BbwUtils.print_code(self.END()[0]), f"{self.END()[1]}"],
-            ["INT", BbwUtils.print_code(self.INT()[0]), f"{self.INT()[1]}"],
-            ["EDU", BbwUtils.print_code(self.EDU()[0]), f"{self.EDU()[1]}"],
-            ["SOC", BbwUtils.print_code(self.SOC()[0]), f"{self.SOC()[1]}"],
-        ]
-        if self.PSI():
-            t.append(["PSI", BbwUtils.print_code(self.PSI()[0]), f"{self.PSI()[1]}"])
+        if self.upp():
+            s += "stats:\n"
+            h = ["stat", "value", "modifier"]
+            t = [
+                ["STR", BbwUtils.print_code(self.STR()[0]), f"{self.STR()[1]}"],
+                ["DEX", BbwUtils.print_code(self.DEX()[0]), f"{self.DEX()[1]}"],
+                ["END", BbwUtils.print_code(self.END()[0]), f"{self.END()[1]}"],
+                ["INT", BbwUtils.print_code(self.INT()[0]), f"{self.INT()[1]}"],
+                ["EDU", BbwUtils.print_code(self.EDU()[0]), f"{self.EDU()[1]}"],
+                ["SOC", BbwUtils.print_code(self.SOC()[0]), f"{self.SOC()[1]}"],
+            ]
+            if self.PSI():
+                t.append(["PSI", BbwUtils.print_code(self.PSI()[0]), f"{self.PSI()[1]}"])
 
-        s += BbwUtils.print_table(t, headers=h, detail_lvl=1)
-        s += "\n".join([i.__str__(detail_lvl=2) for i, _ in self.containers().get_objs(type0=BbwContainer).objs()])
+            s += BbwUtils.print_table(t, headers=h, detail_lvl=1)
 
-        if detail_lvl == 1:
-            return s
+        if len(self.get_children()):
+            s += "backpack:\n"
+            s += super().__str__(detail_lvl=-1)
 
-        h = ["skill/rank", "level"]
-        t = [[k, str(v)] for k, v in sorted(self.skill_rank().items())]
+        if len(self.skill_rank().items()):
+            s += "skills and ranks:\n"
+            h = ["skill/rank", "level"]
+            t = [[k, str(v)] for k, v in sorted(self.skill_rank().items())]
 
-        s += BbwUtils.print_table(t, headers=h, detail_lvl=1)
+            s += BbwUtils.print_table(t, headers=h, detail_lvl=1)
 
         return s
 
@@ -282,24 +333,16 @@ class BbwPerson(BbwObj):
     def _header(detail_lvl=0):
         if detail_lvl == 0:
             return ["count", "name"]
-        elif detail_lvl == 1:
-            return [
-                "count",
-                "name",
-                "upp",
-                "salary (<0)/ticket (>=0)",
-                "capacity",
-                "reinvest",
-            ]
         else:
             return [
                 "count",
                 "name",
                 "upp",
-                "skills/ranks",
                 "salary (<0)/ticket (>=0)",
-                "capacity",
+                "status",
                 "reinvest",
+                "armour",
+                "info",
             ]
 
 
@@ -369,18 +412,18 @@ class BbwPersonFactory:
     }
 
     _lib = [
-        BbwPerson(name="passenger, high", capacity=1),
-        BbwPerson(name="passenger, middle", capacity=1),
-        BbwPerson(name="passenger, basic", capacity=0.5),
-        BbwPerson(name="passenger, low", capacity=1),
-        BbwPerson(name="crew, pilot", capacity=0.5, salary_ticket=-6000),
-        BbwPerson(name="crew, astrogator", capacity=0.5, salary_ticket=-5000),
-        BbwPerson(name="crew, engineer", capacity=0.5, salary_ticket=-4000),
-        BbwPerson(name="crew, steward", capacity=0.5, salary_ticket=-2000),
-        BbwPerson(name="crew, medic", capacity=0.5, salary_ticket=-3000),
-        BbwPerson(name="crew, gunner", capacity=0.5, salary_ticket=-1000),
-        BbwPerson(name="crew, marine", capacity=0.5, salary_ticket=-1000),
-        BbwPerson(name="crew, other", capacity=0.5, salary_ticket=-1000),
+        BbwPerson(name="passenger, high", capacity=4, reinvest=False),
+        BbwPerson(name="passenger, middle", capacity=4, reinvest=False),
+        BbwPerson(name="passenger, basic", capacity=2, reinvest=False),
+        BbwPerson(name="passenger, low", capacity=2, reinvest=False),
+        BbwPerson(name="crew, pilot", capacity=2, salary_ticket=-6000, reinvest=False),
+        BbwPerson(name="crew, astrogator", capacity=2, salary_ticket=-5000, reinvest=False),
+        BbwPerson(name="crew, engineer", capacity=2, salary_ticket=-4000, reinvest=False),
+        BbwPerson(name="crew, steward", capacity=2, salary_ticket=-2000, reinvest=False),
+        BbwPerson(name="crew, medic", capacity=2, salary_ticket=-3000, reinvest=False),
+        BbwPerson(name="crew, gunner", capacity=2, salary_ticket=-1000, reinvest=False),
+        BbwPerson(name="crew, marine", capacity=2, salary_ticket=-1000, reinvest=False),
+        BbwPerson(name="crew, other", capacity=2, salary_ticket=-1000, reinvest=False),
     ]
 
     @staticmethod

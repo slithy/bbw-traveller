@@ -1,7 +1,7 @@
 import pytest
 from cogst5.vehicle import BbwSpaceShip
 from cogst5.world import BbwWorld
-from cogst5.base import BbwObj
+from cogst5.person import BbwPerson
 
 
 @pytest.fixture
@@ -23,12 +23,9 @@ def cs():
         has_cargo_scoop="1",
         has_cargo_crane="0",
         info="repair DM-1",
-        capacity="200",
-        size=0,
         armour="14",
         TL="14",
     )
-    ship.dist_obj(BbwObj("fuel tank", 41, size=0))
     return ship
 
 @pytest.fixture
@@ -39,3 +36,7 @@ def w0():
 @pytest.fixture
 def w1():
     return BbwWorld(name="Wypoc", uwp="E9C45479", zone="amber", hex="2011", sector=(-4, 1))
+
+@pytest.fixture
+def p0():
+    return BbwPerson(upp="35AFFC3", reinvest="True", skill_rank={"seafarer": 0, "gun combat, slug": 1, "athletics, strength": 1})

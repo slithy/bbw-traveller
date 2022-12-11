@@ -1,6 +1,6 @@
 import pytest
 
-from cogst5.base import BbwObj
+from cogst5.base import BbwObj, BbwRes
 from cogst5.models.errors import *
 
 
@@ -164,8 +164,6 @@ def test_free_space():
     )
     c1.dist_obj(c2)
     base.dist_obj(c1)
-
-
     def fs(name=None):
         return sum([i.free_space() for i in [i for i, _ in base.get_objs(name=name, type0=BbwObj).objs()]])
 
@@ -178,6 +176,44 @@ def test_free_space():
     assert fs("c4") == 1
     assert fs("c1") == 2
 
+def test_res():
+    c0 = BbwObj("c0", 9, size=0)
+    res = c0.dist_obj(BbwObj("o0", capacity=1))
+    assert res.count() == 1
+    res = c0.dist_obj(BbwObj("o0", capacity=1, count=2))
+    assert res.count() == 2
+    res = c0.get_objs("o0")
+    assert res.count() == 3
+    assert len(res) == 1
+    assert res[0].name() == "o0"
+    with pytest.raises(IndexError):
+        res[1]
+    c0.dist_obj(BbwObj("c1", 5, size=0))
+    res = c0.dist_obj(BbwObj("o1", capacity=1), cont="c1")
+    assert res.count() == 1
+    res = c0.get_objs("o")
+    assert res.count() == 4
+    assert len(res) == 2
+    res.print_objs()
+    res.print_containers()
+    print(res)
+    assert res[1].name() == "o1"
+    with pytest.raises(IndexError):
+        res[2]
+
+    res0 = c0.get_objs("o0")
+    res1 = c0.get_objs("o1")
+    res = res0+res1
+    assert res.count() == 4
+    assert len(res) == 2
+    res0 = c0.dist_obj(BbwObj("o0", capacity=1, count=1))
+    res1 += res0
+    assert res1.count() == 2
+    assert len(res1) == 2
+    assert res1.objs()[0][1].name() == "c1"
+    assert res1.objs()[1][1].name() == "c0"
+    res0 = c0.dist_obj(BbwObj("o0", capacity=1, count=1))
+    assert res0.objs()[0][1].name() == "c1"
 
 if __name__ == "__main__":
     test_setters_and_print(2)
@@ -186,4 +222,5 @@ if __name__ == "__main__":
     test_rename()
     test_del_obj()
     test_free_space()
+    test_res()
 
