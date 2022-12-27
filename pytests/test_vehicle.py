@@ -1,3 +1,6 @@
+if __name__ == "__main__":
+    import __init__
+
 import copy
 
 from cogst5.vehicle import BbwSpaceShip

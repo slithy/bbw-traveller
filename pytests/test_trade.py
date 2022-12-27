@@ -1,6 +1,10 @@
+if __name__ == "__main__":
+    import __init__
+
 from cogst5.trade import BbwTrade
 from cogst5.person import BbwSupplier
 from cogst5.calendar import BbwCalendar
+from cogst5.utils import BbwUtils
 
 
 def test_load_passengers(cs, w0, w1):
@@ -40,7 +44,7 @@ def test_find_cargo(cs, w0, w1):
         assert i in item.name()
 
 
-def test_optimize_st_and_suppliers(cs, w0, w1):
+def test_suppliers_st(cs, w0, w1):
     supp = BbwSupplier(name="john, illegal")
     w0.suppliers().dist_obj(supp)
     supp = BbwSupplier(name="ben")
@@ -59,6 +63,18 @@ def test_optimize_st_and_suppliers(cs, w0, w1):
     assert len(filter_illegal(supp.supply())) == 0
 
 
+def test_optimize_st(cs, w0, w1):
+    h, t = BbwTrade.optimize_st(cs, None, w1)
+    assert "cybernetics" in t[0][0] and "illegal" in t[0][0]
+    h, t = BbwTrade.optimize_st(cs, w0, None)
+    assert "radioactives" in t[0][0]
+
+    h, t = BbwTrade.optimize_st(cs, w0, filter=["advanced weapons, spt", "cybernetics, spt", "luxury goods, spt"])
+
+    l = [i.replace(" ", "\n") for i in ["advanced weapons, spt", "cybernetics, spt"]]
+    assert [t[0][0], t[1][0]] == l
+
+
 if __name__ == "__main__":
     from conftest import cs, w0, w1
 
@@ -67,4 +83,5 @@ if __name__ == "__main__":
     test_load_passengers(cs, w0, w1)
     test_find_mail(cs, w0, w1)
     test_find_cargo(cs, w0, w1)
-    test_optimize_st_and_suppliers(cs, w0, w1)
+    test_suppliers_st(cs, w0, w1)
+    test_optimize_st(cs, w0, w1)

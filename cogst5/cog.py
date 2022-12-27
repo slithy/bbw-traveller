@@ -1061,19 +1061,56 @@ class Game(commands.Cog):
 
         await self.add_money(ctx, value=price_payed, description=description)
 
-    @commands.command(name="st", aliases=["spt"])
-    async def speculative_trading(self, ctx, w_to_name: str, supplier: str = None, w_from_name: str = None):
+    @commands.command(name="buy_st", aliases=["st_buy", "spt_buy", "buy_spt", "stbuy", "buyst", "sptbuy", "buyspt"])
+    async def optimize_buy_st(self, ctx, w_name: str = None, supplier: str = None):
+        w = self.session_data.get_world(w_name)
+
+        cs = self.session_data.get_ship_curr()
+        filter = set()
+        s = f"speculative trading in `{w.name()}`\n"
+        if supplier is not None and supplier != "":
+            supplier = BbwUtils.get_objs(w.suppliers().values(), name=supplier, only_one=True)[0]
+            s += f"from `{supplier.name()}`\n"
+            filter = set([i[0] for i in supplier.supply()])
+
+        h, t = BbwTrade.optimize_st(cs, w_buy=w, w_sell=None, filter=filter)
+        s += BbwUtils.print_table(t=t, headers=h, detail_lvl=1, tablefmt="fancy_grid")
+
+        await self.send(ctx, s)
+
+    @commands.command(
+        name="sell_st", aliases=["st_sell", "spt_sell", "sell_spt", "stsell", "sellst", "sptsell", "sellspt"]
+    )
+    async def optimize_sell_st(self, ctx, w_name: str = None, from_ship_supplies: bool = False):
+        w = self.session_data.get_world(w_name)
+
+        cs = self.session_data.get_ship_curr()
+        filter = set()
+        s = f"Speculative trading in `{w.name()}`\n"
+        if from_ship_supplies:
+            filter = set([i.name() for i in cs.get_objs("spt")])
+            s += f"using ship `spt` cargo: " + ", ".join([f"`{i}`" for i in filter]) + "\n"
+
+        h, t = BbwTrade.optimize_st(cs, w_buy=None, w_sell=w, filter=filter)
+        s += BbwUtils.print_table(t=t, headers=h, detail_lvl=1, tablefmt="fancy_grid")
+
+        await self.send(ctx, s)
+
+    @commands.command(
+        name="jump_st", aliases=["st_jump", "spt_jump", "jump_spt", "stjump", "jumpst", "sptjump", "jumpspt"]
+    )
+    async def optimize_jump_st(self, ctx, w_to_name: str, supplier: str = None, w_from_name: str = None):
         w0, w1 = self.session_data.get_worlds(w_to_name=w_to_name, w_from_name=w_from_name)
         cs = self.session_data.get_ship_curr()
 
-        h, t = BbwTrade.optimize_st(w0, w1, cs, supplier)
-        sort_idx = 3
-        t = sorted([i for i in t if i[4] > 5000], key=lambda x: -x[sort_idx])
+        filter = set()
+        s = f"Speculative trading from `{w0.name()}` to `{w1.name()}`\n"
+        if supplier is not None and supplier != "":
+            supplier = BbwUtils.get_objs(w0.suppliers().values(), name=supplier, only_one=True)[0]
+            s += f"from `{supplier.name()}`\n"
+            filter = set([i[0] for i in supplier.supply()])
 
-        s = (
-            f"speculative trading options buying from `{w0.name()}` and selling in `{w1.name()}` (sorted by"
-            f" {h[sort_idx]}):\n"
-        )
+        h, t = BbwTrade.optimize_st(cs, w_buy=w0, w_sell=w1, filter=filter)
         s += BbwUtils.print_table(t=t, headers=h, detail_lvl=1, tablefmt="fancy_grid")
 
         await self.send(ctx, s)

@@ -1,3 +1,6 @@
+if __name__ == "__main__":
+    import __init__
+
 import pytest
 
 from cogst5.base import BbwObj, BbwRes

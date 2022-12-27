@@ -210,6 +210,15 @@ class BbwTrade:
         Good("exotics, illegal, spt", "1d1", 1, {}, {}, {"None"}),
     ]
 
+    _speculative_trading_recap_header = [
+        f"goods ",
+        f"buy DMs, \nsell DMs",
+        "base price/\nton",
+        "profit/\ncr",
+        "avg. profit/\nton",
+        "tons avg\n(max)",
+    ]
+
     _speculative_trading_modified_price_buy_table = [
         [*range(-3, 25), 1000],
         [3, 2.5, 2, 1.75, 1.5, 1.35, *[i / 100 for i in range(125, 10, -5)]],
@@ -268,6 +277,9 @@ class BbwTrade:
     @staticmethod
     def _get_mod_st(m, w):
         ans = BbwExpr()
+        if w is None:
+            return ans
+
         for k, v in m.items():
             if k in w.trade_codes() or k in w.zone():
                 ans = max(ans, BbwExpr(f"{k}", v))
@@ -321,7 +333,34 @@ class BbwTrade:
         ]
 
     @staticmethod
-    def optimize_st(w0, w1, cs, supplier=None):
+    def optimize_st(cs, w_buy=None, w_sell=None, filter=None, is_sorted=True, limit=5000):
+        crew = cs.get_objs("crew")
+        broker = BbwPerson.max_skill(crew, "broker")[0][1]
+
+        l = [
+            i
+            for i in BbwTrade._speculative_trading_table
+            if filter is None or len(filter) == 0 or i.name() in set(filter)
+        ]
+
+        l = [BbwTrade._evaluate_good_st(v, w_buy, w_sell, broker) for v in l]
+
+        h = [
+            f"goods ",
+            f"buy DMs, \nsell DMs",
+            "base price/\nton",
+            "profit/\ncr",
+            "avg. profit/\nton",
+            "tons avg\n(max)",
+        ]
+
+        if is_sorted:
+            l = sorted([i for i in l if i[4] > limit], key=lambda x: -x[4])
+
+        return h, l
+
+    @staticmethod
+    def optimize_jump_st(w0, w1, cs, supplier=None):
         crew = cs.get_objs("crew")
         max_broker = BbwPerson.max_skill(crew, "broker")[0][1]
 
@@ -339,16 +378,7 @@ class BbwTrade:
             if v.name() in filter
         ]
 
-        h = [
-            f"goods ",
-            f"buy DMs, \nsell DMs",
-            "base price/\nton",
-            "profit/\ncr",
-            "avg. profit/\nton",
-            "tons avg\n(max)",
-        ]
-
-        return h, l
+        return BbwTrade._speculative_trading_recap_header, l
 
     @staticmethod
     def find_passengers(cs, carouse_or_broker_or_streetwise_mod, SOC_mod, kind, w0, w1):

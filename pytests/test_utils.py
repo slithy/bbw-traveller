@@ -1,3 +1,6 @@
+if __name__ == "__main__":
+    import __init__
+
 from cogst5.utils import BbwUtils
 
 
