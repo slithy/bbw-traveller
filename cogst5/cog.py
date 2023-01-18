@@ -521,10 +521,9 @@ class Game(commands.Cog):
         await self.send(ctx, f"The world `{name}` was successfully deleted")
         await self.charted_space(ctx)
 
-    @commands.command(name="rename_world_curr", aliases=["rename_world", "rename_planet"])
-    async def rename_world(self, ctx, new_name: str):
-        cw = self.session_data.get_world()
-        self.session_data.fleet().rename_obj(name=cw, new_name=new_name)
+    @commands.command(name="rename_world", aliases=["rename_planet"])
+    async def rename_world(self, ctx, name: str, new_name: str):
+        self.session_data.charted_space().rename_obj(name=name, new_name=new_name)
 
         await self.set_world_curr(ctx, new_name)
 
