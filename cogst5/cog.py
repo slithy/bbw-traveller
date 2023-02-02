@@ -416,7 +416,7 @@ class Game(commands.Cog):
         cs = self.session_data.get_ship_curr()
 
         msg = f""
-        crew = cs.crew()
+        crew = cs.get_objs("crew")
         for i in crew:
             payback = i.trip_payback(t)
 
@@ -608,28 +608,28 @@ class Game(commands.Cog):
     @commands.command(name="max_stat", aliases=[])
     async def max_stat(self, ctx, stat: str):
         cs = self.session_data.get_ship_curr()
-        l = cs.crew()
+        l = cs.get_objs("crew")
         v, l = BbwPerson.max_stat(l, stat=stat)
         await self._max_skill_rank_stat(ctx, v, l)
 
     @commands.command(name="max_skill", aliases=[])
     async def max_skill(self, ctx, skill: str):
         cs = self.session_data.get_ship_curr()
-        l = cs.crew()
+        l = cs.get_objs("crew")
         v, l = BbwPerson.max_skill(l, skill=skill)
         await self._max_skill_rank_stat(ctx, v, l)
 
     @commands.command(name="max_rank", aliases=[])
     async def max_rank(self, ctx, rank: str):
         cs = self.session_data.get_ship_curr()
-        l = cs.crew()
+        l = cs.get_objs("crew")
         v, l = BbwPerson.max_rank(l, rank=rank)
         await self._max_skill_rank_stat(ctx, v, l)
 
     @commands.command(name="skill", aliases=[])
     async def skill(self, ctx, skill: str):
         cs = self.session_data.get_ship_curr()
-        l = cs.crew()
+        l = cs.get_objs("crew")
         s = f"People with `{skill}`:\n"
         s += "\n".join(
             [

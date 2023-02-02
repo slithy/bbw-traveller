@@ -42,7 +42,9 @@ class BbwWorld(BbwObj):
             WorldCodes("Ba", "barren", {"GOV": [0], "POP": [0], "LAW": [0]}),
             WorldCodes("De", "desert", {"ATM": list(range(2, 10)), "HYDRO": [0]}),
             WorldCodes("Fl", "fluid oceans", {"ATM": list(range(10, 37)), "HYDRO": list(range(1, 37))}),
-            WorldCodes("Ga", "garden", {"SIZE": list(range(6, 9)), "ATM": list(range(5, 9)), "HYDRO": list(range(5, 8))}),
+            WorldCodes(
+                "Ga", "garden", {"SIZE": list(range(6, 9)), "ATM": list(range(5, 9)), "HYDRO": list(range(5, 8))}
+            ),
             WorldCodes(
                 "Hi",
                 "high population",
