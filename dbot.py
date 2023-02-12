@@ -17,38 +17,42 @@ from discord.errors import Forbidden, HTTPException, InvalidArgument, NotFound
 from discord.ext import commands
 from discord.ext.commands.errors import CommandInvokeError
 
-#from aliasing.errors import CollectableRequiresLicenses, EvaluationError
+# from aliasing.errors import CollectableRequiresLicenses, EvaluationError
 from aliasing.errors import EvaluationError
-#from aliasing.helpers import handle_alias_exception, handle_alias_required_licenses, handle_aliases
+
+# from aliasing.helpers import handle_alias_exception, handle_alias_required_licenses, handle_aliases
 from cogst5.models.errors import BambleweenyException
-#from ddb import BeyondClient, BeyondClientBase
-#from ddb.gamelog import GameLogClient
-#from gamedata.compendium import compendium
-#from gamedata.lookuputils import handle_required_license
+
+# from ddb import BeyondClient, BeyondClientBase
+# from ddb.gamelog import GameLogClient
+# from gamedata.compendium import compendium
+# from gamedata.lookuputils import handle_required_license
 from utils import clustering, config, context
-#from utils.aldclient import AsyncLaunchDarklyClient
+
+# from utils.aldclient import AsyncLaunchDarklyClient
 from utils.help import help_command
 from utils.redisIO import RedisIO
+from cogst5.cog import BbwHelp
 
 # -----COGS-----
 COGS = (
     "cogst5.dice",
     "cogst5.cog"
-    #"cogst5.charGen",
-    #"cogst5.homebrew",
-    #"cogst5.lookup",
-    #"cogst5.pbpUtils",
-    #"cogst5.gametrack",
-    #"cogst5.initiative",
-    #"cogst5.sheetManager",
-    #"cogst5.gamelog",
-    #"cogsmisc.customization",
-    #"cogsmisc.core",
-    #"cogsmisc.publicity",
-    #"cogsmisc.stats",
-    #"cogsmisc.repl",
-    #"cogsmisc.adminUtils",
-    #"cogsmisc.tutorials",
+    # "cogst5.charGen",
+    # "cogst5.homebrew",
+    # "cogst5.lookup",
+    # "cogst5.pbpUtils",
+    # "cogst5.gametrack",
+    # "cogst5.initiative",
+    # "cogst5.sheetManager",
+    # "cogst5.gamelog",
+    # "cogsmisc.customization",
+    # "cogsmisc.core",
+    # "cogsmisc.publicity",
+    # "cogsmisc.stats",
+    # "cogsmisc.repl",
+    # "cogsmisc.adminUtils",
+    # "cogsmisc.tutorials",
 )
 
 
@@ -86,24 +90,24 @@ class Avrae(commands.AutoShardedBot):
         self.launch_max_concurrency = 1
 
         # sentry
-        #if config.SENTRY_DSN is not None:
-            #release = None
-            #if config.GIT_COMMIT_SHA:
-                #release = f"avrae-bot@{config.GIT_COMMIT_SHA}"
-            #sentry_sdk.init(dsn=config.SENTRY_DSN, environment=config.ENVIRONMENT.title(), release=release)
+        # if config.SENTRY_DSN is not None:
+        # release = None
+        # if config.GIT_COMMIT_SHA:
+        # release = f"avrae-bot@{config.GIT_COMMIT_SHA}"
+        # sentry_sdk.init(dsn=config.SENTRY_DSN, environment=config.ENVIRONMENT.title(), release=release)
 
         # ddb entitlements
-        #if config.TESTING and config.DDB_AUTH_SERVICE_URL is None:
-            #self.ddb = BeyondClientBase()
-        #else:
-            #self.ddb = BeyondClient(self.loop)
+        # if config.TESTING and config.DDB_AUTH_SERVICE_URL is None:
+        # self.ddb = BeyondClientBase()
+        # else:
+        # self.ddb = BeyondClient(self.loop)
 
         # launchdarkly
-        #self.ldclient = AsyncLaunchDarklyClient(self.loop, sdk_key=config.LAUNCHDARKLY_SDK_KEY)
+        # self.ldclient = AsyncLaunchDarklyClient(self.loop, sdk_key=config.LAUNCHDARKLY_SDK_KEY)
 
         # ddb game log
-        #self.glclient = GameLogClient(self)
-        #self.glclient.init()
+        # self.glclient = GameLogClient(self)
+        # self.glclient.init()
 
     async def setup_rdb(self):
         return RedisIO(await aioredis.create_redis_pool(config.REDIS_URL, db=config.REDIS_DB_NUM))
@@ -209,13 +213,16 @@ class Avrae(commands.AutoShardedBot):
 
 
 desc = (
-    "Bambleweeny is Discord bot to generate random numbers for RPGs. It is a fork of [Avrae](https://github.com/avrae/avrae). The name is inspired by the Finite Improbability Generator from the _Hitchhikers Guide to the Galaxy_:"
-    ""
-    "_The principle of generating small amounts of finite improbability by simply hooking the logic circuits of a Bambleweeny 57 Submeson Brain to an atomic vector plotter suspended in a strong Brownian Motion producer (say a nice hot cup of tea) were of course well understood—and such generators were often used to break the ice at parties by making all the molecules in the hostess's undergarments leap simultaneously one foot to the left, in accordance with the Theory of Indeterminacy._"
-    ""
-    "_Many respectable physicists said that they weren't going to stand for this—partly because it was a debasement of science, but mostly because they didn't get invited to those sort of parties._"
-    ""
-    "[Learn about Infinite Improbability](https://hitchhikers.fandom.com/wiki/Infinite_Improbability_Drive)"
+    "Bambleweeny is Discord bot to generate random numbers for RPGs. It is a fork of"
+    " [Avrae](https://github.com/avrae/avrae). The name is inspired by the Finite Improbability Generator from the"
+    " _Hitchhikers Guide to the Galaxy_:_The principle of generating small amounts of finite improbability by simply"
+    " hooking the logic circuits of a Bambleweeny 57 Submeson Brain to an atomic vector plotter suspended in a strong"
+    " Brownian Motion producer (say a nice hot cup of tea) were of course well understood—and such generators were"
+    " often used to break the ice at parties by making all the molecules in the hostess's undergarments leap"
+    " simultaneously one foot to the left, in accordance with the Theory of Indeterminacy.__Many respectable physicists"
+    " said that they weren't going to stand for this—partly because it was a debasement of science, but mostly because"
+    " they didn't get invited to those sort of parties._[Learn about Infinite"
+    " Improbability](https://hitchhikers.fandom.com/wiki/Infinite_Improbability_Drive)"
 )
 
 intents = discord.Intents(
@@ -372,5 +379,6 @@ for cog in COGS:
 if __name__ == "__main__":
     faulthandler.enable()  # assumes we log errors to stderr, traces segfaults
     bot.state = "run"
-    #bot.loop.create_task(compendium.reload_task(bot.mdb))
+    bot.help_command = BbwHelp()
+    # bot.loop.create_task(compendium.reload_task(bot.mdb))
     bot.run(config.TOKEN)

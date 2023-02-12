@@ -63,13 +63,13 @@ def test_suppliers_st(cs, w0, w1):
     assert len(filter_illegal(supp.supply())) == 0
 
 
-def test_optimize_st(cs, w0, w1):
-    h, t = BbwTrade.optimize_st(cs, None, w1)
+def test_optimize_spt(cs, w0, w1):
+    h, t = BbwTrade.optimize_spt(cs, None, w1)
     assert "cybernetics" in t[0][0] and "illegal" in t[0][0]
-    h, t = BbwTrade.optimize_st(cs, w0, None)
+    h, t = BbwTrade.optimize_spt(cs, w0, None)
     assert "radioactives" in t[0][0]
 
-    h, t = BbwTrade.optimize_st(cs, w0, filter=["advanced weapons, spt", "cybernetics, spt", "luxury goods, spt"])
+    h, t = BbwTrade.optimize_spt(cs, w0, filter=["advanced weapons, spt", "cybernetics, spt", "luxury goods, spt"])
 
     l = [i.replace(" ", "\n") for i in ["advanced weapons, spt", "cybernetics, spt"]]
     assert [t[0][0], t[1][0]] == l
@@ -80,8 +80,8 @@ if __name__ == "__main__":
 
     cs, w0, w1 = cs.__pytest_wrapped__.obj(), w0.__pytest_wrapped__.obj(), w1.__pytest_wrapped__.obj()
 
-    test_load_passengers(cs, w0, w1)
+    # test_load_passengers(cs, w0, w1)
     test_find_mail(cs, w0, w1)
-    test_find_cargo(cs, w0, w1)
-    test_suppliers_st(cs, w0, w1)
-    test_optimize_st(cs, w0, w1)
+    # test_find_cargo(cs, w0, w1)
+    # test_suppliers_st(cs, w0, w1)
+    # test_optimize_spt(cs, w0, w1)

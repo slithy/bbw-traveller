@@ -3,76 +3,7 @@ import copy
 from cogst5.person import *
 from cogst5.item import *
 from cogst5.world import *
-
-
-class BbwExpr:
-    def __init__(self, l=[], q=None):
-        if q is not None:
-            l = [(l, q)]
-        self._l = []
-        if type(l) is list:
-            self._l = l
-        else:
-            self._l = (BbwExpr() + l)._l
-
-    def __add__(self, o):
-        if type(o) is BbwExpr:
-            return BbwExpr([*self._l, *o._l])
-        if type(o) is tuple:
-            return BbwExpr([*self._l, o])
-        if type(o) is d20.dice.RollResult:
-            return BbwExpr([*self._l, (o, o.total)])
-        raise ValueError(f"{o} must be of type tuple, BbwExpr or d20.dice.RollResult")
-
-    def __sub__(self, o):
-        return self + (o * -1)
-
-    def __gt__(self, o):
-        if type(o) is BbwExpr:
-            if len(self._l) == 0:
-                return False
-            if len(o._l) == 0:
-                return True
-            return int(self) > int(o)
-
-    def __lt__(self, o):
-        if type(o) is BbwExpr:
-            if len(self._l) == 0:
-                return True
-            if len(o._l) == 0:
-                return False
-            return int(self) < int(o)
-
-    def __mul__(self, o):
-        if type(o) is float or type(o) is int:
-            return BbwExpr([(d, i * o) for d, i in self._l])
-
-    def __rmul__(self, o):
-        return self.__mul__(o)
-
-    def __int__(self):
-        return sum(i for _, i in self._l)
-
-    def __str__(self, is_compact=False):
-        if len(self._l) == 0:
-            return ""
-
-        def affix(idx, v, i):
-            s = " " if idx else ""
-            if idx and v >= 0:
-                s += "+ "
-            if type(i) is d20.dice.RollResult:
-                s += i.__str__()
-            else:
-                s += f"{v} [" + i + "]"
-            return s if not is_compact else s.replace(" ", "").replace("`", "")
-
-        s = "".join([f"{affix(idx, v, i)}" for idx, (i, v) in enumerate(self._l)])
-        if len(self._l) == 1:
-            return s if not is_compact else s.replace(" ", "").replace("`", "")
-
-        s += f" = {int(self)}"
-        return s if not is_compact else s.replace(" ", "").replace("`", "")
+from cogst5.expr import *
 
 
 class Good:
@@ -287,7 +218,7 @@ class BbwTrade:
         return ans
 
     @staticmethod
-    def get_deal_st(name, broker: int, w, roll: str = "3d6"):
+    def get_deal_spt(name, broker: int, w, roll: str = "3d6"):
         broker = int(broker)
 
         obj = copy.deepcopy(
@@ -313,8 +244,8 @@ class BbwTrade:
 
     @staticmethod
     def _evaluate_good_st(v, w0, w1, max_broker):
-        buy_multi, buy_mods, _, _ = BbwTrade.get_deal_st(name=v.name(), broker=max_broker, w=w0, roll=9.5)
-        _, _, sell_multi, sell_mods = BbwTrade.get_deal_st(name=v.name(), broker=max_broker, w=w1, roll=9.5)
+        buy_multi, buy_mods, _, _ = BbwTrade.get_deal_spt(name=v.name(), broker=max_broker, w=w0, roll=9.5)
+        _, _, sell_multi, sell_mods = BbwTrade.get_deal_spt(name=v.name(), broker=max_broker, w=w1, roll=9.5)
 
         _, avg_t_buy, _, max_t_buy = v.roll_tons(w0)
         _, avg_t_sell, _, max_t_sell = v.roll_tons(w1)
@@ -333,7 +264,7 @@ class BbwTrade:
         ]
 
     @staticmethod
-    def optimize_st(cs, w_buy=None, w_sell=None, filter=None, is_sorted=True, limit=5000):
+    def optimize_spt(cs, w_buy=None, w_sell=None, filter=None, is_sorted=True, limit=5000):
         crew = cs.get_objs("crew")
         broker = BbwPerson.max_skill(crew, "broker")[0][1]
 
@@ -487,7 +418,7 @@ class BbwTrade:
         crew = cs.get_objs("crew")
         max_naval_or_scout_rank = max(BbwPerson.max_rank(crew, "navy")[0][1], BbwPerson.max_rank(crew, "scout")[0][1])
 
-        max_SOC_mod = max(SOC_mod, BbwUtils.get_modifier(BbwPerson.max_stat(crew, "SOC")[0], BbwPerson._stat_2_mod))
+        max_SOC_mod = max(SOC_mod, BbwPerson.max_stat(crew, "SOC")[0][1])
 
         n_sectors, rft = BbwTrade._freight_traffic_table_roll(brocker_or_streetwise_mod, SOC_mod, "mail", w0, w1)
         r = BbwExpr()

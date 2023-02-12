@@ -12,6 +12,8 @@ import jsonpickle
 
 
 class BbwUtils:
+    _msg_divisor = "__                                                                          __\n"
+
     @staticmethod
     def set_if_not_present_decor(func):
         """We assume that the variable is _{func_name} and the setter is set_{func_name}"""
@@ -235,6 +237,9 @@ class BbwUtils:
                 return v
             if type(v) is tuple:
                 return v[0]
+            if isinstance(v.name, str):
+                return v.name
+
             return v.name()
 
         names = [get_name(i) for i in raw_list]
@@ -278,7 +283,7 @@ class BbwUtils:
 
         if only_one:
             if len(ans) == 0:
-                raise SelectionException(f"object `{name}` not found! Optons: `{', '.join(names)}`")
+                raise SelectionException(f"object `{name}` not found! Options: `{', '.join(names)}`")
             if len(ans) > 1:
                 raise SelectionException(f"too many matches for object `{name}`: `{', '.join([i for i, _ in ans])}`")
 

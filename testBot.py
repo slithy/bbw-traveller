@@ -1,5 +1,6 @@
 from discord.ext import commands
 from dotenv import load_dotenv
+from cogst5.cog import BbwHelp
 
 import os
 
@@ -13,6 +14,7 @@ class TestBot(commands.Bot):
 if __name__ == "__main__":
     bot = TestBot(command_prefix="!")
     bot.load_extension("cogst5.cog")
+    bot.help_command = BbwHelp()
     load_dotenv()
     token = os.getenv("DISCORD_TOKEN")
 

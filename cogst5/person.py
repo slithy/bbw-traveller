@@ -1,7 +1,96 @@
 from cogst5.base import *
 from cogst5.calendar import *
+from cogst5.expr import *
 
 import bisect
+
+
+@BbwUtils.for_all_methods(BbwUtils.type_sanitizer_decor)
+class BbwSkillSpeciality:
+    def __init__(self, info: str, diff: int, stats: list, time: tuple = None):
+        self._diff = diff
+        self._time = time
+        self._stats = stats
+        self._info = info
+
+
+@BbwUtils.for_all_methods(BbwUtils.type_sanitizer_decor)
+class BbwSkill:
+    @staticmethod
+    def _get_skill(raw_list, name):
+        res = BbwUtils.get_objs(raw_list=raw_list, name=name)
+
+        if len(res) > 1:
+            print(res)
+            raise SelectionException(f"object `{name}` too generic! Options: `{res}`")
+        if len(res) == 1:
+            return res[0]
+        q = name.split(",")
+        if len(q) > 1:
+            return BbwSkill._get_skill(raw_list=raw_list, name=q[0].strip())
+
+        return None
+
+    def __init__(self, name: str, specialities: list):
+        self._name = name
+        self._specialities = specialities
+
+    def name(self):
+        return self._name
+
+    def fallback_skill(self):
+        l = self._name.split(",")
+        return l[0].strip() if len(l) == 2 else None
+
+    def base_roll(self, skill_name, skill, stat_name, stat, custom, roll=d20.roll("2d6").total, diff=8):
+        r = BbwExpr()
+        r += (skill_name, skill)
+        r += (stat_name, stat)
+        if custom:
+            r += ("custom", custom)
+
+        r += ("diff", -diff)
+        r += ("roll", roll)
+
+        return r
+
+    def roll(self, person, skill_name, skill, custom: int = 0, chosen_stat: str = None):
+        if chosen_stat:
+            stat_list = [i for i in dir(person) if i.isupper() and len(i) == 3]
+            chosen_stat = BbwUtils.get_objs(raw_list=stat_list, name=chosen_stat, only_one=True)[0]
+
+            stat = getattr(person, chosen_stat)()[1]
+
+            r = self.base_roll(skill_name, skill, chosen_stat, stat, custom)
+
+            return f"**roll**: {r}\n"
+
+        s = []
+        roll0 = d20.roll("2d6").total
+        for spec in self._specialities:
+            v = [getattr(person, i)()[1] for i in spec._stats]
+            stat = max(v)
+            chosen_stat = "/".join([f"{s}({vi})" for s, vi in zip(spec._stats, v)])
+
+            r = self.base_roll(skill_name, skill, chosen_stat, stat, custom, roll0, spec._diff)
+
+            if spec._time:
+                t = BbwExpr()
+                t += d20.roll(spec._time[0])
+                t = f"**T**: {t} {spec._time[1]}"
+            else:
+                t = ""
+
+            l = []
+            if spec._info:
+                l.append(spec._info)
+            if t:
+                l.append(t)
+            l.append(f"** roll **: {r}")
+
+            s.append("\n".join(l))
+
+        return f"\n{BbwUtils._msg_divisor}".join(s)
 
 
 @BbwUtils.for_all_methods(BbwUtils.type_sanitizer_decor)
@@ -12,6 +101,682 @@ class BbwPerson(BbwObj):
     ]
     _soc_2_capacity = [[11, 100], [2, 4]]
     _stat_2_mod = [["0", "2", "5", "8", "B", "E", "Z"], [-3, -2, -1, 0, 1, 2, 3]]
+
+    _skills = [
+        BbwSkill(
+            "admin",
+            [
+                BbwSkillSpeciality("avoiding close examination of papers", 8, ["SOC", "EDU"], ("1d6*10", "sec")),
+                BbwSkillSpeciality("dealing with police harassment", 10, ["SOC", "EDU"], ("1d6*10", "min")),
+            ],
+        ),
+        BbwSkill(
+            "advocate",
+            [
+                BbwSkillSpeciality("arguing in court", 8, ["SOC", "EDU"], ("1d6", "days")),
+                BbwSkillSpeciality("debating an argument", 8, ["INT"], ("1d6*10", "min")),
+            ],
+        ),
+        BbwSkill(
+            "animals",
+            [
+                BbwSkillSpeciality("", 8, ["DEX", "EDU", "INT"], None),
+            ],
+        ),
+        BbwSkill(
+            "animals, handling",
+            [
+                BbwSkillSpeciality("riding a horse into battle", 10, ["DEX"], ("1d6", "sec")),
+            ],
+        ),
+        BbwSkill(
+            "animals, veterinary",
+            [
+                BbwSkillSpeciality("first aid", 8, ["EDU"], ("1d6", "rounds")),
+                BbwSkillSpeciality("treat poison or disease", 8, ["EDU"], ("1d6", "hours")),
+                BbwSkillSpeciality("long-term care", 8, ["EDU"], ("1", "day")),
+            ],
+        ),
+        BbwSkill(
+            "animals, training",
+            [
+                BbwSkillSpeciality("taming a strange alien creature", 14, ["INT"], ("1d6", "days")),
+            ],
+        ),
+        BbwSkill(
+            "art",
+            [
+                BbwSkillSpeciality("", 8, ["DEX", "EDU", "INT"], None),
+            ],
+        ),
+        BbwSkill(
+            "art, performer",
+            [
+                BbwSkillSpeciality("performing a play", 8, ["EDU"], ("1d6", "hours")),
+                BbwSkillSpeciality(
+                    "convincing a person you are actually someone else (vs recon/INT)", 8, ["INT"], None
+                ),
+            ],
+        ),
+        BbwSkill(
+            "art, holography",
+            [
+                BbwSkillSpeciality(
+                    "surreptitiously switching on your recorder while in a secret meeting", 14, ["DEX"], ("1d6", "sec")
+                ),
+            ],
+        ),
+        BbwSkill(
+            "art, instrument",
+            [
+                BbwSkillSpeciality("playing a concerto", 10, ["EDU"], ("1d6*10", "min")),
+            ],
+        ),
+        BbwSkill(
+            "art, visual media",
+            [
+                BbwSkillSpeciality("making a statue of someone", 10, ["INT"], ("1d6", "days")),
+            ],
+        ),
+        BbwSkill(
+            "art, write",
+            [
+                BbwSkillSpeciality(
+                    "rousing the people of a planet by exposing their government's corruption",
+                    10,
+                    ["INT", "EDU"],
+                    ("1d6", "hours"),
+                ),
+                BbwSkillSpeciality("writing an update of traveller", 14, ["INT"], ("1d6", "months")),
+            ],
+        ),
+        BbwSkill(
+            "astrogation",
+            [
+                BbwSkillSpeciality(
+                    "plotting course to a target world using a gas giant for a gravity slingshot",
+                    10,
+                    ["EDU"],
+                    ("1d6*10", "min"),
+                ),
+                BbwSkillSpeciality("plotting a standard jump (-DM jump sectors)", 4, ["EDU"], ("1d6*10", "min")),
+            ],
+        ),
+        BbwSkill(
+            "athletics",
+            [
+                BbwSkillSpeciality("", 8, ["DEX", "STR", "END"], None),
+            ],
+        ),
+        BbwSkill(
+            "athletics, dexterity",
+            [
+                BbwSkillSpeciality(
+                    "climbing",
+                    8,
+                    [
+                        "DEX",
+                    ],
+                    ("1d6*10", "sec"),
+                ),
+                BbwSkillSpeciality(
+                    "sprinting (covers 24 + effect meters every check)",
+                    8,
+                    [
+                        "DEX",
+                    ],
+                    ("1d6", "sec"),
+                ),
+                BbwSkillSpeciality(
+                    "high jumping (effect/2 meters up)",
+                    8,
+                    [
+                        "DEX",
+                    ],
+                    ("1d6", "sec"),
+                ),
+                BbwSkillSpeciality(
+                    "long jumping (effect meters long with running start)",
+                    8,
+                    [
+                        "DEX",
+                    ],
+                    ("1d6", "sec"),
+                ),
+                BbwSkillSpeciality(
+                    "righting yourself when artificial gravity suddenly fails on board a ship",
+                    8,
+                    [
+                        "DEX",
+                    ],
+                    ("1d6", "sec"),
+                ),
+            ],
+        ),
+        BbwSkill(
+            "athletics, endurance",
+            [
+                BbwSkillSpeciality(
+                    "long-distance running/swimming",
+                    8,
+                    [
+                        "END",
+                    ],
+                    ("1d6*10", "min"),
+                ),
+            ],
+        ),
+        BbwSkill(
+            "athletics, strength",
+            [
+                BbwSkillSpeciality(
+                    "arm-wrestling (vs athletics, strength/STR)",
+                    8,
+                    [
+                        "END",
+                    ],
+                    ("1d6", "min"),
+                ),
+                BbwSkillSpeciality(
+                    "feats of strength",
+                    8,
+                    [
+                        "END",
+                    ],
+                    ("1d6*10", "sec"),
+                ),
+                BbwSkillSpeciality(
+                    "performing a complicated task in a high gravity environment",
+                    10,
+                    [
+                        "END",
+                    ],
+                    ("1d6", "sec"),
+                ),
+            ],
+        ),
+        BbwSkill(
+            "broker",
+            [
+                BbwSkillSpeciality(
+                    "negotiating a deal",
+                    8,
+                    [
+                        "INT",
+                    ],
+                    ("1d6", "hours"),
+                ),
+                BbwSkillSpeciality(
+                    "finding a buyer",
+                    8,
+                    [
+                        "SOC",
+                    ],
+                    ("1d6", "hours"),
+                ),
+            ],
+        ),
+        BbwSkill(
+            "carouse",
+            [
+                BbwSkillSpeciality(
+                    "drinking someone under the table (vs carouse/END)",
+                    8,
+                    [
+                        "END",
+                    ],
+                    ("1d6", "hours"),
+                ),
+                BbwSkillSpeciality(
+                    "gathering rumors at a party",
+                    8,
+                    [
+                        "SOC",
+                    ],
+                    ("1d6", "hours"),
+                ),
+            ],
+        ),
+        BbwSkill(
+            "deception",
+            [
+                BbwSkillSpeciality(
+                    "convincing a guard to let you pass without ID (possible vs recon/DEX)",
+                    12,
+                    [
+                        "INT",
+                    ],
+                    ("1d6", "min"),
+                ),
+                BbwSkillSpeciality(
+                    "palming a credit chit",
+                    8,
+                    [
+                        "DEX",
+                    ],
+                    ("1d6", "sec"),
+                ),
+                BbwSkillSpeciality(
+                    "disguising yourself as a wealthy nobel to fool a client (possible vs recon/DEX)",
+                    10,
+                    ["INT", "SOC"],
+                    ("1d6*10", "min"),
+                ),
+            ],
+        ),
+        BbwSkill(
+            "diplomat",
+            [
+                BbwSkillSpeciality(
+                    "greeting the emperor properly",
+                    10,
+                    [
+                        "SOC",
+                    ],
+                    ("1d6", "min"),
+                ),
+                BbwSkillSpeciality(
+                    "negotiating a peace treaty",
+                    8,
+                    [
+                        "EDU",
+                    ],
+                    ("1d6", "days"),
+                ),
+                BbwSkillSpeciality(
+                    "transmitting a formal surrender",
+                    8,
+                    [
+                        "INT",
+                    ],
+                    ("1d6*10", "sec"),
+                ),
+            ],
+        ),
+        BbwSkill(
+            "drive",
+            [
+                BbwSkillSpeciality("", 8, ["INT", "DEX"], None),
+            ],
+        ),
+        BbwSkill(
+            "drive, hovercraft",
+            [
+                BbwSkillSpeciality("maneuvering a hovercraft through a tight canal", 10, ["DEX"], ("1d6", "min")),
+            ],
+        ),
+        BbwSkill(
+            "drive, mole",
+            [
+                BbwSkillSpeciality("surfacing in the right place", 8, ["INT"], ("1d6*10", "min")),
+                BbwSkillSpeciality(
+                    "precisely controlling a dig to expose a vein of minerals", 10, ["DEX"], ("1d6*10", "min")
+                ),
+            ],
+        ),
+        BbwSkill(
+            "drive, track",
+            [
+                BbwSkillSpeciality("maneuvering/smashing through a forest", 10, ["DEX"], ("1d6", "min")),
+                BbwSkillSpeciality("driving a tank into a cargo bay", 8, ["DEX"], ("1d6*10", "sec")),
+            ],
+        ),
+        BbwSkill(
+            "drive, walker",
+            [
+                BbwSkillSpeciality("negotiating rough terrain", 10, ["DEX"], ("1d6", "min")),
+            ],
+        ),
+        BbwSkill(
+            "drive, wheel",
+            [
+                BbwSkillSpeciality(
+                    "driving a groundcar in a short race (vs drive, wheel/DEX)", 8, ["DEX"], ("1d6", "min")
+                ),
+                BbwSkillSpeciality(
+                    "driving a groundcar in a long race (vs drive, wheel/END)", 8, ["END"], ("1d6", "hours")
+                ),
+                BbwSkillSpeciality("avoiding an unexpected obstacle on the road", 8, ["DEX"], ("1d6", "sec")),
+            ],
+        ),
+        BbwSkill(
+            "electronics",
+            [
+                BbwSkillSpeciality("", 8, ["EDU", "INT", "DEX"], None),
+            ],
+        ),
+        BbwSkill(
+            "electronics, comms",
+            [
+                BbwSkillSpeciality("requesting landing privileges at a starport", 6, ["EDU"], ("1d6", "min")),
+                BbwSkillSpeciality(
+                    "accessing publicly available but obscure data over comms", 8, ["EDU"], ("1d6*10", "min")
+                ),
+                BbwSkillSpeciality(
+                    "bouncing a signal off orbiting satellite to hide your transmitter", 10, ["INT"], ("1d6*10", "min")
+                ),
+                BbwSkillSpeciality(
+                    "jamming a comms system (vs electronics, comms/INT). DM -2/-4 for laser/maser respectively. DM+1"
+                    " for each TL difference",
+                    10,
+                    ["INT"],
+                    ("1d6", "min"),
+                ),
+            ],
+        ),
+        BbwSkill(
+            "electronics, computers",
+            [
+                BbwSkillSpeciality("accessing public available data", 4, ["EDU", "INT"], ("1d6", "min")),
+                BbwSkillSpeciality(
+                    "activating a computer program on a ship's computer", 6, ["EDU", "INT"], ("1d6*10", "sec")
+                ),
+                BbwSkillSpeciality(
+                    "searching a corporate database for evidence of illegal activity", 10, ["INT"], ("1d6", "hours")
+                ),
+                BbwSkillSpeciality(
+                    "hacking into a secure computer network. DM for hacking a security programs. Failure means that the"
+                    " targeted system may be able to trace the hacking attempt",
+                    14,
+                    ["INT"],
+                    ("1d6*10", "hours"),
+                ),
+            ],
+        ),
+        BbwSkill(
+            "electronics, remote ops",
+            [
+                BbwSkillSpeciality("using a mining drone to excavate an asteroid", 6, ["DEX"], ("1d6", "hours")),
+            ],
+        ),
+        BbwSkill(
+            "electronics, sensors",
+            [
+                BbwSkillSpeciality("making a detailed sensor scan", 6, ["INT", "EDU"], ("1d6*10", "min")),
+                BbwSkillSpeciality("analizing sensor data", 8, ["INT"], ("1d6", "hours")),
+            ],
+        ),
+        BbwSkill(
+            "engineer",
+            [
+                BbwSkillSpeciality("", 8, ["EDU", "INT"], None),
+            ],
+        ),
+        BbwSkill(
+            "engineer, M-drive",
+            [
+                BbwSkillSpeciality(
+                    "overcharging a thruster plate to increase a ship's agility", 10, ["INT"], ("1d6", "min")
+                ),
+                BbwSkillSpeciality(
+                    "estimating a ship's tonnage from its observed performance", 8, ["INT"], ("1d6*10", "sec")
+                ),
+            ],
+        ),
+        BbwSkill(
+            "engineer, J-drive",
+            [
+                BbwSkillSpeciality("making a jump", 4, ["EDU"], ("1d6*10", "min")),
+            ],
+        ),
+        BbwSkill(
+            "engineer, life support",
+            [
+                BbwSkillSpeciality(
+                    "safely reducing power to life support to prolong a ship's battery life", 8, ["EDU"], ("1d6", "min")
+                ),
+            ],
+        ),
+        BbwSkill(
+            "engineer, power",
+            [
+                BbwSkillSpeciality(
+                    "monitoring a ship's power output to determine its capabilities", 10, ["INT"], ("1d6", "min")
+                ),
+            ],
+        ),
+        BbwSkill(
+            "explosives",
+            [
+                BbwSkillSpeciality("planting charges to collapse a wall in a building", 8, ["EDU"], ("1d6*10", "min")),
+                BbwSkillSpeciality(
+                    "planting a breaching charge. Dmg multiplied by the effect", 8, ["EDU"], ("1d6*10", "sec")
+                ),
+                BbwSkillSpeciality(
+                    "disarming a bomb equipped with anti-tamper trembler detonators", 14, ["DEX"], ("1d6", "min")
+                ),
+            ],
+        ),
+        BbwSkill(
+            "flyer",
+            [
+                BbwSkillSpeciality("landing safely", 6, ["DEX"], ("1d6", "min")),
+                BbwSkillSpeciality("racing another flyer (vs flyer/DEX)", 8, ["DEX"], ("1d6*10", "min")),
+            ],
+        ),
+        BbwSkill(
+            "gambler",
+            [
+                BbwSkillSpeciality("a casual game of poker (vs gambler/INT)", 8, ["INT"], ("1d6", "hours")),
+                BbwSkillSpeciality("picking the right horse to bet on", 8, ["INT"], ("1d6", "min")),
+            ],
+        ),
+        BbwSkill(
+            "gunner",
+            [
+                BbwSkillSpeciality("", 8, ["INT", "DEX"], None),
+            ],
+        ),
+        BbwSkill(
+            "gunner, turret",
+            [
+                BbwSkillSpeciality("firing a turret at an enemy ship", 8, ["DEX"], ("1d6", "sec")),
+            ],
+        ),
+        BbwSkill(
+            "gunner, ortillery",
+            [
+                BbwSkillSpeciality("planetary bombardment/stationary targets", 8, ["INT"], ("1d6", "min")),
+            ],
+        ),
+        BbwSkill(
+            "gunner, screen",
+            [
+                BbwSkillSpeciality("activating a screen to intercept enemy fire", 10, ["DEX"], ("1d6", "sec")),
+            ],
+        ),
+        BbwSkill(
+            "gunner, capital",
+            [
+                BbwSkillSpeciality("firing a spinal mount weapon", 8, ["INT"], ("1d6", "min")),
+            ],
+        ),
+        BbwSkill(
+            "gun combat",
+            [
+                BbwSkillSpeciality("", 8, ["DEX"], ("1d6", "sec")),
+            ],
+        ),
+        BbwSkill(
+            "heavy weapons",
+            [
+                BbwSkillSpeciality("firing an artillery piece at a visible target", 8, ["DEX"], ("1d6", "sec")),
+                BbwSkillSpeciality("firing an artillery piece using indirect fire", 10, ["INT"], ("1d6*10", "sec")),
+            ],
+        ),
+        BbwSkill(
+            "investigate",
+            [
+                BbwSkillSpeciality("searching a crime scene for clues", 8, ["INT"], ("1d6*10", "min")),
+                BbwSkillSpeciality(
+                    "watching a bank of security monitors in a starport, waiting for a specific criminal",
+                    10,
+                    ["INT"],
+                    ("1d6", "hours"),
+                ),
+            ],
+        ),
+        BbwSkill(
+            "jack-of-all-trades",
+            [
+                BbwSkillSpeciality("", 8, ["STR", "DEX", "END", "INT", "EDU", "SOC"], None),
+            ],
+        ),
+        BbwSkill(
+            "language",
+            [
+                BbwSkillSpeciality("ordering a meal, asking for basic directions", 6, ["EDU"], ("1d6", "sec")),
+                BbwSkillSpeciality("holding a simple conversation", 8, ["EDU"], ("1d6*10", "sec")),
+                BbwSkillSpeciality("understanding a complex technical document or report", 12, ["EDU"], ("1d6", "min")),
+            ],
+        ),
+        BbwSkill(
+            "leadership",
+            [
+                BbwSkillSpeciality("shouting an order", 8, ["SOC"], ("1d6", "sec")),
+                BbwSkillSpeciality("rallying shaken troops", 10, ["SOC"], ("1d6", "sec")),
+            ],
+        ),
+        BbwSkill(
+            "mechanic",
+            [
+                BbwSkillSpeciality("reparing a damaged system in the field", 8, ["INT", "EDU"], ("1d6", "min")),
+            ],
+        ),
+        BbwSkill(
+            "medic",
+            [
+                BbwSkillSpeciality("first aid", 8, ["EDU"], ("1d6", "rounds")),
+                BbwSkillSpeciality("treat poison or disease", 8, ["EDU"], ("1d6", "hours")),
+                BbwSkillSpeciality("long-term care", 8, ["EDU"], ("1", "day")),
+            ],
+        ),
+        BbwSkill(
+            "melee",
+            [
+                BbwSkillSpeciality("swinging an object", 8, ["STR", "DEX"], ("1d6", "sec")),
+            ],
+        ),
+        BbwSkill(
+            "navigation",
+            [
+                BbwSkillSpeciality(
+                    "plotting a course using an orbiting satellite beacon", 6, ["INT", "EDU"], ("1d6*10", "min")
+                ),
+                BbwSkillSpeciality("avoiding getting lost in a thick jungle", 10, ["INT"], ("1d6", "hours")),
+            ],
+        ),
+        BbwSkill(
+            "persuade",
+            [
+                BbwSkillSpeciality(
+                    "bluffing your way past a guard (vs persuade/INT or SOC)", 8, ["INT", "SOC"], ("1d6", "min")
+                ),
+                BbwSkillSpeciality("haggling in a bazaar (vs persuade/INT or SOC)", 8, ["INT", "SOC"], ("1d6", "min")),
+                BbwSkillSpeciality("intimidating a thug (vs persuade/INT or SOC)", 8, ["STR", "SOC"], ("1d6", "min")),
+                BbwSkillSpeciality("asking the alien space princess to marry you", 14, ["SOC"], ("1d6*10", "min")),
+            ],
+        ),
+        BbwSkill(
+            "pilot",
+            [
+                BbwSkillSpeciality("", 8, ["DEX"], None),
+            ],
+        ),
+        BbwSkill(
+            "profession",
+            [
+                BbwSkillSpeciality("", 8, ["EDU", "INT", "STR"], None),
+            ],
+        ),
+        BbwSkill(
+            "recon",
+            [
+                BbwSkillSpeciality("working out the routine of a trio of guard patrols", 8, ["INT"], ("1d6*10", "min")),
+                BbwSkillSpeciality(
+                    "spotting the sniper before they shoot you (vs stealth/DEX)", 8, ["INT"], ("1d6*10", "sec")
+                ),
+            ],
+        ),
+        BbwSkill(
+            "science",
+            [
+                BbwSkillSpeciality("remember a commonly known fact", 6, ["EDU"], ("1d6", "min")),
+                BbwSkillSpeciality("researching a problem related to a field of science", 8, ["INT"], ("1d6", "days")),
+            ],
+        ),
+        BbwSkill(
+            "seafarer",
+            [
+                BbwSkillSpeciality("", 8, ["DEX"], None),
+            ],
+        ),
+        BbwSkill(
+            "seafarer, personal",
+            [
+                BbwSkillSpeciality("controlling a canoe in a violent storm", 14, ["END"], ("1d6", "hours")),
+            ],
+        ),
+        BbwSkill(
+            "stealth",
+            [
+                BbwSkillSpeciality("sneaking past the guard (vs recon/INT)", 8, ["DEX"], ("1d6*10", "sec")),
+                BbwSkillSpeciality("avoiding detection by security patrol (vs recon/INT)", 8, ["DEX"], ("1d6", "min")),
+            ],
+        ),
+        BbwSkill(
+            "steward",
+            [
+                BbwSkillSpeciality("cooking a fine meal", 8, ["EDU"], ("1d6", "hours")),
+                BbwSkillSpeciality(
+                    "calming down an angry duke who has just been told he will not be jumping to his destination on"
+                    " time",
+                    10,
+                    ["SOC"],
+                    ("1d6", "min"),
+                ),
+            ],
+        ),
+        BbwSkill(
+            "streetwise",
+            [
+                BbwSkillSpeciality(
+                    "finding a dealer in illegal materials or technologies", 8, ["INT"], ("1d6*10", "hours")
+                ),
+                BbwSkillSpeciality("evade a police search (vs recon/INT)", 8, ["INT"], ("1d6*10", "min")),
+            ],
+        ),
+        BbwSkill(
+            "survival",
+            [
+                BbwSkillSpeciality(
+                    "gathering supplies in the wilderness to survive for a week", 8, ["EDU"], ("1d6", "days")
+                ),
+                BbwSkillSpeciality("identifying a poisonous plant", 8, ["INT", "EDU"], ("1d6*10", "seconds")),
+            ],
+        ),
+        BbwSkill(
+            "tactic",
+            [
+                BbwSkillSpeciality(
+                    "developing a strategy for attacking an enemy base", 8, ["INT"], ("1d6*10", "hours")
+                ),
+            ],
+        ),
+        BbwSkill(
+            "vacc suit",
+            [
+                BbwSkillSpeciality("performing a system check on battle dress", 8, ["EDU"], ("1d6", "min")),
+            ],
+        ),
+        BbwSkill(
+            "0G",
+            [
+                BbwSkillSpeciality("", 8, ["DEX"], None),
+            ],
+        ),
+    ]
+
     _general_skills = [
         "animals",
         "athletics",
@@ -68,6 +833,12 @@ class BbwPerson(BbwObj):
         for i in BbwPerson._general_skills:
             if i in name:
                 self._skill_rank[i] = 0
+                if i == name and value != 0:
+                    raise InvalidArgument(
+                        f"{name} is a generic skill. You need to give a speciality (ex: {name}, [speciality]) to have"
+                        " it above 0. For now it has been added at level 0"
+                    )
+                break
 
         self.set_size()
 
@@ -95,8 +866,8 @@ class BbwPerson(BbwObj):
         if type(value) is str:
             value = int(value, 36)
 
-        BbwUtils.test_geq("skill", value, 0)
-        BbwUtils.test_leq("skill", value, 6)
+        BbwUtils.test_geq("skill/rank", value, 0)
+        BbwUtils.test_leq("skill/rank", value, 6)
         self._skill_rank[name] = value
 
     def set_skill_rank(self, skill_rank={}):
@@ -118,12 +889,33 @@ class BbwPerson(BbwObj):
     def skill_rank(self):
         return self._skill_rank
 
+    # def skill(self, name):
+    #     # the unskilled base value cannot surpass 0
+    #     joat = max(min(self.rank(name="jack-of-all-trades", default_value=-3)[0][1], 3), 0)
+    #     return self.rank(name=name, default_value=joat - 3)
+    #
+    # def rank(self, name, default_value=0):
+    #     res = [(k, v) for k, v in self.skill_rank().items() if name in k]
+    #     return sorted(res, key=lambda x: x[1]) if len(res) else [(name, default_value)]
+
     def skill(self, name):
-        return self.rank(name=name, default_value=-3)
+        # the unskilled base value cannot surpass 0
+        joat = max(min(self.rank(name="jack-of-all-trades", default_value=-3)[1], 3), 0)
+        return self.rank(name=name, default_value=joat - 3)
 
     def rank(self, name, default_value=0):
-        res = [(k, v) for k, v in self.skill_rank().items() if name in k]
-        return sorted(res, key=lambda x: x[1]) if len(res) else [(name, default_value)]
+        res = BbwSkill._get_skill(raw_list=list(self.skill_rank().items()), name=name)
+
+        return res if res else (name, default_value)
+
+    def skill_check(self, skill, custom: int = 0, chosen_stat: str = None):
+        skill_name, skill_value = self.skill(skill)
+        skill_obj = BbwSkill._get_skill(raw_list=BbwPerson._skills, name=skill_name)
+
+        if not skill_obj:
+            raise InvalidArgument(f"{skill_name} skill not found!")
+
+        return skill_obj.roll(self, skill_name, skill_value, custom, chosen_stat)
 
     @BbwUtils.set_if_not_present_decor
     def salary_ticket(self, is_per_obj=False):
@@ -216,8 +1008,8 @@ class BbwPerson(BbwObj):
             (
                 int(self.STR()[0], 36)
                 + int(self.END()[0], 36)
-                + self.rank("athletics, strength", 0)[0][1]
-                + self.rank("athletics, endurance", 0)[0][1]
+                + self.rank("athletics, strength", 0)[1]
+                + self.rank("athletics, endurance", 0)[1]
             )
             * 2
             / 1000
@@ -233,8 +1025,7 @@ class BbwPerson(BbwObj):
 
         return ", ".join(l)
 
-    def trip_payback(self, t):
-        t = int(t)
+    def trip_payback(self, t: int):
         BbwUtils.test_geq("trip time", t, 0)
 
         if self.life_expenses() is None:
@@ -243,38 +1034,38 @@ class BbwPerson(BbwObj):
 
     @staticmethod
     def max_stat(people, stat):
-        ans = "0"
-        pans = []
+        ans = ("0", -3)
+        q = []
         for i in people:
             val = getattr(i, stat)()
             if val is None:
                 continue
-            val = val[0]
-            if ans < val:
+            if ans[0] < val[0]:
                 ans = val
-                pans = [i]
-            elif ans == val:
-                pans.append(i)
+                q = [i]
+            elif ans[0] == val[0]:
+                q.append(i)
 
-        return ans, pans
+        return ans, q
 
     @staticmethod
     def max_rank(people, rank):
-        return BbwPerson.max_skill_rank(people, rank, 0)
+        return BbwPerson.max_skill_rank(people, rank, "rank")
 
     @staticmethod
     def max_skill(people, skill):
-        return BbwPerson.max_skill_rank(people, skill, -3)
+        return BbwPerson.max_skill_rank(people, skill, "skill")
 
     @staticmethod
-    def max_skill_rank(people, rank, default_value):
-        ans = (rank, default_value)
+    def max_skill_rank(people, rank, f):
+        ans = (rank, -4)
         pans = []
         for i in people:
-            if ans[1] < i.rank(rank, default_value)[0][1]:
-                ans = i.rank(rank, default_value)[0]
+            new_rank = getattr(i, f)(rank)
+            if ans[1] < new_rank[1]:
+                ans = new_rank
                 pans = [i]
-            elif ans[1] == i.rank(rank, default_value)[0][1]:
+            elif ans[1] == new_rank[1]:
                 pans.append(i)
 
         return ans, pans
@@ -446,32 +1237,3 @@ class BbwPersonFactory:
             item.set_count(count)
 
         return item
-
-
-# a = BbwWorld(name="feri", uwp="B384879-B", zone="normal", hex="1904", sector=(-4, 1))
-# b = BbwSupplier(name="John, illegal")
-# c = BbwSupplier(name="John, illegal")
-# a.suppliers().dist_obj(b)
-# a.suppliers().dist_obj(c)
-#
-# a.set_supply(123124)
-# print(a.__str__(1))
-# exit()
-
-# new_person = BbwPerson(
-#     name="aaa, crew, other",
-#     count=1,
-#     salary_ticket=-1,
-#     capacity=1,
-#     reinvest=False,
-#     upp="337CCF",
-#     skill_rank={'steward':1},
-# )
-# new_person.set_skill("pilot, spacecraft", 4)
-#
-# new_person.set_rank("noble, admin", 6)
-#
-# print(new_person.__str__(False))
-# print(new_person.skill("bau"))
-# print(new_person.rank("noble"))
-# exit()

@@ -3,7 +3,7 @@ if __name__ == "__main__":
 
 import copy
 
-from cogst5.person import BbwPerson, BbwPersonFactory
+from cogst5.person import BbwPerson, BbwPersonFactory, BbwSkill, BbwSkillSpeciality
 from cogst5.item import BbwItem
 from cogst5.models.errors import *
 import pytest
@@ -17,14 +17,19 @@ def test_basic_functions(p0):
     assert p0.salary_ticket() == -5000
     assert p0.life_expenses() == 5000
     assert p0.carrying_capacity() == 0.028
-    assert p0.skill("gun combat")[0][1] == 0
-    assert p0.skill("gun combat, slug")[0][1] == 1
+    assert p0.skill("gun combat")[1] == 0
+    assert p0.skill("gun combat, slug")[1] == 1
     assert p0.capacity() == 4
     p0.set_skill("electronics, comm", 1)
-    assert p0.skill("electronics")[0][1] == 0
-    assert p0.skill("electronics, comm")[0][1] == 1
-    assert p0.skill("bau")[0][1] == -3
-    assert p0.rank("bau")[0][1] == 0
+    assert p0.skill("electronics")[1] == 0
+    assert p0.skill("electronics, comm")[1] == 1
+    assert p0.skill("bau")[1] == -3
+    assert p0.rank("bau")[1] == 0
+    assert p0.skill("jack-of-all-trades")[1] == -3
+    p0.set_skill("jack-of-all-trades", 1)
+    assert p0.skill("bau")[1] == -2
+    p0.set_skill("jack-of-all-trades", 4)
+    assert p0.skill("bau")[1] == -0
     assert p0.capacity() == 4
     assert p0.size() == 4 - 0.028
 
@@ -70,6 +75,22 @@ def test_std_person():
     assert p.size() == pytest.approx(3.98)
 
 
+def test_skills():
+    pp = BbwPerson(
+        upp="37AEDC3", reinvest="True", skill_rank={"seafarer, personal": 4, "jack-of-all-trades":1, "art, holography": 1, "art, new_art": 1, "flyer, rotor": 1}
+    )
+    assert pp.skill(", per") == ("seafarer, personal", 4)
+    assert pp.skill("zio fa")[1] == -2
+    assert pp.skill("bau")[1] == -2
+    assert pp.skill("seafarer")[1] == 0
+
+    pp.skill_check("art")
+    pp.skill_check("art, ho")
+    pp.skill_check("gun combat")
+    pp.skill_check("art, new_art")
+    pp.skill_check("flyer, rotor")
+
+
 if __name__ == "__main__":
     from conftest import p0
 
@@ -79,3 +100,4 @@ if __name__ == "__main__":
     test_person_factory()
     test_size_capacity()
     test_std_person()
+    test_skills()
