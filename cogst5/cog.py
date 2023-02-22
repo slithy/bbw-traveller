@@ -686,7 +686,7 @@ class Game(commands.Cog):
         await self._max_skill_rank_stat(ctx, v[0], v[1], l)
 
     @commands.command(name="check", aliases=["skill_check", "ck"])
-    async def skill_check(self, ctx, name: str, skill: str, custom: int = 0, chosen_stat: str = None):
+    async def skill_check(self, ctx, name: str, skill: str, chosen_stat: str = None, roll: str = "2d6"):
         """Perform a skill check
 
         name: crew member that performs the check
@@ -696,7 +696,7 @@ class Game(commands.Cog):
         """
         cs = self.session_data.get_ship_curr()
         person = cs.get_objs(name=name, with_all_tags={"crew"}, only_one=True)[0]
-        await self.send(ctx, person.skill_check(skill, custom=custom, chosen_stat=chosen_stat))
+        await self.send(ctx, person.skill_check(skill, roll=roll, chosen_stat=chosen_stat))
 
     @commands.command(name="ship_HP", aliases=["ship_hp", "hp_ship", "HP_ship", "HP", "hp", "Hp"])
     async def HP(self, ctx, v: float):

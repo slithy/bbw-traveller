@@ -42,37 +42,38 @@ class BbwSkill:
         l = self._name.split(",")
         return l[0].strip() if len(l) == 2 else None
 
-    def base_roll(self, skill_name, skill, stat_name, stat, custom, roll=d20.roll("2d6").total, diff=8):
+    def base_roll(self, skill_name, skill, stat_name, stat, roll=None, diff=8):
         r = BbwExpr()
         r += (skill_name, skill)
         r += (stat_name, stat)
-        if custom:
-            r += ("custom", custom)
 
         r += ("diff", -diff)
-        r += ("roll", roll)
+        if roll:
+            r += roll
 
         return r
 
-    def roll(self, person, skill_name, skill, custom: int = 0, chosen_stat: str = None):
+    def roll(self, person, skill_name, skill, chosen_stat: str = None, roll: str = "2d6"):
+        if roll:
+            roll = d20.roll(f"{roll} [roll]")
+
         if chosen_stat:
             stat_list = [i for i in dir(person) if i.isupper() and len(i) == 3]
             chosen_stat = BbwUtils.get_objs(raw_list=stat_list, name=chosen_stat, only_one=True)[0]
 
             stat = getattr(person, chosen_stat)()[1]
 
-            r = self.base_roll(skill_name, skill, chosen_stat, stat, custom)
+            r = self.base_roll(skill_name, skill, chosen_stat, stat, roll)
 
             return f"**roll**: {r}\n"
 
         s = []
-        roll0 = d20.roll("2d6").total
         for spec in self._specialities:
             v = [getattr(person, i)()[1] for i in spec._stats]
             stat = max(v)
             chosen_stat = "/".join([f"{s}({vi})" for s, vi in zip(spec._stats, v)])
 
-            r = self.base_roll(skill_name, skill, chosen_stat, stat, custom, roll0, spec._diff)
+            r = self.base_roll(skill_name, skill, chosen_stat, stat, roll, spec._diff)
 
             if spec._time:
                 t = BbwExpr()
@@ -908,14 +909,14 @@ class BbwPerson(BbwObj):
 
         return res if res else (name, default_value)
 
-    def skill_check(self, skill, custom: int = 0, chosen_stat: str = None):
+    def skill_check(self, skill, roll: str = "2d6", chosen_stat: str = None):
         skill_name, skill_value = self.skill(skill)
         skill_obj = BbwSkill._get_skill(raw_list=BbwPerson._skills, name=skill_name)
 
         if not skill_obj:
             raise InvalidArgument(f"{skill_name} skill not found!")
 
-        return skill_obj.roll(self, skill_name, skill_value, custom, chosen_stat)
+        return skill_obj.roll(self, skill_name=skill_name, skill=skill_value, roll=roll, chosen_stat=chosen_stat)
 
     @BbwUtils.set_if_not_present_decor
     def salary_ticket(self, is_per_obj=False):
