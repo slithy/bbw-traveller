@@ -31,9 +31,10 @@ class BbwSkill:
 
         return None
 
-    def __init__(self, name: str, specialities: list):
+    def __init__(self, name: str, specialities: list, is_general=False):
         self._name = name
         self._specialities = specialities
+        self._is_general = is_general
 
     def name(self):
         return self._name
@@ -42,12 +43,13 @@ class BbwSkill:
         l = self._name.split(",")
         return l[0].strip() if len(l) == 2 else None
 
-    def base_roll(self, skill_name, skill, stat_name, stat, roll=None, diff=8):
+    def base_roll(self, skill_name, skill, stat_name, stat, roll=None, diff=0):
         r = BbwExpr()
         r += (skill_name, skill)
         r += (stat_name, stat)
 
-        r += ("diff", -diff)
+        if diff:
+            r += ("diff", -diff)
         if roll:
             r += roll
 
@@ -101,7 +103,6 @@ class BbwPerson(BbwObj):
         [400, 800, 1000, 1200, 1500, 2000, 2500, 5000, 12000, 20000],
     ]
     _soc_2_capacity = [[11, 100], [2, 4]]
-    _stat_2_mod = [["0", "2", "5", "8", "B", "E", "Z"], [-3, -2, -1, 0, 1, 2, 3]]
 
     _skills = [
         BbwSkill(
@@ -123,6 +124,7 @@ class BbwPerson(BbwObj):
             [
                 BbwSkillSpeciality("", 8, ["DEX", "EDU", "INT"], None),
             ],
+            is_general=True,
         ),
         BbwSkill(
             "animals, handling",
@@ -149,6 +151,7 @@ class BbwPerson(BbwObj):
             [
                 BbwSkillSpeciality("", 8, ["DEX", "EDU", "INT"], None),
             ],
+            is_general=True,
         ),
         BbwSkill(
             "art, performer",
@@ -208,6 +211,7 @@ class BbwPerson(BbwObj):
             [
                 BbwSkillSpeciality("", 8, ["DEX", "STR", "END"], None),
             ],
+            is_general=True,
         ),
         BbwSkill(
             "athletics, dexterity",
@@ -399,6 +403,7 @@ class BbwPerson(BbwObj):
             [
                 BbwSkillSpeciality("", 8, ["INT", "DEX"], None),
             ],
+            is_general=True,
         ),
         BbwSkill(
             "drive, hovercraft",
@@ -445,6 +450,7 @@ class BbwPerson(BbwObj):
             [
                 BbwSkillSpeciality("", 8, ["EDU", "INT", "DEX"], None),
             ],
+            is_general=True,
         ),
         BbwSkill(
             "electronics, comms",
@@ -502,9 +508,10 @@ class BbwPerson(BbwObj):
             [
                 BbwSkillSpeciality("", 8, ["EDU", "INT"], None),
             ],
+            is_general=True,
         ),
         BbwSkill(
-            "engineer, M-drive",
+            "engineer, m-drive",
             [
                 BbwSkillSpeciality(
                     "overcharging a thruster plate to increase a ship's agility", 10, ["INT"], ("1d6", "min")
@@ -515,7 +522,7 @@ class BbwPerson(BbwObj):
             ],
         ),
         BbwSkill(
-            "engineer, J-drive",
+            "engineer, j-drive",
             [
                 BbwSkillSpeciality("making a jump", 4, ["EDU"], ("1d6*10", "min")),
             ],
@@ -554,6 +561,7 @@ class BbwPerson(BbwObj):
                 BbwSkillSpeciality("landing safely", 6, ["DEX"], ("1d6", "min")),
                 BbwSkillSpeciality("racing another flyer (vs flyer/DEX)", 8, ["DEX"], ("1d6*10", "min")),
             ],
+            is_general=True,
         ),
         BbwSkill(
             "gambler",
@@ -567,6 +575,7 @@ class BbwPerson(BbwObj):
             [
                 BbwSkillSpeciality("", 8, ["INT", "DEX"], None),
             ],
+            is_general=True,
         ),
         BbwSkill(
             "gunner, turret",
@@ -597,6 +606,7 @@ class BbwPerson(BbwObj):
             [
                 BbwSkillSpeciality("", 8, ["DEX"], ("1d6", "sec")),
             ],
+            is_general=True,
         ),
         BbwSkill(
             "heavy weapons",
@@ -604,6 +614,7 @@ class BbwPerson(BbwObj):
                 BbwSkillSpeciality("firing an artillery piece at a visible target", 8, ["DEX"], ("1d6", "sec")),
                 BbwSkillSpeciality("firing an artillery piece using indirect fire", 10, ["INT"], ("1d6*10", "sec")),
             ],
+            is_general=True,
         ),
         BbwSkill(
             "investigate",
@@ -630,6 +641,7 @@ class BbwPerson(BbwObj):
                 BbwSkillSpeciality("holding a simple conversation", 8, ["EDU"], ("1d6*10", "sec")),
                 BbwSkillSpeciality("understanding a complex technical document or report", 12, ["EDU"], ("1d6", "min")),
             ],
+            is_general=True,
         ),
         BbwSkill(
             "leadership",
@@ -657,6 +669,7 @@ class BbwPerson(BbwObj):
             [
                 BbwSkillSpeciality("swinging an object", 8, ["STR", "DEX"], ("1d6", "sec")),
             ],
+            is_general=True,
         ),
         BbwSkill(
             "navigation",
@@ -683,12 +696,14 @@ class BbwPerson(BbwObj):
             [
                 BbwSkillSpeciality("", 8, ["DEX"], None),
             ],
+            is_general=True,
         ),
         BbwSkill(
             "profession",
             [
                 BbwSkillSpeciality("", 8, ["EDU", "INT", "STR"], None),
             ],
+            is_general=True,
         ),
         BbwSkill(
             "recon",
@@ -705,12 +720,14 @@ class BbwPerson(BbwObj):
                 BbwSkillSpeciality("remember a commonly known fact", 6, ["EDU"], ("1d6", "min")),
                 BbwSkillSpeciality("researching a problem related to a field of science", 8, ["INT"], ("1d6", "days")),
             ],
+            is_general=True,
         ),
         BbwSkill(
             "seafarer",
             [
                 BbwSkillSpeciality("", 8, ["DEX"], None),
             ],
+            is_general=True,
         ),
         BbwSkill(
             "seafarer, personal",
@@ -757,12 +774,13 @@ class BbwPerson(BbwObj):
             ],
         ),
         BbwSkill(
-            "tactic",
+            "tactics",
             [
                 BbwSkillSpeciality(
                     "developing a strategy for attacking an enemy base", 8, ["INT"], ("1d6*10", "hours")
                 ),
             ],
+            is_general=True,
         ),
         BbwSkill(
             "vacc suit",
@@ -776,26 +794,6 @@ class BbwPerson(BbwObj):
                 BbwSkillSpeciality("", 8, ["DEX"], None),
             ],
         ),
-    ]
-
-    _general_skills = [
-        "animals",
-        "athletics",
-        "art",
-        "drive",
-        "electronics",
-        "engineer",
-        "flyer",
-        "gunner",
-        "gun combat",
-        "heavy weapons",
-        "language",
-        "melee",
-        "pilot",
-        "profession",
-        "science",
-        "seafarer",
-        "tactics",
     ]
 
     def __init__(self, upp=None, salary_ticket=None, reinvest=True, skill_rank={}, *args, **kwargs):
@@ -831,7 +829,9 @@ class BbwPerson(BbwObj):
         BbwUtils.test_leq("skill", value, 4)
         self._skill_rank[name] = value
 
-        for i in BbwPerson._general_skills:
+        general_skills = list(i.name() for i in BbwPerson._skills if i._is_general)
+
+        for i in general_skills:
             if i in name:
                 self._skill_rank[i] = 0
                 if i == name and value != 0:
@@ -940,39 +940,46 @@ class BbwPerson(BbwObj):
     def upp(self):
         return self._upp
 
+    @staticmethod
+    def stat2mod(v: int):
+        if v == 0:
+            return -3
+
+        return int(v / 3) - 2
+
     def STR(self):
         if self.upp() is None:
             return None
 
-        return self.upp()[0], BbwUtils.get_modifier(self.upp()[0], BbwPerson._stat_2_mod)
+        return self.upp()[0], BbwPerson.stat2mod(int(self.upp()[0], 36))
 
     def DEX(self):
         if self.upp() is None:
             return None
 
-        return self.upp()[1], BbwUtils.get_modifier(self.upp()[1], BbwPerson._stat_2_mod)
+        return self.upp()[1], BbwPerson.stat2mod(int(self.upp()[1], 36))
 
     def END(self):
         if self.upp() is None:
             return None
 
-        return self.upp()[2], BbwUtils.get_modifier(self.upp()[2], BbwPerson._stat_2_mod)
+        return self.upp()[2], BbwPerson.stat2mod(int(self.upp()[2], 36))
 
     def INT(self):
         if self.upp() is None:
             return None
 
-        return self.upp()[3], BbwUtils.get_modifier(self.upp()[3], BbwPerson._stat_2_mod)
+        return self.upp()[3], BbwPerson.stat2mod(int(self.upp()[3], 36))
 
     def EDU(self):
         if self.upp() is None:
             return None
-        return self.upp()[4], BbwUtils.get_modifier(self.upp()[4], BbwPerson._stat_2_mod)
+        return self.upp()[4], BbwPerson.stat2mod(int(self.upp()[4], 36))
 
     def SOC(self):
         if self.upp() is None:
             return None
-        return self.upp()[5], BbwUtils.get_modifier(self.upp()[5], BbwPerson._stat_2_mod)
+        return self.upp()[5], BbwPerson.stat2mod(int(self.upp()[5], 36))
 
     def PSI(self):
         if self.upp() is None:
@@ -981,7 +988,7 @@ class BbwPerson(BbwObj):
         if len(self.upp()) < 7:
             return None
 
-        return self.upp()[6], BbwUtils.get_modifier(self.upp()[6], BbwPerson._stat_2_mod)
+        return self.upp()[6], BbwPerson.stat2mod(int(self.upp()[6], 36))
 
     def set_upp(self, v: str = None):
         if v is None:

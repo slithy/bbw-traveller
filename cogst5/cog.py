@@ -956,6 +956,8 @@ class Game(commands.Cog):
         if abs(ndays) < 1:
             return
 
+        ndays = int(ndays)
+
         if travel_accounting:
             await self.trip_accounting_life_support(ctx, ndays)
             await self.trip_accounting_payback(ctx, ndays)
