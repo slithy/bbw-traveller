@@ -1155,10 +1155,16 @@ class Game(commands.Cog):
         """Add objects paying price_multi*value"""
         try:
             new_item = BbwItemFactory.make(
-                name=name, count=count, TL=TL, value=value, capacity=capacity, n_sectors=n_sectors
+                name=name,
+                count=count,
+                TL=TL,
+                value=value,
+                capacity=capacity,
+                n_sectors=n_sectors,
+                price_multi=price_multi,
             )
         except SelectionException:
-            new_item = BbwItem(name=name, count=count, TL=TL, value=value, capacity=capacity)
+            new_item = BbwItem(name=name, count=count, TL=TL, value=value, capacity=capacity, price_multi=price_multi)
 
         cs = self.session_data.get_ship_curr()
 
@@ -1196,9 +1202,16 @@ class Game(commands.Cog):
 
         description = f"sell: {', '.join(set([i.name() for i in res]))} ({res.count()})"
 
-        price_payed = res.value() * price_multi
+        income = res.value() * price_multi
+        costs = res.total_cost()
+        profit = round(income - costs)
+        description += f", profit: {profit} Cr"
+        if res.total_cost():
+            description += f", {int(profit/costs*10000)/100}% per Cr"
+        if res.capacity():
+            description += f", {int(profit/res.capacity())} Cr per ton"
 
-        await self.money(ctx, value=price_payed, description=description)
+        await self.money(ctx, value=income, description=description)
 
     @commands.command(name="buy_spt", aliases=["st_buy", "spt_buy", "buy_st", "stbuy", "buyst", "sptbuy", "buyspt"])
     async def optimize_buy_spt(self, ctx, w_name: str = None, supplier: str = None):

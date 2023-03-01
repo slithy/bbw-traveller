@@ -332,13 +332,23 @@ class BbwRes:
     def count(self):
         return self._count
 
-    def value(self):
-        """This will fail of the first object does not have the value() member"""
+    def capacity(self):
+        if self.count() == 0:
+            return 0
 
+        return self.count() * self[0].capacity(is_per_obj=True)
+
+    def value(self):
         if self.count() == 0:
             return 0
 
         return self.count() * self[0].value(is_per_obj=True)
+
+    def total_cost(self):
+        if self.count() == 0:
+            return 0
+
+        return self.value() * self[0].price_multi()
 
     def __getitem__(self, item):
         return self.objs()[item][0]

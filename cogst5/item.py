@@ -3,11 +3,12 @@ from cogst5.base import *
 
 @BbwUtils.for_all_methods(BbwUtils.type_sanitizer_decor)
 class BbwItem(BbwObj):
-    def __init__(self, TL=None, value=None, armour=0, damage: str = "", *args, **kwargs):
+    def __init__(self, TL=None, value=None, armour=0, damage: str = "", price_multi: float = 0.0, *args, **kwargs):
         self.set_value(value)
         self.set_TL(TL)
         self.set_armour(armour)
         self.set_damage(damage)
+        self.set_price_multi(price_multi)
 
         super().__init__(*args, **kwargs)
 
@@ -25,6 +26,17 @@ class BbwItem(BbwObj):
     @BbwUtils.set_if_not_present_decor
     def armor(self, is_per_obj=True):
         return self.armour(is_per_obj=is_per_obj)
+
+    def set_price_multi(self, v: float = 0.0):
+        BbwUtils.test_geq("price multi", v, 0.0)
+        self._price_multi = v
+
+    @BbwUtils.set_if_not_present_decor
+    def price_multi(self):
+        return self._price_multi
+
+    def total_cost(self):
+        return round(self.price_multi() * self.value())
 
     def set_damage(self, v: str = ""):
         self._damage = BbwUtils.to_d20_roll(v)
@@ -69,6 +81,8 @@ class BbwItem(BbwObj):
             t.append(f"dmg: {BbwUtils.to_traveller_roll(self.damage())}")
         if super().info():
             t.append(super().info())
+        if self.total_cost():
+            t.append(f"tot. cost: {self.total_cost()} Cr")
         return ", ".join(t)
 
     def _str_table(self, detail_lvl: int = 0):
@@ -148,7 +162,7 @@ class BbwItemFactory:
     ]
 
     @staticmethod
-    def make(name, n_sectors=1, count=None, TL=None, value=None, capacity=None):
+    def make(name, n_sectors=1, count=None, TL=None, value=None, capacity=None, price_multi=None):
         if count == 0:
             return None
 
@@ -175,6 +189,8 @@ class BbwItemFactory:
             item.set_size(item.capacity(is_per_obj=True))
         if count is not None:
             item.set_count(count)
+        if price_multi is not None:
+            item.set_price_multi(price_multi)
 
         if "freight" in item.name():
             item.set_name(f"{item.name()} (ns: {n_sectors}, lot: {item.capacity(is_per_obj=True)} tons)")
