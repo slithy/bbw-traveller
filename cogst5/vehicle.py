@@ -13,6 +13,8 @@ from cogst5.world import *
 
 import bisect
 
+import tkinter as tk
+
 
 @BbwUtils.for_all_methods(BbwUtils.type_sanitizer_decor)
 class BbwVehicle(BbwObj):
@@ -33,6 +35,12 @@ class BbwVehicle(BbwObj):
 
     def armor(self):
         return self.armour()
+
+    def set_armour(self, v: int):
+        self.get_objs("armour", only_one=True)[0].set_armour(v)
+
+    def set_armor(self, v: int):
+        self.set_armour(v)
 
     def set_type(self, v: str):
         self._type = v
@@ -136,6 +144,7 @@ class BbwSpaceShip(BbwVehicle):
         self.dist_obj(BbwObj("fuel tank", 41, size=0))
         self.dist_obj(BbwObj("cargo0, main", 30, size=0))
         self.dist_obj(BbwObj("stateroom, main", 44, size=0))
+        self.dist_obj(BbwItem(name="armour", capacity=0, size=0, armour=0))
 
     def flight_time_m_drive(self, d_km: int):
         """
@@ -355,3 +364,5 @@ class BbwSpaceShip(BbwVehicle):
         s += super(BbwVehicle, self).__str__(detail_lvl=-1)
 
         return s
+
+

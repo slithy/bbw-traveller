@@ -72,7 +72,23 @@ class BbwObj(dict):
 
     @BbwUtils.set_if_not_present_decor
     def count(self):
-        return self._count
+        return int(self._count)
+
+    def set_child_count(self, name: str, v: float):
+        if int(v) <= 0:
+            del self[name]
+            return True
+
+        new_cap = self[name].capacity(is_per_obj=True) * v
+        free_space = self.free_space() + self[name].capacity()
+        BbwUtils.test_leq("count", new_cap, free_space)
+        self[name].set_count(v)
+
+    def set_child_capacity(self, name: str, v: float):
+        new_cap = self[name].count() * v
+        free_space = self.free_space() + self[name].capacity()
+        BbwUtils.test_leq("capacity", new_cap, free_space)
+        self[name].set_capacity(v)
 
     def get_obj_capacity(self, i, is_per_obj=False):
         """Useful to add multipliers in derived classes"""
@@ -116,10 +132,11 @@ class BbwObj(dict):
                     f"too many matches for container `{name}`: `{', '.join([i.name() for i in objs])}`"
                 )
             if len(objs):
-                obj = copy.deepcopy(objs[0])
-                del self[obj.name()]
+                obj = objs[0]
+                old_name = obj.name()
                 obj.set_name(new_name)
-                self[obj.name()] = obj
+                self[obj.name()] = self.pop(old_name)
+
                 res += BbwRes(count=obj.count(), objs=[(obj, self)])
                 if only_one:
                     return res
@@ -278,6 +295,9 @@ class BbwObj(dict):
 
     def _str_table(self, detail_lvl: int = 0):
         return [self.count(), self.name(), self.status(), self.n_objs(), self.info()]
+
+    def name_GUI(self):
+        return f"{self.count()}, {self.name()}, {self.status()}"
 
     def __str__(self, detail_lvl: int = 0, lsort=lambda x: x.name(), lname=None):
         s = ""

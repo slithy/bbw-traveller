@@ -1,5 +1,4 @@
-import os
-import time
+
 
 from discord.ext import commands
 import discord
@@ -25,22 +24,6 @@ class Game(commands.Cog):
         self.bot = bot
         self.library = Library()
         self.session_data = BbwSessionData()
-
-    def save_path(self, filename: str, with_timestamp: bool = False):
-        """Save status to file ana backup with date"""
-        save_path = "../../" if os.getcwd() == "/home/bambleweeny" else ""
-        if not filename.endswith(".json"):
-            filename += ".json"
-
-        s = f"{save_path}save/{filename}"
-        if not with_timestamp:
-            return s
-        ts = time.gmtime()
-        timestamp = time.strftime("%Y%m%d%H%M%S", ts)
-
-        split_tup = os.path.splitext(s)
-
-        return f"{split_tup[0]}_{timestamp}{split_tup[1]}"
 
     @commands.command(name="send", aliases=[])
     async def send(self, ctx, msg: str):
@@ -81,14 +64,7 @@ class Game(commands.Cog):
     async def save_session_data(self, ctx, filename: str = "session_data"):
         """Save session data to a file in JSON format"""
 
-        enc_data = jsonpickle.encode(self.session_data)
-        p = self.save_path(filename)
-        with open(p, "w") as f:
-            json.dump(json.loads(enc_data), f, indent=2)
-
-        p_backup = self.save_path(filename, True)
-        with open(p_backup, "w") as f:
-            json.dump(json.loads(enc_data), f, indent=2)
+        p, p_backup = self.session_data.save(filename)
 
         await self.send(ctx, f"Session data saved as: {p}. Backup in: {p_backup}")
 
@@ -96,10 +72,7 @@ class Game(commands.Cog):
     async def load_session_data(self, ctx, filename: str = "session_data.json"):
         """Load session data from a JSON-formatted file"""
 
-        p = self.save_path(filename)
-        with open(p, "r") as f:
-            enc_data = json.dumps(json.load(f))
-            self.session_data = jsonpickle.decode(enc_data)
+        self.session_data, p = BbwSessionData.load(filename)
 
         await self.send(ctx, f"Session data loaded from {p}.")
 
@@ -696,7 +669,7 @@ class Game(commands.Cog):
         """
         cs = self.session_data.get_ship_curr()
         person = cs.get_objs(name=name, with_all_tags={"crew"}, only_one=True)[0]
-        await self.send(ctx, person.skill_check(skill, roll=roll, chosen_stat=chosen_stat))
+        await self.send(ctx, person.skill_check(skill, roll=roll, chosen_stat=chosen_stat)[0])
 
     @commands.command(name="ship_HP", aliases=["ship_hp", "hp_ship", "HP_ship", "HP", "hp", "Hp"])
     async def HP(self, ctx, v: float):

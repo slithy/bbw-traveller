@@ -1,3 +1,6 @@
+import os
+import time
+
 from cogst5.vehicle import *
 from cogst5.base import *
 from cogst5.company import *
@@ -6,6 +9,8 @@ from cogst5.wishlist import *
 from cogst5.log import *
 
 from .models.errors import *
+
+
 
 
 @BbwUtils.for_all_methods(BbwUtils.type_sanitizer_decor)
@@ -20,6 +25,42 @@ class BbwSessionData(BbwObj):
         self._company = BbwCompany()
         self._calendar = BbwCalendar()
         self.set_log()
+
+    @staticmethod
+    def save_path(filename: str, with_timestamp: bool = False):
+        """Save status to file ana backup with date"""
+        save_path = "../../" if os.getcwd() == "/home/bambleweeny" else ""
+        if not filename.endswith(".json"):
+            filename += ".json"
+
+        s = f"{save_path}save/{filename}"
+        if not with_timestamp:
+            return s
+        ts = time.gmtime()
+        timestamp = time.strftime("%Y%m%d%H%M%S", ts)
+
+        split_tup = os.path.splitext(s)
+
+        return f"{split_tup[0]}_{timestamp}{split_tup[1]}"
+
+    @staticmethod
+    def load(filename):
+        p = BbwSessionData.save_path(filename)
+        with open(p, "r") as f:
+            enc_data = json.dumps(json.load(f))
+            return jsonpickle.decode(enc_data), p
+
+    def save(self, filename: str):
+        enc_data = jsonpickle.encode(self)
+        p = BbwSessionData.save_path(filename)
+        with open(p, "w") as f:
+            json.dump(json.loads(enc_data), f, indent=2)
+
+        p_backup = BbwSessionData.save_path(filename, True)
+        with open(p_backup, "w") as f:
+            json.dump(json.loads(enc_data), f, indent=2)
+
+        return p, p_backup
 
     def set_ship_curr(self, v: str = ""):
         if v == "":

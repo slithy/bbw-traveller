@@ -67,7 +67,7 @@ class BbwSkill:
 
             r = self.base_roll(skill_name, skill, chosen_stat, stat, roll)
 
-            return f"**roll**: {r}\n"
+            return f"**roll**: {r}\n", r
 
         s = []
         for spec in self._specialities:
@@ -93,7 +93,7 @@ class BbwSkill:
 
             s.append("\n".join(l))
 
-        return f"\n{BbwUtils._msg_divisor}".join(s)
+        return f"\n{BbwUtils._msg_divisor}".join(s), r
 
 
 @BbwUtils.for_all_methods(BbwUtils.type_sanitizer_decor)
@@ -789,6 +789,12 @@ class BbwPerson(BbwObj):
             ],
         ),
         BbwSkill(
+            "vacc. suit",
+            [
+                BbwSkillSpeciality("performing a system check on battle dress", 8, ["EDU"], ("1d6", "min")),
+            ],
+        ),
+        BbwSkill(
             "0G",
             [
                 BbwSkillSpeciality("", 8, ["DEX"], None),
@@ -914,7 +920,10 @@ class BbwPerson(BbwObj):
         skill_obj = BbwSkill._get_skill(raw_list=BbwPerson._skills, name=skill_name)
 
         if not skill_obj:
-            raise InvalidArgument(f"{skill_name} skill not found!")
+            if chosen_stat is None:
+                raise InvalidArgument(f"{skill_name} skill not found!")
+            else:
+                skill_obj = BbwSkill._get_skill(raw_list=BbwPerson._skills, name="admin")
 
         return skill_obj.roll(self, skill_name=skill_name, skill=skill_value, roll=roll, chosen_stat=chosen_stat)
 
