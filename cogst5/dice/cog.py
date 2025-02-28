@@ -4,16 +4,16 @@ import d20
 import discord
 from discord.ext import commands
 
-#from aliasing import helpers
-#from cogs5e.models.errors import NoSelectionElements
-#from cogs5e.utils import actionutils, checkutils, targetutils
-#from cogs5e.utils.help_constants import *
-#from cogsmisc.stats import Stats
-#from gamedata import Monster
-#from gamedata.lookuputils import handle_source_footer, select_monster_full, select_spell_full
-#from utils.argparser import argparse
-#from utils.constants import SKILL_NAMES
-#from utils.dice import PersistentRollContext, VerboseMDStringifier
+# from aliasing import helpers
+# from cogs5e.models.errors import NoSelectionElements
+# from cogs5e.utils import actionutils, checkutils, targetutils
+# from cogs5e.utils.help_constants import *
+# from cogsmisc.stats import Stats
+# from gamedata import Monster
+# from gamedata.lookuputils import handle_source_footer, select_monster_full, select_spell_full
+# from utils.argparser import argparse
+# from utils.constants import SKILL_NAMES
+# from utils.dice import PersistentRollContext, VerboseMDStringifier
 from utils.dice import VerboseMDStringifier
 from utils.functions import search_and_select, try_delete
 from .inline import InlineRoller
@@ -103,9 +103,9 @@ class Dice(commands.Cog):
 
         await try_delete(ctx.message)
         await ctx.send(out, allowed_mentions=discord.AllowedMentions(users=[ctx.author]))
-        #await Stats.increase_stat(ctx, "dice_rolled_life")
-        #if gamelog := self.bot.get_cog("GameLog"):
-            #await gamelog.send_roll(ctx, res)
+        # await Stats.increase_stat(ctx, "dice_rolled_life")
+        # if gamelog := self.bot.get_cog("GameLog"):
+        # await gamelog.send_roll(ctx, res)
 
     @commands.command(name="multiroll", aliases=["rr"])
     async def rr(self, ctx, iterations: int, *, dice):
@@ -172,4 +172,3 @@ class Dice(commands.Cog):
         if user.bot:
             return
         await self.inline.handle_reaction_inline_rolls(reaction, user)
-
